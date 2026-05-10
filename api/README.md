@@ -1,0 +1,1 @@
+Go to https://editor.swagger.io/ and use import the file `openapi.yml` into the web app for a better visualization of the proposed API
