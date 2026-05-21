@@ -1,0 +1,47 @@
+import uuid
+
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
+from sqlalchemy.orm import Session
+
+from app.db.models import User
+from app.db.session import get_db
+from app.schemas.file import FileDeleteResponse, FileUploadResponse
+from app.services.auth import get_current_user
+from app.services.files import delete_file_for_user, get_file_for_user, upload_image_file, upload_pdf_file
+
+
+router = APIRouter(prefix="/files")
+
+
+@router.post("/upload/image", response_model=FileUploadResponse, status_code=status.HTTP_201_CREATED)
+async def upload_image_route(
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> FileUploadResponse:
+    file_row = await upload_image_file(db, file, current_user.id)
+    return FileUploadResponse.model_validate(file_row)
+
+
+@router.post("/upload/pdf", response_model=FileUploadResponse, status_code=status.HTTP_201_CREATED)
+async def upload_pdf_route(
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> FileUploadResponse:
+    file_row = await upload_pdf_file(db, file, current_user.id)
+    return FileUploadResponse.model_validate(file_row)
+
+
+@router.delete("/delete_file/{file_id}", response_model=FileDeleteResponse)
+async def delete_file_route(
+    file_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> FileDeleteResponse:
+    file_row = get_file_for_user(db, file_id, current_user.id)
+    if file_row is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="File not found.")
+
+    await delete_file_for_user(db, file_row)
+    return FileDeleteResponse(message="File deleted successfully.")
