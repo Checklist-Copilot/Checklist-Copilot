@@ -11,18 +11,25 @@ from app.schemas.checklist import (
     ChecklistDeleteResponse,
     ChecklistGetResponse,
     ChecklistListResponse,
-    ChecklistResponse,
     ChecklistSummaryResponse,
-    ChecklistUpdateRequest,
     ChecklistUpdateResponse,
 )
+from app.schemas.checklist_operations import ChecklistOperationsPatchRequest
 from app.services.auth import get_current_user
+from app.services.checklist_update.exceptions import (
+    CannotDeleteRootError,
+    ChecklistOperationError,
+    ComponentNotFoundError,
+    InvalidTargetContainerError,
+    UnsupportedComponentTypeError,
+    UnsupportedOperationError,
+)
+from app.services.checklist_update.service import apply_checklist_operations
 from app.services.checklists import (
     create_checklist_for_user,
     delete_checklist,
     get_checklist_for_user,
     list_checklists_for_user,
-    update_checklist_for_user,
 )
 
 
@@ -60,10 +67,10 @@ def create_checklist_route(
     return ChecklistCreateResponse.model_validate(checklist)
 
 
-@router.put("/update/{checklist_id}", response_model=ChecklistUpdateResponse)
-def update_checklist_route(
+@router.patch("/{checklist_id}", response_model=ChecklistUpdateResponse)
+def patch_checklist_route(
     checklist_id: uuid.UUID,
-    payload: ChecklistUpdateRequest,
+    payload: ChecklistOperationsPatchRequest,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> ChecklistUpdateResponse:
@@ -71,8 +78,28 @@ def update_checklist_route(
     if checklist is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Checklist not found.")
 
-    updated = update_checklist_for_user(db, checklist, payload)
-    return ChecklistUpdateResponse.model_validate(updated)
+    try:
+        updated_json = apply_checklist_operations(checklist.checklist, payload.operations)
+    except ComponentNotFoundError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+    except (
+        UnsupportedOperationError,
+        UnsupportedComponentTypeError,
+        InvalidTargetContainerError,
+        CannotDeleteRootError,
+    ) as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+    except NotImplementedError as exc:
+        raise HTTPException(status_code=status.HTTP_501_NOT_IMPLEMENTED, detail=str(exc)) from exc
+    except ChecklistOperationError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+
+    checklist.checklist_prev = checklist.checklist
+    checklist.checklist = updated_json
+    db.commit()
+    db.refresh(checklist)
+
+    return ChecklistUpdateResponse.model_validate(checklist)
 
 
 @router.delete("/delete/{checklist_id}", response_model=ChecklistDeleteResponse)
