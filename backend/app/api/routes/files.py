@@ -1,6 +1,6 @@
 import uuid
 
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
 from sqlalchemy.orm import Session
 
 from app.db.models import User
@@ -16,20 +16,22 @@ router = APIRouter(prefix="/files")
 @router.post("/upload/image", response_model=FileUploadResponse, status_code=status.HTTP_201_CREATED)
 async def upload_image_route(
     file: UploadFile = File(...),
+    checklist_id: uuid.UUID | None = Form(default=None),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> FileUploadResponse:
-    file_row = await upload_image_file(db, file, current_user.id)
+    file_row = await upload_image_file(db, file, current_user.id, checklist_id)
     return FileUploadResponse.model_validate(file_row)
 
 
 @router.post("/upload/pdf", response_model=FileUploadResponse, status_code=status.HTTP_201_CREATED)
 async def upload_pdf_route(
     file: UploadFile = File(...),
+    checklist_id: uuid.UUID | None = Form(default=None),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> FileUploadResponse:
-    file_row = await upload_pdf_file(db, file, current_user.id)
+    file_row = await upload_pdf_file(db, file, current_user.id, checklist_id)
     return FileUploadResponse.model_validate(file_row)
 
 

@@ -7,6 +7,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
+from app.db.models import Checklist
 from app.db.models import File as FileModel
 
 _IMAGE_CONTENT_TYPES = {"image/png", "image/jpeg"}
@@ -86,41 +87,87 @@ async def _delete_from_supabase(bucket: str, storage_path: str) -> None:
         )
 
 
-def _persist_file_metadata(db: Session, file_type: str, file_name: str, user_id: uuid.UUID) -> FileModel:
-    file_row = FileModel(file_type=file_type, file_name=file_name, user_id=user_id)
+def _validate_checklist_access(db: Session, checklist_id: uuid.UUID, user_id: uuid.UUID) -> None:
+    stmt = select(Checklist.id).where(Checklist.id == checklist_id, Checklist.user_id == user_id)
+    exists = db.scalar(stmt)
+    if exists is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Checklist not found or not owned by user: {checklist_id}",
+        )
+
+
+def _persist_file_metadata(
+    db: Session,
+    file_type: str,
+    file_name: str,
+    user_id: uuid.UUID,
+    checklist_id: uuid.UUID | None,
+) -> FileModel:
+    file_row = FileModel(
+        file_type=file_type,
+        file_name=file_name,
+        user_id=user_id,
+        checklist_id=checklist_id,
+    )
     db.add(file_row)
     db.commit()
     db.refresh(file_row)
     return file_row
 
 
-async def upload_image_file(db: Session, file: UploadFile, user_id: uuid.UUID) -> FileModel:
+async def upload_image_file(
+    db: Session,
+    file: UploadFile,
+    user_id: uuid.UUID,
+    checklist_id: uuid.UUID | None = None,
+) -> FileModel:
     if file.content_type not in _IMAGE_CONTENT_TYPES:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Only PNG and JPEG images are allowed.")
+    if checklist_id is not None:
+        _validate_checklist_access(db, checklist_id, user_id)
 
     content = await file.read()
     ext = _extension_from_upload(file, ".png")
     object_name = f"{user_id}/{uuid.uuid4()}{ext}"
 
     await _upload_to_supabase(settings.SUPABASE_IMAGES_BUCKET, object_name, file, content)
-    return _persist_file_metadata(db, "image", f"{settings.SUPABASE_IMAGES_BUCKET}/{object_name}", user_id)
+    return _persist_file_metadata(
+        db,
+        "image",
+        f"{settings.SUPABASE_IMAGES_BUCKET}/{object_name}",
+        user_id,
+        checklist_id,
+    )
 
 
-async def upload_pdf_file(db: Session, file: UploadFile, user_id: uuid.UUID) -> FileModel:
+async def upload_pdf_file(
+    db: Session,
+    file: UploadFile,
+    user_id: uuid.UUID,
+    checklist_id: uuid.UUID | None = None,
+) -> FileModel:
     if file.content_type not in _PDF_CONTENT_TYPES:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Only PDF files are allowed.")
+    if checklist_id is not None:
+        _validate_checklist_access(db, checklist_id, user_id)
 
     content = await file.read()
     ext = _extension_from_upload(file, ".pdf")
     object_name = f"{user_id}/{uuid.uuid4()}{ext}"
 
     await _upload_to_supabase(settings.SUPABASE_PDFS_BUCKET, object_name, file, content)
-    return _persist_file_metadata(db, "pdf", f"{settings.SUPABASE_PDFS_BUCKET}/{object_name}", user_id)
+    return _persist_file_metadata(
+        db,
+        "pdf",
+        f"{settings.SUPABASE_PDFS_BUCKET}/{object_name}",
+        user_id,
+        checklist_id,
+    )
 
 
 def get_file_for_user(db: Session, file_id: uuid.UUID, user_id: uuid.UUID) -> FileModel | None:
     stmt = select(FileModel).where(FileModel.id == file_id, FileModel.user_id == user_id)
-    print(f"[files.get_file_for_user] file_id={file_id} user_id={user_id}")
     return db.scalar(stmt)
 
 

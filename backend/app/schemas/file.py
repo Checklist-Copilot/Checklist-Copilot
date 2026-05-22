@@ -17,6 +17,7 @@ class FileRead(FileBase):
     id: uuid.UUID
     created_at: datetime
     user_id: uuid.UUID | None = None
+    checklist_id: uuid.UUID | None = None
 
     model_config = ConfigDict(from_attributes=True)
 

@@ -48,3 +48,8 @@ class File(Base):
     file_type: Mapped[str] = mapped_column(Text, nullable=False)
     file_name: Mapped[str] = mapped_column(Text, nullable=False)
     user_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
+    checklist_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("checklists.id"),
+        nullable=True,
+    )
