@@ -1,1 +1,6 @@
 backend/app/.venv
+__pycache__/
+*.py[cod]
+backend/.env
+backend/.env.example
+openapi.json

@@ -1,0 +1,56 @@
+.page {
+  position: relative;
+  min-height: 100vh;
+  padding: 2rem;
+  background: oklch(97.5% 0.008 255);
+  color: oklch(28% 0.02 255);
+}
+
+.content {
+  width: min(100%, 58rem);
+  margin: 0 auto;
+}
+
+.title {
+  margin: 0;
+  font-size: 1.6rem;
+}
+
+.message {
+  margin-top: 1rem;
+  color: oklch(42% 0.018 255);
+}
+
+.error {
+  margin-top: 1rem;
+  color: oklch(54% 0.2 25);
+}
+
+.json {
+  margin-top: 1rem;
+  border: 1px solid oklch(85% 0.012 255);
+  border-radius: 0.6rem;
+  background: oklch(99.5% 0.003 255);
+  padding: 1rem;
+  overflow: auto;
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+
+
+.logoutButton {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  border: 1px solid oklch(82% 0.014 255);
+  background: oklch(100% 0.002 255);
+  color: oklch(30% 0.02 255);
+  border-radius: 0.55rem;
+  padding: 0.45rem 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.logoutButton:hover {
+  background: oklch(96% 0.005 255);
+}

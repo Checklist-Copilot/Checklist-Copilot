@@ -1,0 +1,64 @@
+.page {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 2rem;
+  background: oklch(98% 0.008 255);
+  color: oklch(28% 0.02 255);
+}
+
+.hero {
+  width: min(100%, 42rem);
+  text-align: center;
+}
+
+.title {
+  margin: 0;
+  font-size: clamp(2rem, 4vw, 3rem);
+  line-height: 1.1;
+}
+
+.subtitle {
+  margin: 0.9rem auto 0;
+  max-width: 46ch;
+  font-size: 1rem;
+  line-height: 1.55;
+  color: oklch(42% 0.018 255);
+}
+
+.actions {
+  margin-top: 1.75rem;
+  display: flex;
+  justify-content: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.primaryButton,
+.secondaryButton {
+  border-radius: 0.65rem;
+  padding: 0.72rem 1.1rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background-color 180ms ease-out, color 180ms ease-out, border-color 180ms ease-out;
+}
+
+.primaryButton {
+  background: oklch(52% 0.16 255);
+  color: oklch(98% 0.005 255);
+  border: 1px solid oklch(52% 0.16 255);
+}
+
+.primaryButton:hover {
+  background: oklch(47% 0.16 255);
+}
+
+.secondaryButton {
+  background: oklch(100% 0.002 255);
+  color: oklch(34% 0.03 255);
+  border: 1px solid oklch(80% 0.014 255);
+}
+
+.secondaryButton:hover {
+  background: oklch(96% 0.005 255);
+}

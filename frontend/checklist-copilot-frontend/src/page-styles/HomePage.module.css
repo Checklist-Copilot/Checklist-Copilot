@@ -1,0 +1,123 @@
+.page {
+  position: relative;
+  min-height: 100vh;
+  padding: 2rem;
+  background: oklch(97.5% 0.008 255);
+  color: oklch(28% 0.02 255);
+}
+
+.content {
+  width: min(100%, 52rem);
+  margin: 0 auto;
+}
+
+.title {
+  margin: 0;
+  font-size: 1.8rem;
+  line-height: 1.2;
+}
+
+.message {
+  margin-top: 1rem;
+  color: oklch(42% 0.018 255);
+}
+
+.error {
+  margin-top: 1rem;
+  color: oklch(54% 0.2 25);
+}
+
+.list {
+  margin: 1.2rem 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 0.7rem;
+}
+
+.listItem {
+  border: 1px solid oklch(85% 0.012 255);
+  border-radius: 0.7rem;
+  background: oklch(99.5% 0.003 255);
+  padding: 0.9rem;
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.itemMain {
+  min-width: 0;
+}
+
+.itemTitle {
+  margin: 0;
+  font-size: 1.05rem;
+  line-height: 1.2;
+}
+
+.itemDescription {
+  margin: 0.4rem 0 0;
+  color: oklch(38% 0.015 255);
+}
+
+.itemMeta {
+  margin: 0.5rem 0 0;
+  font-size: 0.9rem;
+  color: oklch(44% 0.014 255);
+}
+
+.itemActions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.actionButton,
+.actionButtonSecondary {
+  text-decoration: none;
+  font-weight: 600;
+  border-radius: 0.55rem;
+  padding: 0.5rem 0.8rem;
+  white-space: nowrap;
+  border: 1px solid transparent;
+}
+
+.actionButton {
+  background: oklch(52% 0.16 255);
+  color: oklch(98% 0.005 255);
+}
+
+.actionButtonSecondary {
+  background: oklch(96% 0.006 255);
+  border-color: oklch(82% 0.014 255);
+  color: oklch(33% 0.024 255);
+}
+
+@media (max-width: 720px) {
+  .listItem {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .itemActions {
+    width: 100%;
+  }
+}
+
+
+.logoutButton {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  border: 1px solid oklch(82% 0.014 255);
+  background: oklch(100% 0.002 255);
+  color: oklch(30% 0.02 255);
+  border-radius: 0.55rem;
+  padding: 0.45rem 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.logoutButton:hover {
+  background: oklch(96% 0.005 255);
+}
