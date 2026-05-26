@@ -1,0 +1,227 @@
+{
+  "id": "018f6c40-0000-7000-8000-000000000001",
+  "type": "checklist",
+  "children": [
+    {
+      "id": "018f6c40-0000-7000-8000-000000000010",
+      "humanReadableId": "section_inspector_info",
+      "type": "section",
+      "label": "Inspector Information",
+      "collapsed": false,
+      "children": [
+        {
+          "id": "018f6c40-0000-7000-8000-000000000011",
+          "humanReadableId": "field_inspector_name",
+          "type": "textField",
+          "label": "Inspector Name",
+          "value": "",
+          "placeholder": "Full name",
+          "required": true,
+          "multiline": false
+        },
+        {
+          "id": "018f6c40-0000-7000-8000-000000000012",
+          "humanReadableId": "field_inspection_notes",
+          "type": "textField",
+          "label": "General Observations",
+          "value": "",
+          "placeholder": "Describe any general site conditions or concerns",
+          "required": false,
+          "multiline": true
+        },
+        {
+          "id": "018f6c40-0000-7000-8000-000000000013",
+          "humanReadableId": "field_location_code",
+          "type": "numberField",
+          "label": "Location Code",
+          "value": null,
+          "unit": null,
+          "min": 1000,
+          "max": 9999,
+          "required": true
+        },
+        {
+          "id": "018f6c40-0000-7000-8000-000000000014",
+          "humanReadableId": "field_ambient_temperature",
+          "type": "numberField",
+          "label": "Ambient Temperature",
+          "value": null,
+          "unit": "°C",
+          "min": -50,
+          "max": 80,
+          "required": false
+        }
+      ]
+    },
+    {
+      "id": "018f6c40-0000-7000-8000-000000000020",
+      "humanReadableId": "section_safety_equipment",
+      "type": "section",
+      "label": "Safety Equipment Checks",
+      "collapsed": false,
+      "children": [
+        {
+          "id": "018f6c40-0000-7000-8000-000000000021",
+          "humanReadableId": "group_ppe",
+          "type": "checkboxGroup",
+          "label": "Personal Protective Equipment",
+          "items": [
+            {
+              "id": "018f6c40-0000-7000-8000-000000000022",
+              "humanReadableId": "item_hard_hat_worn",
+              "type": "checkbox",
+              "label": "Hard hat is worn",
+              "checked": false,
+              "required": true
+            },
+            {
+              "id": "018f6c40-0000-7000-8000-000000000023",
+              "humanReadableId": "item_safety_vest_worn",
+              "type": "checkbox",
+              "label": "High-visibility vest is worn",
+              "checked": false,
+              "required": true
+            },
+            {
+              "id": "018f6c40-0000-7000-8000-000000000024",
+              "humanReadableId": "item_steel_boots_worn",
+              "type": "checkbox",
+              "label": "Steel-toed boots are worn",
+              "checked": false,
+              "required": true
+            },
+            {
+              "id": "018f6c40-0000-7000-8000-000000000025",
+              "humanReadableId": "item_gloves_worn",
+              "type": "checkbox",
+              "label": "Protective gloves are worn",
+              "checked": false,
+              "required": false
+            }
+          ]
+        },
+        {
+          "id": "018f6c40-0000-7000-8000-000000000026",
+          "humanReadableId": "group_fire_safety",
+          "type": "checkboxGroup",
+          "label": "Fire Safety",
+          "items": [
+            {
+              "id": "018f6c40-0000-7000-8000-000000000027",
+              "humanReadableId": "item_extinguisher_accessible",
+              "type": "checkbox",
+              "label": "Fire extinguisher is accessible and unobstructed",
+              "checked": false,
+              "required": true
+            },
+            {
+              "id": "018f6c40-0000-7000-8000-000000000028",
+              "humanReadableId": "item_exit_signs_lit",
+              "type": "checkbox",
+              "label": "Emergency exit signs are illuminated",
+              "checked": false,
+              "required": true
+            }
+          ]
+        },
+        {
+          "id": "018f6c40-0000-7000-8000-000000000029",
+          "humanReadableId": "images_ppe_reference",
+          "type": "imageBlock",
+          "label": "PPE Reference Images",
+          "images": [
+            {
+              "imageId": "018f6c40-0000-7000-8000-000000000091",
+              "url": "/api/images/018f6c40-0000-7000-8000-000000000091",
+              "caption": "Correct hard hat and vest configuration"
+            }
+          ],
+          "allowUpload": false
+        }
+      ]
+    },
+    {
+      "id": "018f6c40-0000-7000-8000-000000000030",
+      "humanReadableId": "section_equipment_log",
+      "type": "section",
+      "label": "Equipment Status Log",
+      "collapsed": false,
+      "children": [
+        {
+          "id": "018f6c40-0000-7000-8000-000000000031",
+          "humanReadableId": "table_equipment_inspection",
+          "type": "table",
+          "label": "Equipment Inspection Log",
+          "columns": [
+            {
+              "id": "018f6c40-0000-7000-8000-000000000040",
+              "label": "Equipment",
+              "type": "text"
+            },
+            {
+              "id": "018f6c40-0000-7000-8000-000000000041",
+              "label": "Serial Number",
+              "type": "text"
+            },
+            {
+              "id": "018f6c40-0000-7000-8000-000000000042",
+              "label": "Days Since Last Service",
+              "type": "number"
+            },
+            {
+              "id": "018f6c40-0000-7000-8000-000000000043",
+              "label": "Passed Inspection",
+              "type": "checkbox"
+            }
+          ],
+          "rows": [
+            {
+              "id": "018f6c40-0000-7000-8000-000000000050",
+              "cells": {
+                "018f6c40-0000-7000-8000-000000000040": "Fire Extinguisher A",
+                "018f6c40-0000-7000-8000-000000000041": "FE-2024-001",
+                "018f6c40-0000-7000-8000-000000000042": 42,
+                "018f6c40-0000-7000-8000-000000000043": true
+              }
+            },
+            {
+              "id": "018f6c40-0000-7000-8000-000000000051",
+              "cells": {
+                "018f6c40-0000-7000-8000-000000000040": "First Aid Kit",
+                "018f6c40-0000-7000-8000-000000000041": "FA-2024-003",
+                "018f6c40-0000-7000-8000-000000000042": 15,
+                "018f6c40-0000-7000-8000-000000000043": true
+              }
+            },
+            {
+              "id": "018f6c40-0000-7000-8000-000000000052",
+              "cells": {
+                "018f6c40-0000-7000-8000-000000000040": "Emergency Eyewash Station",
+                "018f6c40-0000-7000-8000-000000000041": "EW-2024-007",
+                "018f6c40-0000-7000-8000-000000000042": 180,
+                "018f6c40-0000-7000-8000-000000000043": false
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "018f6c40-0000-7000-8000-000000000060",
+      "humanReadableId": "section_site_photos",
+      "type": "section",
+      "label": "Site Condition Photos",
+      "collapsed": false,
+      "children": [
+        {
+          "id": "018f6c40-0000-7000-8000-000000000061",
+          "humanReadableId": "images_site_photos",
+          "type": "imageBlock",
+          "label": "Upload Site Photos",
+          "images": [],
+          "allowUpload": true
+        }
+      ]
+    }
+  ]
+}
