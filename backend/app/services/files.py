@@ -1,4 +1,5 @@
 import uuid
+from contextlib import suppress
 from pathlib import Path
 
 import httpx
@@ -97,21 +98,49 @@ def _validate_checklist_access(db: Session, checklist_id: uuid.UUID, user_id: uu
         )
 
 
-def _persist_file_metadata(
+def _create_pending_file_metadata(
     db: Session,
     file_type: str,
-    file_name: str,
     user_id: uuid.UUID,
     checklist_id: uuid.UUID | None,
 ) -> FileModel:
     file_row = FileModel(
         file_type=file_type,
-        file_name=file_name,
+        file_name="",
         user_id=user_id,
         checklist_id=checklist_id,
     )
     db.add(file_row)
-    db.commit()
+    db.flush()
+    return file_row
+
+
+async def _upload_file_with_metadata_id(
+    db: Session,
+    file: UploadFile,
+    content: bytes,
+    file_type: str,
+    bucket: str,
+    ext: str,
+    user_id: uuid.UUID,
+    checklist_id: uuid.UUID | None,
+) -> FileModel:
+    file_row = _create_pending_file_metadata(db, file_type, user_id, checklist_id)
+    object_name = f"{user_id}/{file_row.id}{ext}"
+    file_row.file_name = f"{bucket}/{object_name}"
+
+    uploaded = False
+    try:
+        await _upload_to_supabase(bucket, object_name, file, content)
+        uploaded = True
+        db.commit()
+    except Exception:
+        db.rollback()
+        if uploaded:
+            with suppress(Exception):
+                await _delete_from_supabase(bucket, object_name)
+        raise
+
     db.refresh(file_row)
     return file_row
 
@@ -129,13 +158,13 @@ async def upload_image_file(
 
     content = await file.read()
     ext = _extension_from_upload(file, ".png")
-    object_name = f"{user_id}/{uuid.uuid4()}{ext}"
-
-    await _upload_to_supabase(settings.SUPABASE_IMAGES_BUCKET, object_name, file, content)
-    return _persist_file_metadata(
+    return await _upload_file_with_metadata_id(
         db,
+        file,
+        content,
         "image",
-        f"{settings.SUPABASE_IMAGES_BUCKET}/{object_name}",
+        settings.SUPABASE_IMAGES_BUCKET,
+        ext,
         user_id,
         checklist_id,
     )
@@ -154,13 +183,13 @@ async def upload_pdf_file(
 
     content = await file.read()
     ext = _extension_from_upload(file, ".pdf")
-    object_name = f"{user_id}/{uuid.uuid4()}{ext}"
-
-    await _upload_to_supabase(settings.SUPABASE_PDFS_BUCKET, object_name, file, content)
-    return _persist_file_metadata(
+    return await _upload_file_with_metadata_id(
         db,
+        file,
+        content,
         "pdf",
-        f"{settings.SUPABASE_PDFS_BUCKET}/{object_name}",
+        settings.SUPABASE_PDFS_BUCKET,
+        ext,
         user_id,
         checklist_id,
     )
