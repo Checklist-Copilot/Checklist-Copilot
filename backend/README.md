@@ -215,9 +215,13 @@ module touches the DB or auth — it's a pure function over JSON.
 
 ```bash
 cd backend
-export OPENAI_API_KEY=sk-...
-python test_ai_create_checklist.py
+export OPENAI_API_KEY=sk-...   # bash; PowerShell: $env:OPENAI_API_KEY = "sk-..."
+python test_ai_lifecycle.py
 ```
 
-Sends one prompt to OpenAI and prints the generated checklist JSON.
+Two-phase smoke test: generates a fresh checklist from a natural-language
+prompt, then runs an edit instruction against that same checklist. The edit
+phase is designed to require all three tool types
+(`add_component` / `update_component` / `delete_component`). Prints a per-tool
+applied/skipped breakdown so you can see exactly what the model did.
 

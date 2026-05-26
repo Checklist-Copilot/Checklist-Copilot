@@ -107,6 +107,58 @@ def build_create_system_prompt(root_id: str) -> str:
 
 # --- Edit-existing ----------------------------------------------------------- #
 
+# Operations reference is only injected into the EDIT prompt — the CREATE flow
+# only has `add_component` available, so update/delete docs would just waste
+# tokens there.
+_OPERATIONS_REFERENCE = """\
+HOW TO USE THE THREE TOOLS
+
+add_component — create a new component in the tree.
+  Use for: a new section, a new field, a new checkbox in an existing group,
+  a new table, etc.
+
+update_component — patch one or more fields on an EXISTING component.
+  Use for: ticking a checkbox, filling in a textField/numberField value,
+  renaming a label, changing `required`, changing `collapsed`, etc.
+  Cannot change `type` or `id`. Cannot restructure: do NOT try to patch
+  `children` on a section or `items` on a checkboxGroup — use add_component
+  or delete_component for structural changes.
+
+  Patchable fields per type:
+    - section:        label, collapsed, humanReadableId
+    - checkboxGroup:  label, humanReadableId
+    - checkbox:       label, checked, required, humanReadableId
+    - textField:      label, value, placeholder, required, multiline
+    - numberField:    label, value, unit, min, max, required
+    - imageBlock:     label, images, allowUpload
+    - table:          label, columns, rows
+
+  Anything outside this list will be rejected. Send only the fields you want
+  to change (the patch is merged, not a full replacement).
+
+delete_component — remove a component AND every component nested inside it.
+  Cannot delete the root checklist. Once gone, it's gone (the route layer
+  separately keeps a snapshot for undo — that's not your concern).
+
+CHOOSING THE RIGHT TOOL
+- Want to change a field on something that already exists? -> update_component.
+  Do NOT delete + re-add to "edit" something; just patch it.
+- Want to add something new where nothing exists? -> add_component.
+- Want to remove something the user said to take out? -> delete_component.
+
+WORKED EXAMPLE
+User instruction: "Tick the hard hat checkbox, rename the PPE group to
+'Required PPE', remove the gloves checkbox, and add a 'Steel-toed boots'
+checkbox to the PPE group."
+
+  1) update_component { targetId: "chk_hard_hat", patch: { checked: true } }
+  2) update_component { targetId: "group_ppe",    patch: { label: "Required PPE" } }
+  3) delete_component { targetId: "chk_gloves" }
+  4) add_component    { targetContainerId: "group_ppe",
+                        component: { type: "checkbox", label: "Steel-toed boots are worn" } }
+"""
+
+
 EDIT_SYSTEM_PROMPT_TEMPLATE = """\
 You are an assistant that edits an existing checklist via tool calls.
 
@@ -123,9 +175,14 @@ When adding new components:
 When the requested change is complete, stop calling tools and return a short
 confirmation message.
 
+{operations_reference}
+
 {component_reference}
 """
 
 
 def build_edit_system_prompt() -> str:
-    return EDIT_SYSTEM_PROMPT_TEMPLATE.format(component_reference=_COMPONENT_REFERENCE)
+    return EDIT_SYSTEM_PROMPT_TEMPLATE.format(
+        operations_reference=_OPERATIONS_REFERENCE,
+        component_reference=_COMPONENT_REFERENCE,
+    )
