@@ -139,3 +139,89 @@ This archive contains:
 The code is a scaffold / reference implementation, not a fully production-ready backend.
 It is meant to help the team understand the architecture and start implementation.
 
+---
+
+## Implementation status
+
+### Implemented: `app/services/checklist_update/`
+
+The module that mutates a checklist's JSON via three operation types:
+`addComponent`, `updateComponent`, `deleteComponent`. Every operation is validated for
+shape (required fields, type checks, parent–child rules) and structural integrity
+(target exists, component type matches the handler). All errors derive from
+`ChecklistOperationError`.
+
+**Supported component types** (see [`docs/component-structure.md`](../docs/component-structure.md)
+for full field specs):
+`section`, `checkboxGroup`, `checkbox`, `textField`, `numberField`, `imageBlock`, `table`.
+
+**Single entry point**
+
+```python
+from app.services.checklist_update.service import apply_checklist_operations
+
+updated_json = apply_checklist_operations(checklist_json, operations)
+```
+
+`operations` is a list of `AddComponentOperation` / `UpdateComponentOperation` /
+`DeleteComponentOperation` objects (see `app/schemas/checklist_operations.py`).
+Both manual frontend edits and AI tool calls converge on this function — there is
+no separate "AI path" inside the mutation layer.
+
+**How an HTTP route consumes the service** (see `app/api/routes/checklists.py::patch_checklist_route`):
+
+1. Load the checklist for the current user.
+2. Call `apply_checklist_operations(checklist.checklist, payload.operations)`.
+3. Translate `ChecklistOperationError` subclasses to HTTP status codes:
+   - `ComponentNotFoundError` → 404
+   - `InvalidTargetContainerError`, `CannotDeleteRootError`,
+     `UnsupportedOperationError`, `UnsupportedComponentTypeError`,
+     `InvalidComponentPayloadError` → 400
+4. On success, snapshot the previous JSON into `checklist_prev` (for undo),
+   write the new JSON, commit, and return the row.
+
+**Quick demo / smoke test**
+
+```bash
+cd backend
+python test_add_delete_update.py
+```
+
+Runs 23 checks covering every component type's add/update/delete plus the
+validation failure paths. Exits with status 0 if everything passes.
+
+### Implemented: `app/services/ai/`
+
+OpenAI-backed copilot that turns natural-language prompts into the same
+`ChecklistOperation` list the manual edit flow accepts. The AI never writes to
+the checklist JSON directly — it produces operations, the operations go through
+`apply_checklist_operations`, and the same validators reject invalid model output.
+
+**Entry points** (`app/services/ai/service.py`):
+
+- `generate_checklist_from_text(prompt)` — builds a fresh checklist tree.
+- `edit_checklist_with_ai(checklist, instruction)` — returns the modified checklist.
+
+**Configuration**: set `OPENAI_API_KEY` (and optionally `OPENAI_MODEL`,
+default `gpt-4o-mini`) in your environment or `.env`. Nothing else in the AI
+module touches the DB or auth — it's a pure function over JSON.
+
+**Routes** (`app/api/routes/ai.py`):
+
+- `POST /api/ai/checklists/create-from-text`
+- `POST /api/ai/checklists/{checklist_id}/edit`
+
+**Standalone integration test**
+
+```bash
+cd backend
+export OPENAI_API_KEY=sk-...   # bash; PowerShell: $env:OPENAI_API_KEY = "sk-..."
+python test_ai_lifecycle.py
+```
+
+Two-phase smoke test: generates a fresh checklist from a natural-language
+prompt, then runs an edit instruction against that same checklist. The edit
+phase is designed to require all three tool types
+(`add_component` / `update_component` / `delete_component`). Prints a per-tool
+applied/skipped breakdown so you can see exactly what the model did.
+

@@ -20,3 +20,8 @@ class InvalidTargetContainerError(ChecklistOperationError):
 
 class CannotDeleteRootError(ChecklistOperationError):
     pass
+
+
+class InvalidComponentPayloadError(ChecklistOperationError):
+    """Raised when a component payload (add) or patch (update) fails validation."""
+    pass
