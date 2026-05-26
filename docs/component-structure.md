@@ -24,8 +24,8 @@ The checklist document itself is the root node. It is not a component that can b
 
 ```json
 {
-  "id": "string (UUIDv7)",
-  "type": "checklist",
+  "id": "root",
+  "type": "root",
   "children": [ /* top-level components */ ]
 }
 ```
