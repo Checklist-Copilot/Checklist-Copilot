@@ -19,6 +19,9 @@ class Settings(BaseSettings):
     SUPABASE_IMAGES_BUCKET: str = "images"
     SUPABASE_PDFS_BUCKET: str = "pdfs"
 
+    OPENAI_API_KEY: str | None = None
+    OPENAI_MODEL: str = "gpt-4o-mini"
+
     BACKEND_CORS_ORIGINS: list[str] = ["http://localhost:5173"]
 
     model_config = SettingsConfigDict(

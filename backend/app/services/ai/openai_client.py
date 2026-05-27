@@ -15,13 +15,25 @@ from __future__ import annotations
 import json
 import os
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any, Callable
+
+from dotenv import load_dotenv
 
 
 # Default model — small + cheap + supports tool calling reliably.
 # Override with the OPENAI_MODEL env var. `gpt-3.5-turbo-1106` and later also work;
 # legacy `gpt-3.5-turbo` is flaky on multi-tool responses.
 _DEFAULT_MODEL = "gpt-4o-mini"
+
+
+def _find_dotenv() -> Path | None:
+    """Find the project .env file without importing app settings."""
+    for parent in Path(__file__).resolve().parents:
+        candidate = parent / ".env"
+        if candidate.exists():
+            return candidate
+    return None
 
 
 @dataclass
@@ -33,6 +45,7 @@ class ToolCall:
 
 class OpenAIClient:
     def __init__(self, model: str | None = None) -> None:
+        load_dotenv(_find_dotenv())
         api_key = os.environ.get("OPENAI_API_KEY")
         if not api_key:
             raise RuntimeError(
