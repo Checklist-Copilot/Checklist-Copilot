@@ -20,10 +20,13 @@ class AiSkippedCall(BaseModel):
 
 class AiResponse(BaseModel):
     """
-    Returned by both AI endpoints. `checklist` is the resulting JSON tree (after
-    all valid tool calls were applied). `skipped` lists any tool calls that
-    failed validation so the frontend can surface them for debugging.
+    Returned by the AI edit endpoint. `checklist` is the resulting JSON tree
+    (after all valid tool calls were applied). `reply` is the model's
+    natural-language message to the user — the frontend shows this in the chat
+    panel. `skipped` lists any tool calls that failed validation so the frontend
+    can surface them for debugging.
     """
     checklist: dict[str, Any]
+    reply: str
     applied_calls: int
     skipped: list[AiSkippedCall]

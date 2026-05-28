@@ -186,6 +186,10 @@ def _print_result(label: str, result: AIRunResult) -> dict[str, int]:
         for s in result.skipped_calls:
             print(f"  - {s['reason']}")
 
+    # The model's natural-language reply (its "speech" channel) — this is what
+    # the frontend shows the user in the chat panel.
+    print(f'AI reply: {result.reply or "(none)"}')
+
     return applied_by_type
 
 

@@ -5,6 +5,25 @@ Both prompts inline the component-type rules so the model doesn't need to fetch
 documentation. Keep them short — every extra token costs money on each request.
 """
 
+# --- Shared reply-style rules ------------------------------------------------ #
+
+# The model's natural-language text (its `content`, separate from tool calls) is
+# shown to the user in the chat panel. Keep it short — the UI already renders the
+# actual checklist changes, so the reply is a confirmation, not a report.
+_REPLY_STYLE = """\
+REPLY STYLE (your natural-language message to the user)
+- Be brief and efficient: one short sentence, two at most.
+- Confirm what you did or answer the question — don't list every change; the
+  UI already shows the updated checklist.
+- No preamble ("Sure!", "Of course!"), no restating the request, no markdown.
+- If you couldn't do something, say so in one line.
+Examples of good replies:
+  "Added 4 sections covering operator info, PPE, environment, and equipment."
+  "Checked the hard hat item and removed the vest."
+  "Yes, I can see 4 screws installed."
+"""
+
+
 # --- Shared component reference (kept compact on purpose) -------------------- #
 
 _COMPONENT_REFERENCE = """\
@@ -94,6 +113,8 @@ When (and only when) every part of the user's request is represented in the
 tree, stop calling tools and return a short plain-text confirmation. Don't
 stop early — the user expects a complete, usable checklist.
 
+{reply_style}
+
 {component_reference}
 """
 
@@ -101,6 +122,7 @@ stop early — the user expects a complete, usable checklist.
 def build_create_system_prompt(root_id: str) -> str:
     return CREATE_SYSTEM_PROMPT_TEMPLATE.format(
         root_id=root_id,
+        reply_style=_REPLY_STYLE,
         component_reference=_COMPONENT_REFERENCE,
     )
 
@@ -175,6 +197,8 @@ When adding new components:
 When the requested change is complete, stop calling tools and return a short
 confirmation message.
 
+{reply_style}
+
 {operations_reference}
 
 {component_reference}
@@ -183,6 +207,7 @@ confirmation message.
 
 def build_edit_system_prompt() -> str:
     return EDIT_SYSTEM_PROMPT_TEMPLATE.format(
+        reply_style=_REPLY_STYLE,
         operations_reference=_OPERATIONS_REFERENCE,
         component_reference=_COMPONENT_REFERENCE,
     )

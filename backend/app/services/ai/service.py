@@ -45,6 +45,9 @@ class AIRunResult:
     applied_calls: int = 0
     skipped_calls: list[dict] = field(default_factory=list)
     raw_tool_calls: list[dict] = field(default_factory=list)
+    # The model's natural-language message to the user (its "speech" channel).
+    # Surfaced to the frontend so the AI can talk back, not just mutate the tree.
+    reply: str = ""
 
 
 # --------------------------------------------------------------------------- #
@@ -226,13 +229,14 @@ def generate_checklist_from_text(
     )
 
     client = OpenAIClient()
-    client.chat_with_tools(
+    chat_result = client.chat_with_tools(
         system_prompt,
         user_prompt,
         CREATE_TOOLS,
         on_tool_call,
         max_rounds=max_rounds,
     )
+    result.reply = chat_result.reply
 
     return result
 
@@ -260,13 +264,14 @@ def edit_checklist_with_ai(
     )
 
     client = OpenAIClient()
-    client.chat_with_tools(
+    chat_result = client.chat_with_tools(
         system_prompt,
         user_prompt,
         ALL_TOOLS,
         on_tool_call,
         max_rounds=max_rounds,
     )
+    result.reply = chat_result.reply
 
     return result
 

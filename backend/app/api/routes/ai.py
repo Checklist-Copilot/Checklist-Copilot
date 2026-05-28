@@ -86,6 +86,7 @@ def ai_edit_checklist(
 
     return AiResponse(
         checklist=result.checklist,
+        reply=result.reply,
         applied_calls=result.applied_calls,
         skipped=[AiSkippedCall(**s) for s in result.skipped_calls],
     )

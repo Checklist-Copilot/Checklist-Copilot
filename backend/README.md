@@ -202,6 +202,14 @@ the checklist JSON directly — it produces operations, the operations go throug
 - `generate_checklist_from_text(prompt)` — builds a fresh checklist tree.
 - `edit_checklist_with_ai(checklist, instruction)` — returns the modified checklist.
 
+The AI has two output channels, kept separate:
+
+- **Actions** — validated tool calls that mutate the checklist JSON.
+- **Speech** — the model's natural-language reply (`AIRunResult.reply`), surfaced
+  to the frontend as `AiResponse.reply`. This is how the AI talks back to the
+  user ("Checked the hard hat item and removed the vest." / "Yes, I see 4 screws.").
+  The reply is kept brief by the prompt — one or two sentences, no preamble.
+
 **Configuration**: set `OPENAI_API_KEY` (and optionally `OPENAI_MODEL`,
 default `gpt-4o-mini`) in your environment or `.env`. Nothing else in the AI
 module touches the DB or auth — it's a pure function over JSON.
@@ -223,5 +231,7 @@ Two-phase smoke test: generates a fresh checklist from a natural-language
 prompt, then runs an edit instruction against that same checklist. The edit
 phase is designed to require all three tool types
 (`add_component` / `update_component` / `delete_component`). Prints a per-tool
-applied/skipped breakdown so you can see exactly what the model did.
+applied/skipped breakdown, the AI's natural-language reply for each phase, and
+a human-readable "what changed" diff so you can confirm each change in the
+resulting JSON.
 

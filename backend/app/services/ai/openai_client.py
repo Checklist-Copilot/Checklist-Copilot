@@ -43,6 +43,19 @@ class ToolCall:
     arguments: dict[str, Any]
 
 
+@dataclass
+class ChatResult:
+    """
+    Outcome of a multi-turn `chat_with_tools` run.
+
+    - `tool_calls`: every tool call executed across all rounds (the "actions").
+    - `reply`: the model's natural-language message to the user (the "speech").
+      This is the text the frontend shows in the chat panel.
+    """
+    tool_calls: list["ToolCall"]
+    reply: str
+
+
 class OpenAIClient:
     def __init__(self, model: str | None = None) -> None:
         load_dotenv(_find_dotenv())
@@ -114,7 +127,7 @@ class OpenAIClient:
         *,
         max_rounds: int = 5,
         temperature: float = 0.2,
-    ) -> list[ToolCall]:
+    ) -> ChatResult:
         """
         Run an agentic loop: send messages -> apply each tool call via
         `on_tool_call` -> feed the results back -> repeat.
@@ -126,13 +139,15 @@ class OpenAIClient:
         outcome (e.g. `{"ok": True, "new_id": "sec_abc"}`). The dict is sent back
         to the model as the "tool" role reply so it knows what happened.
 
-        Returns the flat list of every tool call executed across all rounds.
+        Returns a ChatResult with every tool call executed (the actions) AND the
+        model's natural-language reply text (the speech, for the frontend).
         """
         messages: list[dict[str, Any]] = [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_prompt},
         ]
         all_calls: list[ToolCall] = []
+        reply_parts: list[str] = []
 
         for _round in range(max_rounds):
             response = self._client.chat.completions.create(
@@ -145,7 +160,13 @@ class OpenAIClient:
             msg = response.choices[0].message
             raw_tool_calls = msg.tool_calls or []
 
-            # Model decided it's done.
+            # Capture any natural-language text the model produced this round.
+            # This is the channel it uses to "talk back" to the user — e.g.
+            # answering "Yes, I see 4 screws" or confirming what it changed.
+            if msg.content and msg.content.strip():
+                reply_parts.append(msg.content.strip())
+
+            # Model decided it's done (no more actions).
             if not raw_tool_calls:
                 break
 
@@ -191,4 +212,4 @@ class OpenAIClient:
                     }
                 )
 
-        return all_calls
+        return ChatResult(tool_calls=all_calls, reply="\n".join(reply_parts).strip())
