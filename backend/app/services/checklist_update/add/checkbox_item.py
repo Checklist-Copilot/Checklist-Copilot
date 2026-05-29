@@ -54,6 +54,9 @@ def add_checkbox_item(checklist: dict, operation: AddComponentOperation) -> dict
         "label": label,
         "checked": bool(payload.get("checked", False)),
         "required": bool(payload.get("required", False)),
+        # `edited` is server-controlled; new components are always unedited.
+        # Clients cannot send this field (not in _ALLOWED_FIELDS).
+        "edited": False,
     }
     if payload.get("humanReadableId") is not None:
         component["humanReadableId"] = payload["humanReadableId"]

@@ -66,6 +66,8 @@ def add_number_field(checklist: dict, operation: AddComponentOperation) -> dict:
         "min": minimum,
         "max": maximum,
         "required": bool(payload.get("required", False)),
+        # `edited` is server-controlled. New components are unedited.
+        "edited": False,
     }
     if payload.get("humanReadableId") is not None:
         component["humanReadableId"] = payload["humanReadableId"]

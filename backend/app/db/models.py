@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import DateTime, ForeignKey, Text, func
+from sqlalchemy import DateTime, ForeignKey, Integer, Text, func
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -36,6 +36,12 @@ class Checklist(Base):
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     checklist: Mapped[dict] = mapped_column(JSONB, nullable=False)
     checklist_prev: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+
+    # Denormalized completion stats, recomputed on every save (manual + AI).
+    # Lets the dashboard render progress without loading the JSON column.
+    total_items: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default="0")
+    edited_items: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default="0")
+    completed_items: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default="0")
 
     user: Mapped["User"] = relationship(back_populates="checklists")
 

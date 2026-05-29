@@ -31,8 +31,12 @@ from app.schemas.checklist_operations import (
     UpdateComponentOperation,
 )
 from app.services.ai.openai_client import OpenAIClient, ToolCall
-from app.services.ai.prompts import build_create_system_prompt, build_edit_system_prompt
-from app.services.ai.tools import ALL_TOOLS, CREATE_TOOLS
+from app.services.ai.prompts import (
+    build_create_system_prompt,
+    build_edit_system_prompt,
+    build_observe_system_prompt,
+)
+from app.services.ai.tools import ALL_TOOLS, CREATE_TOOLS, OBSERVE_TOOLS
 from app.services.checklist_update.exceptions import ChecklistOperationError
 from app.services.checklist_update.service import apply_checklist_operations
 from app.services.checklist_update.tree_utils import find_component_by_id
@@ -276,10 +280,150 @@ def edit_checklist_with_ai(
     return result
 
 
+# --------------------------------------------------------------------------- #
+# Observe (vision) entry point                                                 #
+# --------------------------------------------------------------------------- #
+
+def _build_observe_callback(
+    result: AIRunResult,
+    image_id: str,
+    image_url: str,
+):
+    """
+    Callback for the vision flow. Handles `add_image_to_block` specially —
+    the AI only provides the target block id and a caption; the server
+    appends the new image entry (id + url) to the imageBlock's `images`
+    list by emitting a regular `updateComponent` operation that goes
+    through the standard validators.
+
+    All other tool calls (`update_component`, `delete_component`) are
+    delegated to the standard callback so the same code path handles them.
+    """
+    standard = _build_callback(result)
+
+    def on_tool_call(call: ToolCall) -> dict:
+        if call.name != "add_image_to_block":
+            return standard(call)
+
+        result.raw_tool_calls.append({"name": call.name, "arguments": call.arguments})
+        args = call.arguments
+        try:
+            target_block_id = args["targetBlockId"]
+            caption = args.get("caption")
+            if not isinstance(target_block_id, str) or not target_block_id:
+                raise KeyError("targetBlockId must be a non-empty string")
+
+            target = find_component_by_id(result.checklist, target_block_id)
+            if target is None:
+                raise ChecklistOperationError(f"component {target_block_id!r} not found")
+            if target.get("type") != "imageBlock":
+                raise ChecklistOperationError(
+                    f"targetBlockId must point to an imageBlock, got {target.get('type')!r}"
+                )
+
+            existing = list(target.get("images") or [])
+
+            # Idempotency: if this image is already attached to this block,
+            # silently no-op and tell the model so it stops trying. Otherwise
+            # an over-eager model would append duplicate entries (gpt-4o-mini
+            # has been observed to call this tool twice for one image).
+            already_attached = any(
+                isinstance(img, dict) and img.get("imageId") == image_id
+                for img in existing
+            )
+            if already_attached:
+                return {
+                    "ok": True,
+                    "already_attached": True,
+                    "added_to": target_block_id,
+                    "image_id": image_id,
+                    "message": (
+                        "Image is already attached to this imageBlock. Do not "
+                        "call add_image_to_block again for this image."
+                    ),
+                }
+
+            new_entry = {
+                "imageId": image_id,
+                "url": image_url,
+                "caption": caption if isinstance(caption, str) else None,
+            }
+            merged = existing + [new_entry]
+
+            op = UpdateComponentOperation.model_construct(
+                operation="updateComponent",
+                targetId=target_block_id,
+                patch={"images": merged},
+            )
+            result.checklist = apply_checklist_operations(result.checklist, [op])
+            result.applied_calls += 1
+            return {"ok": True, "added_to": target_block_id, "image_id": image_id}
+
+        except (ChecklistOperationError, KeyError, TypeError) as exc:
+            reason = f"{type(exc).__name__}: {exc}"
+            result.skipped_calls.append(
+                {"call": {"name": call.name, "arguments": args}, "reason": reason}
+            )
+            return {"ok": False, "error": reason}
+
+    return on_tool_call
+
+
+def observe_with_image(
+    checklist: dict,
+    instruction: str,
+    *,
+    image_id: str,
+    image_url: str,
+    image_data_url: str,
+    prior_messages: list[dict] | None = None,
+    max_rounds: int = 3,
+) -> AIRunResult:
+    """
+    Vision flow: the user sends an instruction and an image, the model sees
+    both alongside the current checklist, and can either answer in text or
+    attach the image to an imageBlock via `add_image_to_block`.
+
+    - `checklist` is the current JSON (the caller is responsible for snapshotting
+      it into `checklist_prev` and persisting `result.checklist` afterwards).
+    - `image_id` / `image_url` identify the already-uploaded file. The AI does
+      NOT see these in its tool calls; the server injects them when applying
+      `add_image_to_block`.
+    - `image_data_url` is the base64-encoded `data:<mime>;base64,...` payload
+      that goes into the chat completion's image content part.
+    - `prior_messages` is the optional running chat history kept by the
+      frontend so the user can ask follow-up questions about the same image.
+    """
+    result = AIRunResult(checklist=checklist)
+    on_tool_call = _build_observe_callback(result, image_id, image_url)
+
+    system_prompt = build_observe_system_prompt()
+    user_text = (
+        f"Current checklist JSON:\n```json\n{json.dumps(checklist, indent=2)}\n```\n\n"
+        f"An image is attached to this message. (id={image_id})\n\n"
+        f"User says: {instruction}"
+    )
+
+    client = OpenAIClient()
+    chat_result = client.chat_with_tools_and_image(
+        system_prompt,
+        user_text,
+        image_data_url,
+        OBSERVE_TOOLS,
+        on_tool_call,
+        prior_messages=prior_messages,
+        max_rounds=max_rounds,
+    )
+    result.reply = chat_result.reply
+
+    return result
+
+
 # Re-export helper so callers don't have to dig through tree_utils.
 __all__ = [
     "AIRunResult",
     "edit_checklist_with_ai",
     "find_component_by_id",
     "generate_checklist_from_text",
+    "observe_with_image",
 ]

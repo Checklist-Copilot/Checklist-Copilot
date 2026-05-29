@@ -3,6 +3,13 @@ from typing import Any
 from app.services.checklist_update.exceptions import CannotDeleteRootError, ComponentNotFoundError, InvalidTargetContainerError
 
 
+# Component types that carry the server-controlled `edited` flag.
+# Containers (section, checkboxGroup) are excluded — they aren't "items."
+_LEAF_TYPES_WITH_EDITED: frozenset[str] = frozenset(
+    {"checkbox", "textField", "numberField", "imageBlock", "table"}
+)
+
+
 def _iter_child_containers(node: dict[str, Any]) -> list[list[dict[str, Any]]]:
     containers: list[list[dict[str, Any]]] = []
     children = node.get("children")
@@ -94,6 +101,12 @@ def update_component_by_id(checklist: dict[str, Any], target_id: str, patch: dic
     if target is None:
         raise ComponentNotFoundError(f"Component not found: {target_id}")
 
-    # TODO: later constrain allowed patch fields per component type.
     target.update(patch)
+
+    # Server-controlled edited flag: any patch to a leaf marks it as touched.
+    # The patch itself can never contain `edited` (rejected upstream in
+    # validate_patch_fields), so this is the only place it flips to true.
+    if target.get("type") in _LEAF_TYPES_WITH_EDITED:
+        target["edited"] = True
+
     return checklist

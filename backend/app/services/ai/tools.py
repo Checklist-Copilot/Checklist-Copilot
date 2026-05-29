@@ -117,3 +117,51 @@ ALL_TOOLS: list[dict] = [ADD_COMPONENT_TOOL, UPDATE_COMPONENT_TOOL, DELETE_COMPO
 
 # For "create from text" we don't need update/delete — the checklist starts empty.
 CREATE_TOOLS: list[dict] = [ADD_COMPONENT_TOOL]
+
+
+# --------------------------------------------------------------------------- #
+# Vision-mode tool                                                             #
+# --------------------------------------------------------------------------- #
+
+# Used only by the /observe endpoint. The image's id and url come from the
+# request context (the user already uploaded the image), so the model only
+# decides WHICH imageBlock to attach it to and provides a short caption.
+# The server appends the new entry to the imageBlock's `images` array — the
+# model doesn't have to reproduce existing entries.
+ADD_IMAGE_TO_BLOCK_TOOL: dict = {
+    "type": "function",
+    "function": {
+        "name": "add_image_to_block",
+        "description": (
+            "Attach the user's current image to an existing imageBlock in the "
+            "checklist. Pick the imageBlock whose label best matches what the "
+            "image shows. Only call this when the user wants the image added, "
+            "or when you are confident it belongs in a specific imageBlock. "
+            "The image id and URL are supplied by the server — you do not need "
+            "to pass them."
+        ),
+        "parameters": {
+            "type": "object",
+            "additionalProperties": False,
+            "required": ["targetBlockId", "caption"],
+            "properties": {
+                "targetBlockId": {
+                    "type": "string",
+                    "description": "Real id of the target imageBlock component.",
+                },
+                "caption": {
+                    "type": "string",
+                    "description": "Short caption describing what the image shows.",
+                },
+            },
+        },
+    },
+}
+
+# Tool set exposed to the model during the vision flow: regular edit ops + the
+# vision-specific image attachment tool.
+OBSERVE_TOOLS: list[dict] = [
+    ADD_IMAGE_TO_BLOCK_TOOL,
+    UPDATE_COMPONENT_TOOL,
+    DELETE_COMPONENT_TOOL,
+]

@@ -69,6 +69,8 @@ def add_image_block(checklist: dict, operation: AddComponentOperation) -> dict:
         "label": label,
         "images": images,
         "allowUpload": bool(payload.get("allowUpload", False)),
+        # `edited` is server-controlled. New components are unedited.
+        "edited": False,
     }
     if payload.get("humanReadableId") is not None:
         component["humanReadableId"] = payload["humanReadableId"]

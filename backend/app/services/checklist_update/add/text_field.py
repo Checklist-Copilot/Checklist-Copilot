@@ -57,6 +57,8 @@ def add_text_field(checklist: dict, operation: AddComponentOperation) -> dict:
         "placeholder": placeholder,
         "required": bool(payload.get("required", False)),
         "multiline": bool(payload.get("multiline", False)),
+        # `edited` is server-controlled. New components are unedited.
+        "edited": False,
     }
     if payload.get("humanReadableId") is not None:
         component["humanReadableId"] = payload["humanReadableId"]

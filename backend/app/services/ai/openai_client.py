@@ -116,7 +116,7 @@ class OpenAIClient:
         return calls
 
     # ----------------------------------------------------------------------- #
-    # Multi-turn agentic loop.                                                 #
+    # Multi-turn agentic loop (text-only convenience wrapper).                 #
     # ----------------------------------------------------------------------- #
     def chat_with_tools(
         self,
@@ -129,23 +129,71 @@ class OpenAIClient:
         temperature: float = 0.2,
     ) -> ChatResult:
         """
-        Run an agentic loop: send messages -> apply each tool call via
-        `on_tool_call` -> feed the results back -> repeat.
-
-        Stops when the model returns a response with no tool calls (meaning it
-        considers the task done) or when `max_rounds` is reached (safety cap).
-
-        `on_tool_call(call)` must return a JSON-serialisable dict describing the
-        outcome (e.g. `{"ok": True, "new_id": "sec_abc"}`). The dict is sent back
-        to the model as the "tool" role reply so it knows what happened.
-
-        Returns a ChatResult with every tool call executed (the actions) AND the
-        model's natural-language reply text (the speech, for the frontend).
+        Run an agentic loop with a single text user message. Thin wrapper
+        around the shared `_run_tool_loop` below.
         """
         messages: list[dict[str, Any]] = [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_prompt},
         ]
+        return self._run_tool_loop(messages, tools, on_tool_call, max_rounds, temperature)
+
+    # ----------------------------------------------------------------------- #
+    # Multi-turn agentic loop with an image (vision).                          #
+    # ----------------------------------------------------------------------- #
+    def chat_with_tools_and_image(
+        self,
+        system_prompt: str,
+        user_text: str,
+        image_data_url: str,
+        tools: list[dict],
+        on_tool_call: Callable[[ToolCall], dict],
+        *,
+        prior_messages: list[dict[str, Any]] | None = None,
+        max_rounds: int = 3,
+        temperature: float = 0.2,
+    ) -> ChatResult:
+        """
+        Same as `chat_with_tools`, but the user message includes an image so
+        the model can "see" what the user is asking about.
+
+        - `image_data_url` must be a `data:<mime>;base64,<...>` URL. The caller
+          (the AI service) base64-encodes the bytes it fetched from storage.
+        - `prior_messages` is an optional running conversation history so the
+          user can ask follow-up questions about the same image. Each entry is
+          `{"role": "user"|"assistant", "content": "..."}` — kept flat to make
+          the frontend's job easy.
+        """
+        user_content = [
+            {"type": "text", "text": user_text},
+            {"type": "image_url", "image_url": {"url": image_data_url}},
+        ]
+        messages: list[dict[str, Any]] = [
+            {"role": "system", "content": system_prompt},
+            *(prior_messages or []),
+            {"role": "user", "content": user_content},
+        ]
+        return self._run_tool_loop(messages, tools, on_tool_call, max_rounds, temperature)
+
+    # ----------------------------------------------------------------------- #
+    # Shared loop body — both entry points feed into this.                     #
+    # ----------------------------------------------------------------------- #
+    def _run_tool_loop(
+        self,
+        messages: list[dict[str, Any]],
+        tools: list[dict],
+        on_tool_call: Callable[[ToolCall], dict],
+        max_rounds: int,
+        temperature: float,
+    ) -> ChatResult:
+        """
+        Drive the agentic loop: send messages -> apply each tool call via
+        `on_tool_call` -> feed the results back -> repeat.
+
+        Stops when the model returns a response with no tool calls or when
+        `max_rounds` is reached. Returns the executed tool calls plus the
+        model's accumulated natural-language reply (used as the chat-panel text).
+        """
         all_calls: list[ToolCall] = []
         reply_parts: list[str] = []
 

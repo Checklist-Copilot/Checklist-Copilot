@@ -48,6 +48,54 @@ async def _upload_to_supabase(bucket: str, storage_path: str, file: UploadFile, 
         )
 
 
+async def _download_from_supabase(bucket: str, storage_path: str) -> tuple[bytes, str]:
+    """Fetch an object's bytes (and content-type) back from Supabase Storage."""
+    if not settings.SUPABASE_URL or not settings.SUPABASE_SERVICE_ROLE_KEY:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Supabase storage is not configured.",
+        )
+
+    download_url = f"{settings.SUPABASE_URL}/storage/v1/object/{bucket}/{storage_path}"
+    headers = {
+        "apikey": settings.SUPABASE_SERVICE_ROLE_KEY,
+        "Authorization": f"Bearer {settings.SUPABASE_SERVICE_ROLE_KEY}",
+    }
+    async with httpx.AsyncClient(timeout=30) as client:
+        response = await client.get(download_url, headers=headers)
+
+    if response.status_code >= 400:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=f"Supabase download failed: {response.text}",
+        )
+
+    content_type = response.headers.get("content-type", "application/octet-stream")
+    return response.content, content_type
+
+
+async def fetch_file_bytes(file_row: FileModel) -> tuple[bytes, str]:
+    """
+    Download the raw bytes of a stored file. `file_row.file_name` doubles as
+    the storage reference: "<bucket>/<user_id>/<file_id>.<ext>".
+    """
+    bucket, sep, storage_path = file_row.file_name.partition("/")
+    if not sep or not storage_path:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid file_name storage reference.",
+        )
+    return await _download_from_supabase(bucket, storage_path)
+
+
+def build_file_url(file_id: uuid.UUID) -> str:
+    """
+    Canonical URL the frontend should use to fetch this file. The GET endpoint
+    enforces auth and streams the bytes from Supabase.
+    """
+    return f"/api/files/{file_id}/raw"
+
+
 async def _delete_from_supabase(bucket: str, storage_path: str) -> None:
     if not settings.SUPABASE_URL or not settings.SUPABASE_SERVICE_ROLE_KEY:
         raise HTTPException(

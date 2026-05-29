@@ -11,6 +11,8 @@ It walks through:
   2. Updating fields of each type.
   3. Deleting a component.
   4. Triggering each of the validation errors the handlers should reject.
+  5. Verifying the server-controlled `edited` flag and the `recount` stats
+     (total / edited / completed item counts).
 
 If everything passes you see a summary at the bottom and the final checklist
 JSON dump. If anything regresses the script exits with a non-zero status.
@@ -40,6 +42,7 @@ from app.services.checklist_update.exceptions import (  # noqa: E402
     InvalidTargetContainerError,
 )
 from app.services.checklist_update.service import apply_checklist_operations  # noqa: E402
+from app.services.checklist_update.stats import recount  # noqa: E402
 from app.services.checklist_update.tree_utils import find_component_by_id  # noqa: E402
 
 
@@ -565,6 +568,86 @@ expect_error(
             "operation": "updateComponent",
             "targetId": "does-not-exist",
             "patch": {"label": "x"},
+        },
+    ),
+)
+
+
+# --------------------------------------------------------------------------- #
+# `edited` flag + recount stats                                                #
+# --------------------------------------------------------------------------- #
+#
+# At this point in the script the checklist has had every leaf touched at
+# least once (textField, numberField, imageBlock, table, first checkbox) and
+# the second checkbox was deleted. So we expect:
+#   total = 5 leaves, edited = 5, completed = 5.
+
+print("\n=== Edited flag + stats ===")
+
+
+@step("each updated leaf carries edited=true")
+def _():
+    for cid in (TEXT_FIELD_ID, NUMBER_FIELD_ID, IMAGE_BLOCK_ID, TABLE_ID, FIRST_CHECKBOX_ID):
+        comp = find_component_by_id(checklist, cid)
+        assert comp is not None, f"component {cid} missing"
+        assert comp.get("edited") is True, f"{cid}: edited={comp.get('edited')}"
+
+
+@step("containers (section, checkboxGroup) do NOT carry edited")
+def _():
+    for cid in (SECTION_ID, GROUP_ID):
+        comp = find_component_by_id(checklist, cid)
+        assert comp is not None
+        assert "edited" not in comp, f"container {cid} should not have edited; got {comp.get('edited')}"
+
+
+@step("recount on the edited checklist matches expected totals")
+def _():
+    counts = recount(checklist)
+    assert_eq(counts, {"total": 5, "edited": 5, "completed": 5}, "recount on edited tree")
+
+
+@step("a freshly-added leaf starts with edited=false")
+def _():
+    global checklist
+    checklist = apply(
+        checklist,
+        {
+            "operation": "addComponent",
+            "targetContainerId": GROUP_ID,
+            "component": {"type": "checkbox", "label": "Untouched"},
+        },
+    )
+    items = find_component_by_id(checklist, GROUP_ID)["items"]
+    new_item = items[-1]
+    assert_eq(new_item["edited"], False, "freshly added checkbox edited flag")
+    # And the stats reflect a new (untouched, unchecked) leaf.
+    counts = recount(checklist)
+    assert_eq(counts, {"total": 6, "edited": 5, "completed": 5}, "recount after adding untouched leaf")
+
+
+expect_error(
+    "cannot include 'edited' in an add payload",
+    InvalidComponentPayloadError,
+    lambda: apply(
+        checklist,
+        {
+            "operation": "addComponent",
+            "targetContainerId": GROUP_ID,
+            "component": {"type": "checkbox", "label": "Bad", "edited": True},
+        },
+    ),
+)
+
+expect_error(
+    "cannot patch 'edited' directly",
+    InvalidComponentPayloadError,
+    lambda: apply(
+        checklist,
+        {
+            "operation": "updateComponent",
+            "targetId": FIRST_CHECKBOX_ID,
+            "patch": {"edited": False},
         },
     ),
 )

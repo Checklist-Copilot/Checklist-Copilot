@@ -123,6 +123,8 @@ def add_table(checklist: dict, operation: AddComponentOperation) -> dict:
         "label": label,
         "columns": columns,
         "rows": rows,
+        # `edited` is server-controlled. New components are unedited.
+        "edited": False,
     }
     if payload.get("humanReadableId") is not None:
         component["humanReadableId"] = payload["humanReadableId"]

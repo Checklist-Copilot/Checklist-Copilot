@@ -10,8 +10,10 @@ from app.services.checklist_update.exceptions import InvalidComponentPayloadErro
 
 
 # Fields that may never be supplied by the caller (AI or frontend).
-# `id` is generated server-side, `type` is fixed at creation time.
-FORBIDDEN_PATCH_FIELDS: frozenset[str] = frozenset({"id", "type"})
+# `id` is generated server-side, `type` is fixed at creation time,
+# `edited` is set automatically by `update_component_by_id` whenever a leaf
+# is patched — clients cannot lie about it.
+FORBIDDEN_PATCH_FIELDS: frozenset[str] = frozenset({"id", "type", "edited"})
 
 
 def payload_to_dict(component: Any) -> dict[str, Any]:

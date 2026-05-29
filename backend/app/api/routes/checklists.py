@@ -26,6 +26,7 @@ from app.services.checklist_update.exceptions import (
 )
 from app.services.checklist_update.service import apply_checklist_operations
 from app.services.checklists import (
+    apply_stats,
     create_checklist_for_user,
     delete_checklist,
     get_checklist_for_user,
@@ -96,6 +97,7 @@ def patch_checklist_route(
 
     checklist.checklist_prev = checklist.checklist
     checklist.checklist = updated_json
+    apply_stats(checklist)
     db.commit()
     db.refresh(checklist)
 
