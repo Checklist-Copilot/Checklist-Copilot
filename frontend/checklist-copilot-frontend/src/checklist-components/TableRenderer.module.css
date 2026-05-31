@@ -1,0 +1,37 @@
+.block {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border-radius: 16px;
+  border: 1px solid rgba(248, 245, 255, 0.12);
+  background: rgba(20, 17, 34, 0.62);
+}
+
+.title {
+  margin: 0;
+  color: #f8f5ff;
+  font-weight: 900;
+  letter-spacing: -0.035em;
+}
+
+.description { margin: 0; color: #b9b0ce; font-size: 14px; }
+.wrap { overflow-x: auto; border-radius: 14px; border: 1px solid rgba(248, 245, 255, 0.1); }
+.table { width: 100%; border-collapse: collapse; min-width: 620px; }
+
+.table th,
+.table td {
+  border-bottom: 1px solid rgba(248, 245, 255, 0.09);
+  padding: 12px;
+  text-align: left;
+  color: #eee9fb;
+}
+
+.table th {
+  background: rgba(248, 245, 255, 0.055);
+  color: #cfc6e4;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.table tr:last-child td { border-bottom: none; }
+.checkbox { width: 18px; height: 18px; accent-color: #8b5cf6; }

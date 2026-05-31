@@ -11,6 +11,12 @@ import styles from '../page-styles/LandingPage.module.css'
 function LandingPage() {
   return (
     <main className={styles.page}>
+      <div className={styles.ambient} aria-hidden="true">
+        <span className={styles.orbOne} />
+        <span className={styles.orbTwo} />
+        <span className={styles.gridGlow} />
+      </div>
+
       <header className={styles.topbar}>
         <div className={styles.left}>
           <button className={styles.menuButton} type="button">
@@ -32,6 +38,7 @@ function LandingPage() {
       </header>
 
       <section className={styles.hero}>
+        <div className={styles.heroBadge}>AI checklist copilot</div>
         <h1 className={styles.title}>
           Checklists that actually
           <br />
@@ -39,9 +46,7 @@ function LandingPage() {
         </h1>
 
         <p className={styles.subtitle}>
-          Build inspection forms, verify them
-          <br />
-          with photo, and let AI handle the rest
+          Build inspection forms, verify them with photos, and keep every review moving from one workspace.
         </p>
 
         <div className={styles.actions}>

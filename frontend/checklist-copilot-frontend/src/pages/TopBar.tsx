@@ -9,7 +9,7 @@ type TopBarProps = {
   onLogout: () => void
 }
 
-function TopBar({ userName = 'John Doe', userEmail = 'john.doe@example.com', onLogout }: TopBarProps) {
+function TopBar({ userName = 'User', userEmail = '', onLogout }: TopBarProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
 
   return (
@@ -23,7 +23,7 @@ function TopBar({ userName = 'John Doe', userEmail = 'john.doe@example.com', onL
           {isMenuOpen ? <FiX /> : <FiMenu />}
         </button>
 
-        <img src="src\assets\logo_cropped.png" alt="Checkly logo" className={styles.logo} />
+        <img src="/src/assets/logo_cropped.png" alt="Checkly logo" className={styles.logo} />
       </div>
 
       <button className={styles.logoutButton} type="button" onClick={onLogout}>
@@ -39,7 +39,7 @@ function TopBar({ userName = 'John Doe', userEmail = 'john.doe@example.com', onL
 
             <div>
               <p className={styles.userName}>{userName}</p>
-              <p className={styles.userEmail}>{userEmail}</p>
+              {userEmail ? <p className={styles.userEmail}>{userEmail}</p> : null}
             </div>
           </div>
 

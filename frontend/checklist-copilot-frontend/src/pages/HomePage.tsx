@@ -68,23 +68,7 @@ function HomePage() {
 
   if (!isAuthorized) return null
 
-  const displayChecklists =
-    checklists.length > 0
-      ? checklists
-      : [
-          {
-            id: '1',
-            title: 'Equipment Inspection',
-            description: 'Quarterly heavy machinery safety check',
-            updated_at: new Date().toISOString(),
-          },
-          {
-            id: '2',
-            title: 'Vehicle Pre-Trip Check',
-            description: 'Daily pre-departure safety check for fleet vehicles',
-            updated_at: new Date().toISOString(),
-          },
-        ]
+  const totalChecklists = checklists.length
 
   return (
     <>
@@ -111,31 +95,31 @@ function HomePage() {
 
           <div className={styles.statusContent}>
             <div className={styles.donut}>
-              <span className={styles.donutNumber}>4</span>
+              <span className={styles.donutNumber}>{totalChecklists}</span>
               <span className={styles.donutLabel}>total</span>
             </div>
 
             <div className={styles.statusList}>
               <div>
-                <span className={styles.greenDot}>
-                  <IoCheckmarkCircleOutline />
+                <span className={styles.redDot}>
+                  <CiFlag1 />
                 </span>
-                <span>Completed</span>
-                <strong>1</strong>
+                <span>Not Started</span>
+                <strong>0</strong>
               </div>
               <div>
                 <span className={styles.yellowDot}>
                   <GoClock />
                 </span>
                 <span>In Progress</span>
-                <strong>2</strong>
+                <strong>0</strong>
               </div>
               <div>
-                <span className={styles.redDot}>
-                  <CiFlag1 />
+                <span className={styles.greenDot}>
+                  <IoCheckmarkCircleOutline />
                 </span>
-                <span>Needs Review</span>
-                <strong>1</strong>
+                <span>Completed</span>
+                <strong>{totalChecklists}</strong>
               </div>
             </div>
           </div>
@@ -164,18 +148,26 @@ function HomePage() {
         {isLoading ? <p className={styles.message}>Loading checklists...</p> : null}
         {errorMessage ? <p className={styles.error}>{errorMessage}</p> : null}
 
-        {!isLoading && !errorMessage ? (
-          <div className={styles.cardGrid}>
-            {displayChecklists.map((checklist, index) => {
-              const isCompleted = index % 2 === 1
-              const progress = isCompleted ? 100 : 43
+        {!isLoading && !errorMessage && checklists.length === 0 ? (
+          <div className={styles.emptyState}>
+            <h3>No checklists yet</h3>
+            <p>Create your first checklist to start managing inspections.</p>
+            <Link to="/checklist/new" className={styles.openButton}>
+              <FaPlus />
+              New Checklist
+            </Link>
+          </div>
+        ) : null}
 
+        {!isLoading && !errorMessage && checklists.length > 0 ? (
+          <div className={styles.cardGrid}>
+            {checklists.map((checklist) => {
               return (
                 <article key={checklist.id} className={styles.card}>
                   <div className={styles.cardHeader}>
                     <h3>{checklist.title}</h3>
-                    <span className={isCompleted ? styles.completedBadge : styles.progressBadge}>
-                      {isCompleted ? 'Completed' : 'In Progress'}
+                    <span className={styles.progressBadge}>
+                      Checklist
                     </span>
                   </div>
 
@@ -186,16 +178,16 @@ function HomePage() {
                   <div className={styles.meta}>
                     <span>
                       <FaUser />
-                      {isCompleted ? 'Maria Santos' : 'Joe Doe'}
+                      Owner
                     </span>
 
                     <span>
                       <FaCalendarAlt />
-                      Due {isCompleted ? '7 days ago' : 'in 3 days'}
+                      Updated {new Date(checklist.updated_at).toLocaleDateString()}
                     </span>
                   </div>
 
-                  <p className={styles.items}>{isCompleted ? 6 : 7} items</p>
+                  <p className={styles.items}>Ready to open</p>
 
                   <div className={styles.actions}>
                     <Link to={`/checklist/use/${checklist.id}`} className={styles.openButton}>

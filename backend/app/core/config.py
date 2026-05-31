@@ -22,7 +22,17 @@ class Settings(BaseSettings):
     OPENAI_API_KEY: str | None = None
     OPENAI_MODEL: str = "gpt-4o-mini"
 
-    BACKEND_CORS_ORIGINS: list[str] = ["http://localhost:5173"]
+    BACKEND_CORS_ORIGINS: list[str] = [
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+        "http://192.168.0.105:5173",
+    ]
+    # Development convenience: allow Vite/dev-server origins from local/private LAN
+    # devices (for example a tablet opening http://<this-machine-ip>:5173).
+    BACKEND_CORS_ORIGIN_REGEX: str | None = (
+        r"^https?://(localhost|127\.0\.0\.1|10\.\d{1,3}\.\d{1,3}\.\d{1,3}|"
+        r"192\.168\.\d{1,3}\.\d{1,3}|172\.(1[6-9]|2\d|3[0-1])\.\d{1,3}\.\d{1,3})(:\d+)?$"
+    )
 
     model_config = SettingsConfigDict(
         env_file=BASE_DIR / ".env",

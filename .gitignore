@@ -4,3 +4,4 @@ __pycache__/
 backend/.env
 backend/.env.example
 openapi.json
+frontend/checklist-copilot-frontend/.env
