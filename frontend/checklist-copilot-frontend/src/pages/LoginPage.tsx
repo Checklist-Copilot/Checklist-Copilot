@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { FiMenu, FiMail, FiEye } from 'react-icons/fi'
+import { FiMenu, FiMail, FiEye, FiEyeOff } from 'react-icons/fi'
 import styles from '../page-styles/LoginPage.module.css'
 import { login } from '../api/auth'
 import { ApiError } from '../api/http'
@@ -12,6 +12,7 @@ function LoginPage() {
   const [password, setPassword] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [showPassword, setShowPassword] = useState(false)
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -95,17 +96,31 @@ function LoginPage() {
               <input
                 className={styles.input}
                 id="login-password"
+                type={showPassword ? 'text' : 'password'}
                 name="password"
-                type="password"
                 autoComplete="current-password"
                 placeholder="••••••••"
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
                 required
               />
-              <span className={styles.inputIcon}>
-                <FiEye />
-              </span>
+              {showPassword ? (
+                  <button
+                    type="button"
+                    className={styles.inputIcon}
+                    onClick={() => setShowPassword(false)}
+                  >
+                    <FiEyeOff />
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    className={styles.inputIcon}
+                    onClick={() => setShowPassword(true)}
+                  >
+                    <FiEye />
+                  </button>
+                )}
             </div>
 
             {errorMessage ? <p className={styles.error}>{errorMessage}</p> : null}

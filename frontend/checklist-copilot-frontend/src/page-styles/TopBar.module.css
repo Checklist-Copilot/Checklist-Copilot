@@ -34,14 +34,15 @@
 
 .logoutButton {
   text-decoration: none;
-  background: transparent;
-  border: 1px solid #8a8a8a;
   color: #d0d0d0;
+  border: 1px solid #8a8a8a;
   border-radius: 10px;
   padding: 6px 12px;
-  font-size: 20px;
-  font-weight: 500;
+  background: transparent;
+  font-weight: 600;
   cursor: pointer;
+  font-family: inherit;
+  font-size: 16px;
 }
 
 .sidebar {
