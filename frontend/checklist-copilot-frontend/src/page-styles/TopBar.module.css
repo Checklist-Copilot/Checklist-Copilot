@@ -1,0 +1,119 @@
+.topbar {
+  height: 60px;
+  background: #292929;
+  border-bottom: 1px solid #3f3f3f;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 26px;
+  position: relative;
+  z-index: 20;
+}
+
+.left {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+}
+
+.menuButton {
+  background: transparent;
+  border: none;
+  color: #b7b7b7;
+  font-size: 28px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+}
+
+.logo {
+  height: 42px;
+  width: auto;
+  object-fit: contain;
+}
+
+.logoutButton {
+  text-decoration: none;
+  background: transparent;
+  border: 1px solid #8a8a8a;
+  color: #d0d0d0;
+  border-radius: 10px;
+  padding: 6px 12px;
+  font-size: 20px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.sidebar {
+  position: absolute;
+  top: 70px;
+  left: 24px;
+  width: 325px;
+  background: #242424;
+  border: 1px solid #555;
+  border-radius: 18px;
+  padding: 14px 12px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.35);
+}
+
+.userRow {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 0 20px 20px;
+  border-bottom: 1px solid #3d3d3d;
+}
+
+.avatar {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background: #843fd7;
+  color: white;
+  display: grid;
+  place-items: center;
+  font-weight: 600;
+}
+
+.userName {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: white;
+}
+
+.userEmail {
+  margin: 2px 0 0;
+  color: #b7b7b7;
+  font-size: 15px;
+}
+
+.nav {
+  display: flex;
+  flex-direction: column;
+}
+
+.navItem {
+  background: transparent;
+  border: none;
+  color: #c9c9c9;
+  text-decoration: none;
+  font-size: 19px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 18px 24px;
+  cursor: pointer;
+  border-bottom: 1px solid #3d3d3d;
+  text-align: left;
+}
+
+.navItem:last-child {
+  border-bottom: none;
+}
+
+.navItem svg {
+  font-size: 22px;
+  color: #a8a8a8;
+}

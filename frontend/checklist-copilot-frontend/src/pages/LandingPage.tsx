@@ -1,27 +1,88 @@
-import { Link } from "react-router-dom";
-import styles from "../page-styles/LandingPage.module.css";
-
+import { Link } from 'react-router-dom'
+import {
+  FiMenu,
+  FiPlay,
+  FiCamera,
+  FiList,
+} from 'react-icons/fi'
+import { HiOutlineSparkles } from 'react-icons/hi2'
+import styles from '../page-styles/LandingPage.module.css'
 
 function LandingPage() {
-    return (
-        <main className={styles.page}>
-            <section className={styles.hero}>
-                <h1 className={styles.title}>Checklist Copilot</h1>
-                <p className={styles.subtitle}>
-                    Build and use checklists with a focused workflow.
-                </p>
-                <div className={styles.actions}>
-                    <Link to="/login" className={styles.primaryButton}>
-                        Login
-                    </Link>
-                    <Link to="/register" className={styles.secondaryButton}>
-                        Register
-                    </Link>
-                </div>
-            </section>
-        </main>
-    )
+  return (
+    <main className={styles.page}>
+      <header className={styles.topbar}>
+        <div className={styles.left}>
+          <button className={styles.menuButton} type="button">
+            <FiMenu />
+          </button>
 
+          <img src="/src/assets/logo_cropped.png" alt="Checkly logo" className={styles.logo} />
+        </div>
+
+        <div className={styles.topbarActions}>
+          <Link to="/login" className={styles.loginButton}>
+            Log In
+          </Link>
+
+          <Link to="/register" className={styles.getStartedButton}>
+            Get Started
+          </Link>
+        </div>
+      </header>
+
+      <section className={styles.hero}>
+        <h1 className={styles.title}>
+          Checklists that actually
+          <br />
+          think with you
+        </h1>
+
+        <p className={styles.subtitle}>
+          Build inspection forms, verify them
+          <br />
+          with photo, and let AI handle the rest
+        </p>
+
+        <div className={styles.actions}>
+          <Link to="/register" className={styles.primaryButton}>
+            → Start for Free
+          </Link>
+
+          <Link to="/login" className={styles.secondaryButton}>
+            <FiPlay />
+            Watch Demo
+          </Link>
+        </div>
+
+        <div className={styles.featureGrid}>
+          <div className={styles.featureCard}>
+            <div className={styles.yellowIcon}>
+              <FiCamera />
+            </div>
+            <h2>Photo checks</h2>
+            <p>Visual verification</p>
+          </div>
+
+          <div className={styles.featureCard}>
+            <div className={styles.blueIcon}>
+              <HiOutlineSparkles />
+            </div>
+            <h2>AI Assistant</h2>
+            <p>Smart verification</p>
+          </div>
+
+          <div className={styles.featureCard}>
+            <div className={styles.greenIcon}>
+              <FiList />
+            </div>
+            <h2>Designer</h2>
+            <p>Drag-and-drop</p>
+          </div>
+        </div>
+      </section>
+    </main>
+  )
 }
 
 export default LandingPage

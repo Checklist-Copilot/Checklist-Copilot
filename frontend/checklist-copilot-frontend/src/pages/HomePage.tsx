@@ -8,20 +8,17 @@ import { useRequireAuth } from '../hooks/useRequireAuth'
 
 import {
   FaPlus,
-  FaCheckCircle,
-  FaExclamationTriangle,
-  FaClipboardList,
+  FaPlay,
   FaUser,
-  FaCalendarAlt,
+  FaCalendarAlt
 } from 'react-icons/fa'
 
-import {
-  MdOutlinePendingActions,
-} from 'react-icons/md'
+import { IoCheckmarkCircleOutline } from "react-icons/io5";
+import { GoClock } from "react-icons/go";
+import { CiFlag1 } from "react-icons/ci";
+import { ImBin } from "react-icons/im";
 
-import {
-  HiOutlineDocumentText,
-} from 'react-icons/hi'
+import TopBar from '../pages/TopBar'
 
 function HomePage() {
   const navigate = useNavigate()
@@ -90,6 +87,8 @@ function HomePage() {
         ]
 
   return (
+    <>
+    <TopBar onLogout={handleLogout} />
     <main className={styles.page}>
       <header className={styles.header}>
         <div>
@@ -98,9 +97,6 @@ function HomePage() {
         </div>
 
         <div className={styles.headerActions}>
-          <button className={styles.logoutButton} type="button" onClick={handleLogout}>
-            Log out
-          </button>
 
           <Link to="/checklist/new" className={styles.newButton}>
             <FaPlus />
@@ -122,21 +118,21 @@ function HomePage() {
             <div className={styles.statusList}>
               <div>
                 <span className={styles.greenDot}>
-                  <FaCheckCircle />
+                  <IoCheckmarkCircleOutline />
                 </span>
                 <span>Completed</span>
                 <strong>1</strong>
               </div>
               <div>
                 <span className={styles.yellowDot}>
-                  <MdOutlinePendingActions />
+                  <GoClock />
                 </span>
                 <span>In Progress</span>
                 <strong>2</strong>
               </div>
               <div>
                 <span className={styles.redDot}>
-                  <FaExclamationTriangle />
+                  <CiFlag1 />
                 </span>
                 <span>Needs Review</span>
                 <strong>1</strong>
@@ -203,15 +199,16 @@ function HomePage() {
 
                   <div className={styles.actions}>
                     <Link to={`/checklist/use/${checklist.id}`} className={styles.openButton}>
-                      ▷ Open
+                      <FaPlay />
+                      Open
                     </Link>
 
                     <Link to={`/checklist/edit/${checklist.id}`} className={styles.iconButton}>
-                      ⚑
+                      <CiFlag1 />
                     </Link>
 
                     <button className={styles.iconButton} type="button">
-                      ♲
+                      <ImBin />
                     </button>
                   </div>
                 </article>
@@ -221,6 +218,7 @@ function HomePage() {
         ) : null}
       </section>
     </main>
+    </>
   )
 }
 

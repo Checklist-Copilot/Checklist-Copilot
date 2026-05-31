@@ -1,78 +1,203 @@
 .page {
   min-height: 100vh;
-  display: grid;
-  place-items: center;
-  padding: 2rem;
-  background: oklch(97.5% 0.008 255);
-  color: oklch(28% 0.02 255);
+  background: #171717;
+  color: #ffffff;
 }
 
-.card {
-  width: min(100%, 28rem);
-  background: oklch(99.6% 0.003 255);
-  border: 1px solid oklch(88% 0.01 255);
-  border-radius: 0.9rem;
-  padding: 1.4rem;
+.topbar {
+  height: 65px;
+  background: #292929;
+  border-bottom: 1px solid #3d3d3d;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px;
+}
+
+.left {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+}
+
+.menuButton {
+  background: transparent;
+  border: none;
+  color: #b7b7b7;
+  font-size: 24px;
+  display: flex;
+  cursor: pointer;
+}
+
+.logo {
+  height: 34px;
+  width: auto;
+  object-fit: contain;
+}
+
+.topbarActions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.loginButton,
+.getStartedButton {
+  text-decoration: none;
+  font-weight: 600;
+  border-radius: 10px;
+}
+
+.loginButton {
+  color: #d0d0d0;
+  border: 1px solid #8a8a8a;
+  padding: 6px 12px;
+}
+
+.getStartedButton {
+  color: #ffffff;
+  background: #7f39d6;
+  padding: 7px 13px;
+}
+
+.authSection {
+  min-height: calc(100vh - 65px);
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding-top: 110px;
+}
+
+.authCard {
+  width: 528px;
 }
 
 .title {
   margin: 0;
-  font-size: 1.6rem;
-  line-height: 1.2;
+  font-size: 38px;
+  line-height: 1.1;
+  font-weight: 600;
+}
+
+.subtitle {
+  margin: 14px 0 46px;
+  color: #b7b7b7;
+  font-size: 20px;
+  font-weight: 500;
 }
 
 .form {
-  margin-top: 1rem;
-  display: grid;
-  gap: 0.6rem;
+  display: flex;
+  flex-direction: column;
 }
 
 .label {
-  font-size: 0.95rem;
+  color: #b7b7b7;
+  font-size: 23px;
   font-weight: 600;
+  margin-bottom: 18px;
+}
+
+.passwordHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 18px;
+}
+
+.forgotLink {
+  color: #8b3ff2;
+  text-decoration: none;
+  font-size: 23px;
+  font-weight: 600;
+  margin-bottom: 18px;
+}
+
+.inputWrapper {
+  position: relative;
 }
 
 .input {
   width: 100%;
-  border: 1px solid oklch(82% 0.014 255);
-  border-radius: 0.6rem;
-  /* padding: 0.72rem 0.82rem; */
-  padding-top: 5px;
-  padding-bottom: 5px;
-  font-size: 1rem;
-  background: oklch(100% 0.002 255);
-  color: oklch(28% 0.02 255);
+  height: 80px;
+  border: none;
+  border-radius: 18px;
+  background: #292929;
+  color: #ffffff;
+  font-size: 24px;
+  font-weight: 600;
+  padding: 0 70px 0 16px;
+  outline: none;
 }
 
-.input:focus {
-  outline: none;
-  border-color: oklch(52% 0.16 255);
-  box-shadow: 0 0 0 3px oklch(90% 0.04 255 / 0.8);
+.input::placeholder {
+  color: #5a5a5a;
+}
+
+.inputIcon {
+  position: absolute;
+  right: 18px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #a8a8a8;
+  font-size: 34px;
 }
 
 .button {
-  margin-top: 0.45rem;
-  border: 1px solid oklch(52% 0.16 255);
-  background: oklch(52% 0.16 255);
-  color: oklch(98% 0.005 255);
-  border-radius: 0.6rem;
-  padding: 0.72rem 0.9rem;
-  font-size: 1rem;
+  margin-top: 20px;
+  height: 60px;
+  border: none;
+  border-radius: 9px;
+  background: #843fd7;
+  color: #ffffff;
+  font-size: 26px;
   font-weight: 600;
   cursor: pointer;
-}
-
-.button:hover {
-  background: oklch(47% 0.16 255);
-}
-
-.error {
-  margin: 0.3rem 0 0;
-  color: oklch(54% 0.2 25);
-  font-size: 0.92rem;
 }
 
 .button:disabled {
   opacity: 0.7;
   cursor: not-allowed;
+}
+
+.signupText {
+  margin-top: 48px;
+  text-align: center;
+  color: #b7b7b7;
+  font-size: 24px;
+  font-weight: 500;
+}
+
+.signupLink {
+  color: #8b3ff2;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.error {
+  color: #ff6b6b;
+  margin: 14px 0 0;
+}
+
+@media (max-width: 700px) {
+  .authSection {
+    padding: 60px 24px;
+  }
+
+  .authCard {
+    width: 100%;
+  }
+
+  .topbarActions {
+    gap: 8px;
+  }
+
+  .input {
+    height: 64px;
+    font-size: 20px;
+  }
+
+  .title {
+    font-size: 32px;
+  }
 }
