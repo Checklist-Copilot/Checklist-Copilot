@@ -1,3 +1,4 @@
+import copy
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -71,18 +72,26 @@ def ai_edit_checklist(
             status_code=status.HTTP_404_NOT_FOUND, detail="Checklist not found."
         )
 
+    # Work on a detached copy. The checklist update helpers mutate nested dicts/lists
+    # in place, and SQLAlchemy JSONB columns do not reliably detect those in-place
+    # mutations. Keeping a separate original snapshot also makes undo correct.
+    original_checklist = copy.deepcopy(checklist.checklist)
+    working_checklist = copy.deepcopy(checklist.checklist)
+
     try:
-        result = edit_checklist_with_ai(checklist.checklist, payload.instruction)
+        result = edit_checklist_with_ai(working_checklist, payload.instruction)
     except RuntimeError as exc:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc)
         ) from exc
 
-    # Snapshot for undo, then save the AI-modified JSON.
-    checklist.checklist_prev = checklist.checklist
-    checklist.checklist = result.checklist
-    db.commit()
-    db.refresh(checklist)
+    # Snapshot for undo, then save the AI-modified JSON. If the model only replied
+    # without applying a structural/value change, leave the DB row untouched.
+    if result.checklist != original_checklist:
+        checklist.checklist_prev = original_checklist
+        checklist.checklist = result.checklist
+        db.commit()
+        db.refresh(checklist)
 
     return AiResponse(
         checklist=result.checklist,

@@ -19,6 +19,7 @@ function UseChecklistPage() {
   const [checklist, setChecklist] = useState<Checklist | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [checklistRenderVersion, setChecklistRenderVersion] = useState(0)
   const missingChecklistId = isAuthorized && !checklist_id
   const [isAIChatOpen, setIsAIChatOpen] = useState(false)
 
@@ -47,6 +48,7 @@ function UseChecklistPage() {
         updated_at: new Date().toISOString(),
       }
     })
+    setChecklistRenderVersion((version) => version + 1)
 
     return response.reply
   }
@@ -156,7 +158,7 @@ function UseChecklistPage() {
         {errorMessage ? <p className={styles.error}>{errorMessage}</p> : null}
         {!isLoading && !missingChecklistId && !errorMessage ? (
           <div className={styles.checklistShell}>
-            <ChecklistRenderer checklist={renderedChecklist} />
+            <ChecklistRenderer key={checklistRenderVersion} checklist={renderedChecklist} />
           </div>
         ) : null}
 
