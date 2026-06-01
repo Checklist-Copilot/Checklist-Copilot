@@ -8,7 +8,8 @@ import { useRequireAuth } from '../hooks/useRequireAuth'
 import { ChecklistRenderer, mockChecklist } from '../checklist-components'
 import type { ChecklistRoot } from '../checklist-components'
 import { HiOutlineSparkles } from 'react-icons/hi2'
-import TopBar from '../pages/TopBar'
+import TopBar from '../components/TopBar'
+import AIChatPopup from '../components/AIChatPopup'
 
 function UseChecklistPage() {
   const navigate = useNavigate()
@@ -18,6 +19,7 @@ function UseChecklistPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const missingChecklistId = isAuthorized && !checklist_id
+  const [isAIChatOpen, setIsAIChatOpen] = useState(false)
 
   function handleLogout() {
     removeToken()
@@ -82,9 +84,19 @@ function UseChecklistPage() {
     <main className={styles.page}>
       
 
-      <button className={styles.aiButton} type="button" aria-label="Open AI assistant">
+      <button
+        className={styles.aiButton}
+        type="button"
+        aria-label="Open AI assistant"
+        onClick={() => setIsAIChatOpen(true)}
+      >
         <HiOutlineSparkles />
       </button>
+      
+      <AIChatPopup
+        isOpen={isAIChatOpen}
+        onClose={() => setIsAIChatOpen(false)}
+      />
 
       <section className={styles.content}>
         <header className={styles.checklistHeader}>
