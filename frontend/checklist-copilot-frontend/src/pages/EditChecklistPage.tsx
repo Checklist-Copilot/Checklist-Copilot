@@ -13,6 +13,7 @@ function EditChecklistPage() {
   const [checklist, setChecklist] = useState<Checklist | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const missingChecklistId = isAuthorized && !checklist_id
 
   function handleLogout() {
     removeToken()
@@ -20,17 +21,11 @@ function EditChecklistPage() {
   }
 
   useEffect(() => {
-    if (!isAuthorized) {
+    if (!isAuthorized || !checklist_id) {
       return
     }
 
     const checklistId = checklist_id
-
-    if (!checklistId) {
-      setErrorMessage('Checklist ID is missing in URL.')
-      setIsLoading(false)
-      return
-    }
 
     let isMounted = true
 
@@ -84,8 +79,9 @@ function EditChecklistPage() {
       <section className={styles.content}>
         <h1 className={styles.title}>Edit Checklist</h1>
         {isLoading ? <p className={styles.message}>Loading checklist...</p> : null}
+        {missingChecklistId ? <p className={styles.error}>Checklist ID is missing in URL.</p> : null}
         {errorMessage ? <p className={styles.error}>{errorMessage}</p> : null}
-        {!isLoading && !errorMessage && checklist ? (
+        {!isLoading && !missingChecklistId && !errorMessage && checklist ? (
           <pre className={styles.json}>{JSON.stringify(checklist, null, 2)}</pre>
         ) : null}
       </section>

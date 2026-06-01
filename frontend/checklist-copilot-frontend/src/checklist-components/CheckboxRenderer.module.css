@@ -1,0 +1,29 @@
+.item {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 10px;
+  border-radius: 13px;
+  color: #eee9fb;
+  background: rgba(248, 245, 255, 0.045);
+  border: 1px solid rgba(248, 245, 255, 0.08);
+  font-weight: 700;
+}
+
+.item input {
+  width: 18px;
+  height: 18px;
+  accent-color: #8b5cf6;
+}
+
+.requiredBadge {
+  margin-left: auto;
+  border-radius: 999px;
+  padding: 4px 9px;
+  color: #ffe6a6;
+  background: rgba(244, 201, 93, 0.13);
+  border: 1px solid rgba(244, 201, 93, 0.26);
+  font-size: 12px;
+  font-weight: 900;
+}

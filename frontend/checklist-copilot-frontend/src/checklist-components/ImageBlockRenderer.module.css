@@ -1,0 +1,41 @@
+.block {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border-radius: 16px;
+  border: 1px solid rgba(248, 245, 255, 0.12);
+  background: rgba(20, 17, 34, 0.62);
+}
+
+.header { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.title { margin: 0; color: #f8f5ff; font-weight: 900; letter-spacing: -0.035em; }
+.description, .emptyText { margin: 0; color: #b9b0ce; font-size: 14px; }
+
+.uploadBadge {
+  border-radius: 999px;
+  padding: 4px 9px;
+  color: #ddcfff;
+  background: rgba(124, 58, 237, 0.16);
+  border: 1px solid rgba(167, 139, 250, 0.28);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.images { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
+.card { overflow: hidden; border-radius: 14px; background: rgba(248, 245, 255, 0.05); border: 1px solid rgba(248, 245, 255, 0.1); }
+.card img { width: 100%; height: 140px; object-fit: cover; display: block; }
+.placeholder { height: 140px; display: grid; place-items: center; color: #cfc6e4; background: linear-gradient(135deg, rgba(124, 58, 237, 0.16), rgba(34, 211, 238, 0.12)); font-weight: 900; }
+.caption { display: grid; gap: 4px; margin: 0; padding: 10px; color: #cfc6e4; font-size: 14px; }
+.meta { display: block; margin-top: 3px; color: #8d849e; font-size: 12px; font-weight: 700; }
+
+.uploadButton {
+  width: fit-content;
+  border: 1px dashed rgba(139, 92, 246, 0.46);
+  border-radius: 13px;
+  background: rgba(139, 92, 246, 0.09);
+  color: #d8c7ff;
+  padding: 10px 14px;
+  font: inherit;
+  font-weight: 900;
+  cursor: not-allowed;
+}
