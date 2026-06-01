@@ -8,6 +8,7 @@ import { useRequireAuth } from '../hooks/useRequireAuth'
 import { ChecklistRenderer, mockChecklist } from '../checklist-components'
 import type { ChecklistRoot } from '../checklist-components'
 import { HiOutlineSparkles } from 'react-icons/hi2'
+import TopBar from '../pages/TopBar'
 
 function UseChecklistPage() {
   const navigate = useNavigate()
@@ -76,13 +77,10 @@ function UseChecklistPage() {
   const renderedChecklist = isChecklistRoot(checklist?.checklist) ? checklist.checklist : mockChecklist
 
   return (
+    <>
+    <TopBar onLogout={handleLogout} />
     <main className={styles.page}>
-      <header className={styles.topbar}>
-        <Link to="/home" className={styles.brandLink}>Checkly</Link>
-        <button className={styles.logoutButton} type='button' onClick={handleLogout}>
-          Log out
-        </button>
-      </header>
+      
 
       <button className={styles.aiButton} type="button" aria-label="Open AI assistant">
         <HiOutlineSparkles />
@@ -127,6 +125,7 @@ function UseChecklistPage() {
         <Link to="/home" className={styles.backLink}>Back to Dashboard</Link>
       </section>
     </main>
+    </>
   )
 }
 
