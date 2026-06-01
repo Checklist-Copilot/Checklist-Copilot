@@ -1,56 +1,280 @@
 .page {
-  position: relative;
   min-height: 100vh;
-  padding: 2rem;
-  background: oklch(97.5% 0.008 255);
-  color: oklch(28% 0.02 255);
+  background:
+    radial-gradient(circle at 86% 18%, rgba(124, 58, 237, 0.22), transparent 28rem),
+    radial-gradient(circle at 18% 76%, rgba(34, 211, 238, 0.12), transparent 24rem),
+    linear-gradient(145deg, #0d0c18 0%, #171322 54%, #080812 100%);
+  color: #f8f5ff;
+  position: relative;
+}
+
+.page::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(248, 245, 255, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(248, 245, 255, 0.035) 1px, transparent 1px);
+  background-size: 44px 44px;
+  mask-image: radial-gradient(circle at 50% 34%, black, transparent 72%);
+}
+
+.topbar {
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 18px;
+  border-bottom: 1px solid rgba(248, 245, 255, 0.1);
+  background: rgba(20, 17, 34, 0.82);
+  backdrop-filter: blur(16px);
+  position: sticky;
+  top: 0;
+  z-index: 5;
+}
+
+.brandLink {
+  color: #b39cff;
+  text-decoration: none;
+  font-weight: 900;
+  letter-spacing: -0.03em;
+}
+
+.logoutButton {
+  border: 1px solid rgba(248, 245, 255, 0.18);
+  background: rgba(248, 245, 255, 0.055);
+  color: #f8f5ff;
+  border-radius: 10px;
+  padding: 0.45rem 0.75rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: transform 220ms cubic-bezier(.16,1,.3,1), background 220ms;
+}
+
+.logoutButton:hover {
+  transform: translateY(-2px);
+  background: rgba(248, 245, 255, 0.1);
 }
 
 .content {
-  width: min(100%, 58rem);
+  width: min(100% - 36px, 920px);
   margin: 0 auto;
+  padding: 34px 0 72px;
+  position: relative;
+  z-index: 1;
+  animation: cardRise 680ms cubic-bezier(.16,1,.3,1) both;
+}
+
+.checklistHeader {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: start;
+  gap: 24px;
+  margin-bottom: 14px;
+}
+
+.status {
+  width: fit-content;
+  margin: 0 0 8px;
+  color: #f4c95d;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.status::before {
+  content: '';
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-right: 7px;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: 0 0 14px currentColor;
+  vertical-align: 1px;
 }
 
 .title {
   margin: 0;
-  font-size: 1.6rem;
+  font-size: clamp(34px, 5vw, 56px);
+  line-height: 0.95;
+  font-weight: 900;
+  letter-spacing: -0.065em;
+}
+
+.description {
+  max-width: 620px;
+  margin: 12px 0 0;
+  color: #b9b0ce;
+  line-height: 1.5;
+}
+
+.metaRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 12px;
+  color: #8d849e;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.metaRow span {
+  padding: 6px 9px;
+  border-radius: 999px;
+  background: rgba(248, 245, 255, 0.055);
+  border: 1px solid rgba(248, 245, 255, 0.08);
+}
+
+.progressBox {
+  min-width: 92px;
+  padding: 13px 14px;
+  border-radius: 18px;
+  background: rgba(179, 156, 255, 0.12);
+  border: 1px solid rgba(179, 156, 255, 0.24);
+  text-align: right;
+}
+
+.progressValue {
+  display: block;
+  color: #f8f5ff;
+  font-weight: 900;
+  font-size: 20px;
+}
+
+.progressLabel {
+  display: block;
+  margin-top: 2px;
+  color: #b9b0ce;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.progressHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 20px 0 8px;
+  color: #cfc6e4;
+  font-size: 17px;
+  font-weight: 900;
+}
+
+.progressTrack {
+  height: 8px;
+  margin-bottom: 22px;
+  border-radius: 999px;
+  background: rgba(248, 245, 255, 0.09);
+  overflow: hidden;
+}
+
+.progressFill {
+  display: block;
+  width: 33%;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #7c3aed, #a78bfa);
+  box-shadow: 0 0 22px rgba(167, 139, 250, 0.42);
+}
+
+.checklistShell {
+  padding: 16px;
+  border-radius: 28px;
+  background: rgba(248, 245, 255, 0.045);
+  border: 1px solid rgba(248, 245, 255, 0.12);
+  box-shadow: inset 0 1px 0 rgba(248, 245, 255, 0.08), 0 24px 80px rgba(0, 0, 0, 0.28);
+}
+
+.aiButton {
+  position: fixed;
+  right: 28px;
+  bottom: 28px;
+  z-index: 10;
+  width: 58px;
+  height: 58px;
+  border: none;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  color: #ffffff;
+  background: linear-gradient(135deg, #7c3aed, #c084fc);
+  box-shadow: 0 18px 42px rgba(124, 58, 237, 0.45);
+  cursor: pointer;
+  transition: transform 260ms cubic-bezier(.16,1,.3,1), box-shadow 260ms;
+}
+
+.aiButton svg {
+  font-size: 26px;
+}
+
+.aiButton:hover {
+  transform: translateY(-4px) rotate(-5deg);
+  box-shadow: 0 22px 54px rgba(124, 58, 237, 0.55);
+}
+
+.backLink {
+  width: fit-content;
+  display: inline-flex;
+  margin-top: 18px;
+  border: 1px solid rgba(248, 245, 255, 0.16);
+  border-radius: 14px;
+  padding: 10px 14px;
+  color: #f8f5ff;
+  text-decoration: none;
+  font-weight: 800;
+  background: rgba(248, 245, 255, 0.045);
+  transition: transform 220ms cubic-bezier(.16,1,.3,1), background 220ms;
+}
+
+.backLink::before {
+  content: '←';
+  margin-right: 8px;
+}
+
+.backLink:hover {
+  transform: translateY(-2px);
+  background: rgba(248, 245, 255, 0.09);
 }
 
 .message {
   margin-top: 1rem;
-  color: oklch(42% 0.018 255);
+  color: #b9b0ce;
 }
 
 .error {
   margin-top: 1rem;
-  color: oklch(54% 0.2 25);
+  color: #fb7185;
 }
 
-.json {
-  margin-top: 1rem;
-  border: 1px solid oklch(85% 0.012 255);
-  border-radius: 0.6rem;
-  background: oklch(99.5% 0.003 255);
-  padding: 1rem;
-  overflow: auto;
-  font-size: 0.92rem;
-  line-height: 1.5;
+@keyframes cardRise {
+  from { opacity: 0; transform: translateY(26px) scale(.985); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
+@media (max-width: 760px) {
+  .content {
+    width: min(100% - 28px, 920px);
+    padding-top: 24px;
+  }
 
-.logoutButton {
-  position: absolute;
-  top: 1rem;
-  right: 1rem;
-  border: 1px solid oklch(82% 0.014 255);
-  background: oklch(100% 0.002 255);
-  color: oklch(30% 0.02 255);
-  border-radius: 0.55rem;
-  padding: 0.45rem 0.75rem;
-  font-weight: 600;
-  cursor: pointer;
+  .checklistHeader {
+    grid-template-columns: 1fr;
+  }
+
+  .progressBox {
+    text-align: left;
+  }
+
+  .aiButton {
+    right: 18px;
+    bottom: 18px;
+  }
 }
 
-.logoutButton:hover {
-  background: oklch(96% 0.005 255);
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+  }
 }
