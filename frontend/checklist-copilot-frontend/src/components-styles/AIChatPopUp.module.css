@@ -107,6 +107,9 @@
   flex: 1;
   padding: 18px;
   overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
 .messageBubble {
@@ -117,6 +120,12 @@
   border-radius: 18px 18px 18px 6px;
   background: rgba(248, 245, 255, 0.07);
   box-shadow: inset 0 1px 0 rgba(248, 245, 255, 0.08);
+}
+
+.userMessageBubble {
+  align-self: flex-end;
+  border-radius: 18px 18px 6px 18px;
+  background: rgba(124, 58, 237, 0.22);
 }
 
 .messageLabel {
@@ -179,6 +188,17 @@
 .sendButton:hover {
   transform: translateY(-2px);
   box-shadow: 0 16px 36px rgba(124, 58, 237, 0.42);
+}
+
+.input:disabled,
+.sendButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.68;
+}
+
+.sendButton:disabled:hover {
+  transform: none;
+  box-shadow: 0 12px 30px rgba(124, 58, 237, 0.32);
 }
 
 @keyframes popupIn {

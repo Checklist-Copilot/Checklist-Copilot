@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import styles from '../page-styles/UseChecklistPage.module.css'
+import { editChecklistWithAi } from '../api/ai'
 import { getChecklistById } from '../api/checklist'
 import type { Checklist } from '../types/checklist'
 import { removeToken } from '../auth/tokenStorage'
@@ -24,6 +25,30 @@ function UseChecklistPage() {
   function handleLogout() {
     removeToken()
     navigate('/')
+  }
+
+  // Sends the user's instruction to the backend so the AI can edit the current checklist.
+  // When the backend returns the updated checklist JSON, the page state is refreshed so the rendered checklist changes immediately.
+  async function handleAiMessage(message: string) {
+    if (!checklist_id) {
+      throw new Error('Checklist ID is missing.')
+    }
+
+    const response = await editChecklistWithAi(checklist_id, message)
+    setChecklist((currentChecklist) => {
+      if (!currentChecklist) {
+        return currentChecklist
+      }
+
+      return {
+        ...currentChecklist,
+        checklist: response.checklist,
+        checklist_prev: currentChecklist.checklist,
+        updated_at: new Date().toISOString(),
+      }
+    })
+
+    return response.reply
   }
 
   useEffect(() => {
@@ -96,6 +121,7 @@ function UseChecklistPage() {
       <AIChatPopup
         isOpen={isAIChatOpen}
         onClose={() => setIsAIChatOpen(false)}
+        onSendMessage={handleAiMessage}
       />
 
       <section className={styles.content}>
