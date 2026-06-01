@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { FiMenu, FiX, FiGrid, FiPlus, FiLogOut } from 'react-icons/fi'
 import { FaUserCircle } from "react-icons/fa";
-import styles from '../page-styles/TopBar.module.css'
+import styles from '../components-styles/TopBar.module.css'
 
 type TopBarProps = {
   userName?: string

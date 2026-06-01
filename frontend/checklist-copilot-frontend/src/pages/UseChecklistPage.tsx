@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import styles from '../page-styles/UseChecklistPage.module.css'
+import { editChecklistWithAi } from '../api/ai'
 import { getChecklistById } from '../api/checklist'
 import type { Checklist } from '../types/checklist'
 import { removeToken } from '../auth/tokenStorage'
@@ -8,6 +9,8 @@ import { useRequireAuth } from '../hooks/useRequireAuth'
 import { ChecklistRenderer, mockChecklist } from '../checklist-components'
 import type { ChecklistRoot } from '../checklist-components'
 import { HiOutlineSparkles } from 'react-icons/hi2'
+import TopBar from '../components/TopBar'
+import AIChatPopup from '../components/AIChatPopup'
 
 function UseChecklistPage() {
   const navigate = useNavigate()
@@ -16,11 +19,38 @@ function UseChecklistPage() {
   const [checklist, setChecklist] = useState<Checklist | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [checklistRenderVersion, setChecklistRenderVersion] = useState(0)
   const missingChecklistId = isAuthorized && !checklist_id
+  const [isAIChatOpen, setIsAIChatOpen] = useState(false)
 
   function handleLogout() {
     removeToken()
     navigate('/')
+  }
+
+  // Sends the user's instruction to the backend so the AI can edit the current checklist.
+  // When the backend returns the updated checklist JSON, the page state is refreshed so the rendered checklist changes immediately.
+  async function handleAiMessage(message: string) {
+    if (!checklist_id) {
+      throw new Error('Checklist ID is missing.')
+    }
+
+    const response = await editChecklistWithAi(checklist_id, message)
+    setChecklist((currentChecklist) => {
+      if (!currentChecklist) {
+        return currentChecklist
+      }
+
+      return {
+        ...currentChecklist,
+        checklist: response.checklist,
+        checklist_prev: currentChecklist.checklist,
+        updated_at: new Date().toISOString(),
+      }
+    })
+    setChecklistRenderVersion((version) => version + 1)
+
+    return response.reply
   }
 
   useEffect(() => {
@@ -76,17 +106,25 @@ function UseChecklistPage() {
   const renderedChecklist = isChecklistRoot(checklist?.checklist) ? checklist.checklist : mockChecklist
 
   return (
+    <>
+    <TopBar onLogout={handleLogout} />
     <main className={styles.page}>
-      <header className={styles.topbar}>
-        <Link to="/home" className={styles.brandLink}>Checkly</Link>
-        <button className={styles.logoutButton} type='button' onClick={handleLogout}>
-          Log out
-        </button>
-      </header>
+      
 
-      <button className={styles.aiButton} type="button" aria-label="Open AI assistant">
+      <button
+        className={styles.aiButton}
+        type="button"
+        aria-label="Open AI assistant"
+        onClick={() => setIsAIChatOpen(true)}
+      >
         <HiOutlineSparkles />
       </button>
+      
+      <AIChatPopup
+        isOpen={isAIChatOpen}
+        onClose={() => setIsAIChatOpen(false)}
+        onSendMessage={handleAiMessage}
+      />
 
       <section className={styles.content}>
         <header className={styles.checklistHeader}>
@@ -120,13 +158,14 @@ function UseChecklistPage() {
         {errorMessage ? <p className={styles.error}>{errorMessage}</p> : null}
         {!isLoading && !missingChecklistId && !errorMessage ? (
           <div className={styles.checklistShell}>
-            <ChecklistRenderer checklist={renderedChecklist} />
+            <ChecklistRenderer key={checklistRenderVersion} checklist={renderedChecklist} />
           </div>
         ) : null}
 
         <Link to="/home" className={styles.backLink}>Back to Dashboard</Link>
       </section>
     </main>
+    </>
   )
 }
 

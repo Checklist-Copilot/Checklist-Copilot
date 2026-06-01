@@ -18,7 +18,7 @@ import { GoClock } from "react-icons/go";
 import { CiFlag1 } from "react-icons/ci";
 import { ImBin } from "react-icons/im";
 
-import TopBar from '../pages/TopBar'
+import TopBar from '../components/TopBar'
 
 function HomePage() {
   const navigate = useNavigate()
