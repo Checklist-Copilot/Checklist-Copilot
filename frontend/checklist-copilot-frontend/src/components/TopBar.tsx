@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { FiMenu, FiX, FiGrid, FiPlus, FiLogOut } from 'react-icons/fi'
 import { FaUserCircle } from "react-icons/fa";
 import styles from '../components-styles/TopBar.module.css'
@@ -10,7 +11,13 @@ type TopBarProps = {
 }
 
 function TopBar({ userName = 'User', userEmail = '', onLogout }: TopBarProps) {
+  const navigate = useNavigate()
   const [isMenuOpen, setIsMenuOpen] = useState(false)
+
+  function handleNavigate(path: string) {
+    setIsMenuOpen(false)
+    navigate(path)
+  }
 
   return (
     <header className={styles.topbar}>
@@ -44,20 +51,20 @@ function TopBar({ userName = 'User', userEmail = '', onLogout }: TopBarProps) {
           </div>
 
           <nav className={styles.nav}>
-            <a href="/home" className={styles.navItem}>
+            <button className={styles.navItem} type="button" onClick={() => handleNavigate('/home')}>
               <FiGrid />
               Dashboard
-            </a>
+            </button>
 
-            <a href="/checklist/new" className={styles.navItem}>
+            <button className={styles.navItem} type="button" onClick={() => handleNavigate('/checklist/new')}>
               <FiPlus />
               New Checklist
-            </a>
+            </button>
 
-            <a href="/account" className={styles.navItem}>
+            <button className={styles.navItem} type="button" onClick={() => handleNavigate('/account')}>
               <FaUserCircle />
               My Account
-            </a>
+            </button>
 
             <button className={styles.navItem} type="button" onClick={onLogout}>
               <FiLogOut />
