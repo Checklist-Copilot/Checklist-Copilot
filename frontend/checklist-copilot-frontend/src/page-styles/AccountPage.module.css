@@ -1,0 +1,329 @@
+.page {
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at 78% 0%, rgba(139, 92, 246, 0.24), transparent 32rem),
+    radial-gradient(circle at 10% 48%, rgba(34, 211, 238, 0.12), transparent 28rem),
+    linear-gradient(145deg, #0d0c18, #171322 56%, #0a0a12);
+  color: #f8f5ff;
+  padding: 32px;
+  position: relative;
+  overflow-x: hidden;
+}
+
+.page::before {
+  content: '';
+  position: fixed;
+  inset: 60px 0 auto;
+  height: 46vh;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(255,255,255,0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.045) 1px, transparent 1px);
+  background-size: 56px 56px;
+  mask-image: linear-gradient(transparent, black 20%, transparent);
+  animation: gridDrift 18s linear infinite;
+}
+
+.header,
+.stack {
+  width: min(920px, 100%);
+  margin: 0 auto;
+  position: relative;
+  z-index: 1;
+}
+
+.header {
+  margin-bottom: 28px;
+  animation: revealUp 700ms cubic-bezier(.16,1,.3,1) both;
+}
+
+.title {
+  font-size: clamp(40px, 6vw, 72px);
+  line-height: 0.9;
+  margin: 0;
+  font-weight: 800;
+  letter-spacing: -0.06em;
+}
+
+.subtitle {
+  margin: 12px 0 0;
+  color: #b9b0ce;
+  font-size: 20px;
+}
+
+.stack {
+  display: grid;
+  gap: 22px;
+}
+
+.panel {
+  background: rgba(255, 255, 255, 0.075);
+  border: 1px solid rgba(255, 255, 255, 0.13);
+  border-radius: 28px;
+  padding: 26px 24px;
+  backdrop-filter: blur(18px);
+  box-shadow: 0 22px 70px rgba(0, 0, 0, 0.22);
+  animation: cardRise 760ms cubic-bezier(.16,1,.3,1) both;
+}
+
+.panel:nth-child(2) { animation-delay: 90ms; }
+.panel:nth-child(3) { animation-delay: 180ms; }
+
+.identity {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  margin-bottom: 24px;
+}
+
+.avatar {
+  width: 72px;
+  height: 72px;
+  border-radius: 22px;
+  background: linear-gradient(135deg, #8b5cf6, #ec4899);
+  color: white;
+  display: grid;
+  place-items: center;
+  font-size: 24px;
+  font-weight: 800;
+  box-shadow: 0 18px 44px rgba(139, 92, 246, 0.32);
+}
+
+.identity h2 {
+  margin: 0;
+  font-size: 26px;
+  letter-spacing: -0.03em;
+}
+
+.identity p,
+.note,
+.message {
+  color: #b9b0ce;
+}
+
+.identity p {
+  margin: 4px 0 0;
+  font-size: 16px;
+}
+
+.fieldGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.field {
+  display: grid;
+  gap: 10px;
+  color: #d8d0ea;
+  font-weight: 700;
+}
+
+.field span {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: #b9b0ce;
+}
+
+.field input,
+.passwordInput {
+  width: 100%;
+  min-height: 50px;
+  box-sizing: border-box;
+  border: 1px solid rgba(255, 255, 255, 0.13);
+  border-radius: 14px;
+  background: rgba(10, 10, 18, 0.68);
+  color: #f8f5ff;
+  font: inherit;
+  font-weight: 700;
+  outline: none;
+  transition: border-color 220ms, background 220ms, box-shadow 220ms;
+}
+
+.field input {
+  padding: 0 16px;
+}
+
+.field input:focus,
+.passwordInput:focus-within {
+  border-color: rgba(196, 167, 255, 0.72);
+  background: rgba(10, 10, 18, 0.84);
+  box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.12);
+}
+
+.panelTitle,
+.dangerTitle {
+  margin: 0 0 22px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 24px;
+  letter-spacing: -0.03em;
+}
+
+.panelTitle svg {
+  color: #c4a7ff;
+}
+
+.passwordInput {
+  display: grid;
+  grid-template-columns: 1fr 44px;
+  align-items: center;
+  overflow: hidden;
+}
+
+.passwordInput input {
+  min-height: 48px;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.passwordInput input:focus {
+  box-shadow: none;
+}
+
+.passwordInput button {
+  width: 44px;
+  height: 44px;
+  border: 0;
+  background: transparent;
+  color: #b9b0ce;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  font-size: 18px;
+}
+
+.formFooter {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-top: 22px;
+}
+
+.primaryButton,
+.secondaryButton,
+.dangerButton {
+  min-height: 46px;
+  border-radius: 14px;
+  padding: 0 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+  transition: transform 260ms cubic-bezier(.16,1,.3,1), box-shadow 260ms, border-color 260ms, background 260ms;
+}
+
+.primaryButton,
+.secondaryButton {
+  border: 0;
+  background: linear-gradient(135deg, #8b5cf6, #ec4899);
+  color: #ffffff;
+  box-shadow: 0 16px 42px rgba(139, 92, 246, 0.28);
+}
+
+.secondaryButton {
+  background: rgba(255, 255, 255, 0.055);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow: none;
+}
+
+.primaryButton:hover,
+.secondaryButton:hover,
+.dangerButton:hover {
+  transform: translateY(-3px);
+}
+
+.primaryButton:disabled,
+.secondaryButton:disabled {
+  opacity: 0.65;
+  cursor: wait;
+  transform: none;
+}
+
+.note {
+  margin: 0;
+  font-size: 14px;
+}
+
+.dangerPanel {
+  border-color: rgba(251, 113, 133, 0.34);
+  background: rgba(251, 113, 133, 0.075);
+}
+
+.dangerTitle {
+  color: #fb7185;
+}
+
+.dangerText {
+  margin: -8px 0 20px;
+  color: #d8a4ad;
+  line-height: 1.6;
+}
+
+.dangerButton {
+  background: rgba(251, 113, 133, 0.08);
+  border: 1px solid rgba(251, 113, 133, 0.55);
+  color: #ff8a9b;
+}
+
+.dangerButton:disabled {
+  opacity: 0.6;
+  cursor: wait;
+  transform: none;
+}
+
+.dangerMessage {
+  color: #fb7185;
+  margin: 14px 0 0;
+}
+
+@keyframes revealUp {
+  from { opacity: 0; transform: translateY(24px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes cardRise {
+  from { opacity: 0; transform: translateY(30px) scale(.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes gridDrift {
+  from { background-position: 0 0; }
+  to { background-position: 56px 56px; }
+}
+
+@media (max-width: 760px) {
+  .page {
+    padding: 24px;
+  }
+
+  .fieldGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .identity {
+    align-items: flex-start;
+  }
+
+  .avatar {
+    width: 60px;
+    height: 60px;
+    border-radius: 18px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+  }
+}
