@@ -16,3 +16,27 @@ export async function login(payload: LoginRequest): Promise<AuthResponse> {
 export function getCurrentUser(token?: string): Promise<User> {
   return apiRequest<User>('/auth/me', { method: 'GET' }, token)
 }
+
+export type UpdateCurrentUserRequest = {
+  username: string
+  email: string
+}
+
+export function updateCurrentUser(payload: UpdateCurrentUserRequest): Promise<User> {
+  return apiRequest<User>('/auth/me', {
+    method: 'PATCH',
+    body: JSON.stringify(payload),
+  })
+}
+
+export type ChangePasswordRequest = {
+  current_password: string
+  new_password: string
+}
+
+export function changePassword(payload: ChangePasswordRequest): Promise<User> {
+  return apiRequest<User>('/auth/me/password', {
+    method: 'PATCH',
+    body: JSON.stringify(payload),
+  })
+}
