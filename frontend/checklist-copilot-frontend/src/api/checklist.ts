@@ -55,7 +55,7 @@ export type ChecklistOperation =
 // PATCH /api/checklists/{id} — apply a batch of operations to the tree.
 // The backend validates each one, applies them, snapshots `checklist_prev`,
 // recomputes stats, and returns the persisted row.
-export function patchChecklist(
+export function updateChecklistById(
   checklistId: string,
   operations: ChecklistOperation[],
 ): Promise<Checklist> {
