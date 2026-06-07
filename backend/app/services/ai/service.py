@@ -359,36 +359,51 @@ def edit_checklist_with_ai(
     result = AIRunResult(checklist=checklist)
     on_tool_call = _build_callback(result)
 
-    system_prompt = build_edit_system_prompt()
-    metadata_line = (
-        f"Current title: {current_title!r}\n"
-        f"Current description: {current_description!r}\n\n"
-        if current_title is not None or current_description is not None
-        else ""
-    )
-
-    # Count every leaf + container in the tree. We surface this number in the
-    # user message so the model has an explicit "is this empty?" signal — a
-    # tree of size 0 or 1 strongly implies a BUILD intent, even if the user's
-    # instruction is short.
+    # Route by "is this effectively empty?". An empty checklist + free-form
+    # instruction is almost always a build-from-scratch request, and a
+    # dedicated prompt with a smaller tool surface produces noticeably more
+    # thorough output than the general-purpose edit prompt trying to detect
+    # build intent on its own. Persisting into the existing row keeps the
+    # URL stable.
     component_count = _count_components(checklist)
-    size_hint = (
-        f"Components currently in the tree: {component_count} "
-        f"({'EMPTY — likely a build-from-scratch instruction' if component_count <= 1 else 'existing content — likely a targeted edit'})\n\n"
-    )
+    is_effectively_empty = component_count <= 1
 
-    user_prompt = (
-        f"{metadata_line}"
-        f"{size_hint}"
-        f"Current checklist JSON:\n```json\n{json.dumps(checklist, indent=2)}\n```\n\n"
-        f"User instruction:\n{instruction}"
-    )
+    if is_effectively_empty:
+        # Specialised build flow.
+        root_id = checklist.get("id", "root")
+        system_prompt = build_create_system_prompt(root_id)
+        tools = CREATE_TOOLS
+        user_prompt = (
+            f"Build a checklist for:\n\n{instruction}\n\n"
+            f"The root container id is `{root_id}`. Use it as `targetContainerId` "
+            f"for the top-level sections, then fill every section with the "
+            f"appropriate fields and checkbox items. Also call "
+            f"`update_checklist_metadata` ONCE to set a meaningful title "
+            f"(current title is {current_title!r}). Keep going until done."
+        )
+    else:
+        # Standard edit flow.
+        system_prompt = build_edit_system_prompt()
+        tools = ALL_TOOLS
+        metadata_line = (
+            f"Current title: {current_title!r}\n"
+            f"Current description: {current_description!r}\n\n"
+            if current_title is not None or current_description is not None
+            else ""
+        )
+        size_hint = f"Components currently in the tree: {component_count}\n\n"
+        user_prompt = (
+            f"{metadata_line}"
+            f"{size_hint}"
+            f"Current checklist JSON:\n```json\n{json.dumps(checklist, indent=2)}\n```\n\n"
+            f"User instruction:\n{instruction}"
+        )
 
     client = OpenAIClient()
     chat_result = client.chat_with_tools(
         system_prompt,
         user_prompt,
-        ALL_TOOLS,
+        tools,
         on_tool_call,
         max_rounds=max_rounds,
     )
