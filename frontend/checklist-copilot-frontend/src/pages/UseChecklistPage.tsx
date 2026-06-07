@@ -28,6 +28,37 @@ function UseChecklistPage() {
     navigate('/')
   }
 
+  function handleComponentUpdate(componentId: string, patch: Record<string, unknown>) {
+  setChecklist((currentChecklist) => {
+    if (!currentChecklist || !isChecklistRoot(currentChecklist.checklist)) {
+      return currentChecklist
+    }
+
+    return {
+      ...currentChecklist,
+      checklist: {
+        ...currentChecklist.checklist,
+        children: currentChecklist.checklist.children.map((component) => {
+          if (component.id === componentId) {
+            return { ...component, ...patch }
+          }
+
+          if (component.type === 'section') {
+            return {
+              ...component,
+              children: component.children.map((child) =>
+                child.id === componentId ? { ...child, ...patch } : child,
+              ),
+            }
+          }
+
+          return component
+        }),
+      },
+    }
+  })
+}
+
   // Sends the user's instruction to the backend so the AI can edit the current checklist.
   // When the backend returns the updated checklist JSON, the page state is refreshed so the rendered checklist changes immediately.
   async function handleAiMessage(message: string) {
@@ -158,7 +189,7 @@ function UseChecklistPage() {
         {errorMessage ? <p className={styles.error}>{errorMessage}</p> : null}
         {!isLoading && !missingChecklistId && !errorMessage ? (
           <div className={styles.checklistShell}>
-            <ChecklistRenderer key={checklistRenderVersion} checklist={renderedChecklist} />
+            <ChecklistRenderer key={checklistRenderVersion} checklist={renderedChecklist} onComponentUpdate={handleComponentUpdate} />
           </div>
         ) : null}
 

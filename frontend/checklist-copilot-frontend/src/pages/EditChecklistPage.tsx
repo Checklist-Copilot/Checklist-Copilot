@@ -158,8 +158,9 @@ function EditChecklistPage() {
   }
 
   function handleAddComponent(type: ChecklistComponent['type']) {
-    const newComponent = createComponent(type)
+  const newComponent = createComponent(type)
 
+  if (type === 'section') {
     setEditableChecklist((current) => ({
       ...current,
       children: [...current.children, newComponent],
@@ -176,24 +177,92 @@ function EditChecklistPage() {
     ])
 
     setSuccessMessage(null)
+    return
   }
+
+  const latestSection = [...editableChecklist.children]
+    .reverse()
+    .find((component) => component.type === 'section')
+
+  if (!latestSection || latestSection.type !== 'section') {
+    setErrorMessage('Add a section before adding components.')
+    return
+  }
+
+  setEditableChecklist((current) => ({
+    ...current,
+    children: current.children.map((component) => {
+      if (component.id !== latestSection.id || component.type !== 'section') {
+        return component
+      }
+
+      return {
+        ...component,
+        children: [...component.children, newComponent],
+      }
+    }),
+  }))
+
+  setPendingOperations((current) => [
+    ...current,
+    {
+      operation: 'addComponent',
+      targetContainerId: latestSection.id,
+      position: 'end',
+      component: newComponent as unknown as Record<string, unknown>,
+    },
+  ])
+
+  setSuccessMessage(null)
+}
 
   function handleDeleteComponent(componentId: string) {
-    setEditableChecklist((current) => ({
-      ...current,
-      children: current.children.filter((component) => component.id !== componentId),
-    }))
+  setEditableChecklist((current) => ({
+    ...current,
+    children: current.children
+      .filter((component) => component.id !== componentId)
+      .map((component) => {
+        if (component.type !== 'section') {
+          return component
+        }
 
-    setPendingOperations((current) => [
-      ...current,
-      {
-        operation: 'deleteComponent',
-        targetId: componentId,
-      },
-    ])
+        return {
+          ...component,
+          children: component.children.filter((child) => child.id !== componentId),
+        }
+      }),
+  }))
 
-    setSuccessMessage(null)
-  }
+  setPendingOperations((current) => [
+    ...current,
+    {
+      operation: 'deleteComponent',
+      targetId: componentId,
+    },
+  ])
+
+  setSuccessMessage(null)
+}
+
+  function handleSectionUpdate(sectionId: string, patch: Record<string, unknown>) {
+  setEditableChecklist((current) => ({
+    ...current,
+    children: current.children.map((component) =>
+      component.id === sectionId ? { ...component, ...patch } : component,
+    ),
+  }))
+
+  setPendingOperations((current) => [
+    ...current,
+    {
+      operation: 'updateComponent',
+      targetId: sectionId,
+      patch,
+    },
+  ])
+
+  setSuccessMessage(null)
+}
 
   async function handleSaveChecklist() {
     if (!checklist_id || pendingOperations.length === 0) return
@@ -371,6 +440,7 @@ function EditChecklistPage() {
               <ChecklistRenderer
                 checklist={editableChecklist}
                 isEditMode
+                onSectionUpdate={handleSectionUpdate}
                 onDeleteComponent={handleDeleteComponent}
               />
             </div>
