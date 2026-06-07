@@ -103,6 +103,12 @@
   cursor: pointer;
 }
 
+.focusedChild {
+  outline: 2px solid rgba(167, 139, 250, 0.75);
+  outline-offset: 4px;
+  border-radius: 18px;
+}
+
 .childDeleteButton:hover {
   background: rgba(251, 113, 133, 0.32);
 }

@@ -39,6 +39,8 @@ function EditChecklistPage() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
   const [isAIChatOpen, setIsAIChatOpen] = useState(false)
+  const [focusedComponentId, setFocusedComponentId] = useState<string>('root')
+  const [toastMessage, setToastMessage] = useState<string | null>(null)
 
   const missingChecklistId = isAuthorized && !checklist_id
 
@@ -50,6 +52,14 @@ function EditChecklistPage() {
   function createId() {
     return crypto.randomUUID()
   }
+
+  function showToast(message: string) {
+  setToastMessage(message)
+
+  window.setTimeout(() => {
+    setToastMessage(null)
+  }, 3200)
+}
 
   function createComponent(type: ChecklistComponent['type']): ChecklistComponent {
     const id = createId()
@@ -157,43 +167,177 @@ function EditChecklistPage() {
     }
   }
 
-  function handleAddComponent(type: ChecklistComponent['type']) {
-    const newComponent = createComponent(type)
+  function findComponentById(root: ChecklistRoot, componentId: string): ChecklistComponent | ChecklistRoot | null {
+    if (componentId === 'root') return root
 
+    for (const component of root.children) {
+      if (component.id === componentId) return component
+
+      if (component.type === 'section') {
+        const child = component.children.find((item) => item.id === componentId)
+        if (child) return child
+      }
+
+      if (component.type === 'checkboxGroup' || component.type === 'checkboxContainer') {
+        const item = component.items.find((checkbox) => checkbox.id === componentId)
+        if (item) return item
+      }
+    }
+
+    return null
+  }
+
+  function canContainComponent(
+    target: ChecklistComponent | ChecklistRoot | null,
+    newType: ChecklistComponent['type'],
+  ) {
+    if (!target) return false
+
+    if (target.type === 'root') {
+      return newType === 'section'
+    }
+
+    if (target.type === 'section') {
+      return newType !== 'section' && newType !== 'checkbox' && newType !== 'checkboxItem'
+    }
+
+    if (target.type === 'checkboxGroup' || target.type === 'checkboxContainer') {
+      return newType === 'checkbox' || newType === 'checkboxItem'
+    }
+
+    return false
+  }
+
+  function getFallbackTargetId(type: ChecklistComponent['type']) {
+    if (type === 'section') return 'root'
+
+    const latestSection = [...editableChecklist.children]
+      .reverse()
+      .find((component) => component.type === 'section')
+
+    return latestSection?.id ?? null
+  }
+
+  function handleAddComponent(type: ChecklistComponent['type']) {
+  const selectedTarget = findComponentById(editableChecklist, focusedComponentId)
+  let targetContainerId = focusedComponentId
+
+  if (!canContainComponent(selectedTarget, type)) {
+    const fallbackTargetId = getFallbackTargetId(type)
+
+    if (!fallbackTargetId) {
+      showToast('Add a section first before adding this component.')
+      return
+    }
+
+    targetContainerId = fallbackTargetId
+
+    showToast(
+      type === 'section'
+        ? 'Sections are added to the checklist root.'
+        : 'That component cannot contain children, so the new component was added to the latest section.',
+    )
+  }
+
+  const newComponent =
+    targetContainerId !== 'root' &&
+    findComponentById(editableChecklist, targetContainerId)?.type === 'checkboxGroup'
+      ? createComponent('checkbox')
+      : createComponent(type)
+
+  if (targetContainerId === 'root') {
     setEditableChecklist((current) => ({
       ...current,
       children: [...current.children, newComponent],
     }))
-
-    setPendingOperations((current) => [
-      ...current,
-      {
-        operation: 'addComponent',
-        targetContainerId: 'root',
-        position: 'end',
-        component: newComponent as unknown as Record<string, unknown>,
-      },
-    ])
-
-    setSuccessMessage(null)
-  }
-
-  function handleDeleteComponent(componentId: string) {
+  } else {
     setEditableChecklist((current) => ({
       ...current,
-      children: current.children.filter((component) => component.id !== componentId),
+      children: current.children.map((component) => {
+        if (component.type === 'section' && component.id === targetContainerId) {
+          return {
+            ...component,
+            children: [...component.children, newComponent],
+          }
+        }
+
+        if (
+          (component.type === 'checkboxGroup' || component.type === 'checkboxContainer') &&
+          component.id === targetContainerId &&
+          (newComponent.type === 'checkbox' || newComponent.type === 'checkboxItem')
+        ) {
+          return {
+            ...component,
+            items: [...component.items, newComponent],
+          }
+        }
+
+        return component
+      }),
     }))
-
-    setPendingOperations((current) => [
-      ...current,
-      {
-        operation: 'deleteComponent',
-        targetId: componentId,
-      },
-    ])
-
-    setSuccessMessage(null)
   }
+
+  setPendingOperations((current) => [
+    ...current,
+    {
+      operation: 'addComponent',
+      targetContainerId,
+      position: 'end',
+      component: newComponent as unknown as Record<string, unknown>,
+    },
+  ])
+
+  setFocusedComponentId(newComponent.id)
+  setSuccessMessage(null)
+}
+
+  function handleDeleteComponent(componentId: string) {
+  setEditableChecklist((current) => ({
+    ...current,
+    children: current.children
+      .filter((component) => component.id !== componentId)
+      .map((component) => {
+        if (component.type !== 'section') {
+          return component
+        }
+
+        return {
+          ...component,
+          children: component.children.filter((child) => child.id !== componentId),
+        }
+      }),
+  }))
+
+  setPendingOperations((current) => [
+    ...current,
+    {
+      operation: 'deleteComponent',
+      targetId: componentId,
+    },
+  ])
+
+  setSuccessMessage(null)
+}
+
+  function handleSectionUpdate(sectionId: string, patch: Record<string, unknown>) {
+  setEditableChecklist((current) => ({
+    ...current,
+    children: current.children.map((component) =>
+      component.id === sectionId ? { ...component, ...patch } : component,
+    ),
+  }))
+
+  setPendingOperations((current) => [
+    ...current,
+    {
+      operation: 'updateComponent',
+      targetId: sectionId,
+      patch,
+    },
+  ])
+
+  setSuccessMessage(null)
+}
 
   async function handleSaveChecklist() {
     if (!checklist_id || pendingOperations.length === 0) return
@@ -298,24 +442,84 @@ function EditChecklistPage() {
       <TopBar onLogout={handleLogout} />
 
       <main className={styles.page}>
-        <aside className={styles.componentSidebar}>
-          <p className={styles.sidebarTitle}>Components</p>
-          <p className={styles.sidebarHint}>Click an item to insert it.</p>
+        <div className={styles.editLayout}>
+          <aside className={styles.componentSidebar}>
+            <p className={styles.sidebarTitle}>Components</p>
+            <p className={styles.sidebarHint}>Click an item to insert it.</p>
 
-          <div className={styles.componentList}>
-            {componentOptions.map((option) => (
+            <div className={styles.componentList}>
+              {componentOptions.map((option) => (
+                <button
+                  key={option.type}
+                  type="button"
+                  className={styles.componentItem}
+                  onClick={() => handleAddComponent(option.type)}
+                >
+                  <FiPlus />
+                  {option.label}
+                </button>
+              ))}
+            </div>
+          </aside>
+
+          <section className={`${styles.content} ${styles.editContent}`}>
+            <header className={styles.checklistHeader}>
+              <div>
+                <p className={styles.status}>Edit Mode</p>
+                <h1 className={styles.title}>{checklist?.title ?? 'Edit Checklist'}</h1>
+                <p className={styles.description}>
+                  {checklist?.description ?? 'Add and delete checklist components manually.'}
+                </p>
+
+                <div className={styles.metaRow}>
+                  <span>{editableChecklist.children.length} components</span>
+                  {checklist ? <span>Creator {checklist.user_id}</span> : null}
+                  {checklist ? <span>Created {formatDate(checklist.created_at)}</span> : null}
+                  {checklist ? <span>Updated {formatDate(checklist.updated_at)}</span> : null}
+                  <span>Checklist ID {checklist_id ?? 'mock'}</span>
+                </div>
+              </div>
+
               <button
-                key={option.type}
                 type="button"
-                className={styles.componentItem}
-                onClick={() => handleAddComponent(option.type)}
+                className={styles.saveButton}
+                onClick={handleSaveChecklist}
+                disabled={isSaving || pendingOperations.length === 0}
               >
-                <FiPlus />
-                {option.label}
+                <FiSave />
+                {isSaving ? 'Saving...' : 'Save'}
               </button>
-            ))}
-          </div>
-        </aside>
+            </header>
+
+            {isLoading ? <p className={styles.message}>Loading checklist...</p> : null}
+            {missingChecklistId ? <p className={styles.error}>Checklist ID is missing in URL.</p> : null}
+            {errorMessage ? <p className={styles.error}>{errorMessage}</p> : null}
+            {successMessage ? <p className={styles.message}>{successMessage}</p> : null}
+
+            {!isLoading && !missingChecklistId && !errorMessage ? (
+              <div className={styles.checklistShell}>
+                <ChecklistRenderer
+                  checklist={editableChecklist}
+                  isEditMode
+                  focusedComponentId={focusedComponentId}
+                  onFocusComponent={setFocusedComponentId}
+                  onSectionUpdate={handleSectionUpdate}
+                  onDeleteComponent={handleDeleteComponent}
+                />
+              </div>
+            ) : null}
+
+            <Link to="/home" className={styles.backLink}>
+              Back to Dashboard
+            </Link>
+          </section>
+        </div>
+
+        {toastMessage ? (
+        <div className={styles.toast} role="status" aria-live="polite">
+          {toastMessage}
+        </div>
+      ) : null}
 
         <button
           className={styles.aiButton}
@@ -331,55 +535,6 @@ function EditChecklistPage() {
           onClose={() => setIsAIChatOpen(false)}
           onSendMessage={handleAiMessage}
         />
-
-        <section className={styles.content}>
-          <header className={styles.checklistHeader}>
-            <div>
-              <p className={styles.status}>Edit Mode</p>
-              <h1 className={styles.title}>{checklist?.title ?? 'Edit Checklist'}</h1>
-              <p className={styles.description}>
-                {checklist?.description ?? 'Add and delete checklist components manually.'}
-              </p>
-
-              <div className={styles.metaRow}>
-                <span>{editableChecklist.children.length} components</span>
-                {checklist ? <span>Creator {checklist.user_id}</span> : null}
-                {checklist ? <span>Created {formatDate(checklist.created_at)}</span> : null}
-                {checklist ? <span>Updated {formatDate(checklist.updated_at)}</span> : null}
-                <span>Checklist ID {checklist_id ?? 'mock'}</span>
-              </div>
-            </div>
-
-            <button
-              type="button"
-              className={styles.saveButton}
-              onClick={handleSaveChecklist}
-              disabled={isSaving || pendingOperations.length === 0}
-            >
-              <FiSave />
-              {isSaving ? 'Saving...' : 'Save'}
-            </button>
-          </header>
-
-          {isLoading ? <p className={styles.message}>Loading checklist...</p> : null}
-          {missingChecklistId ? <p className={styles.error}>Checklist ID is missing in URL.</p> : null}
-          {errorMessage ? <p className={styles.error}>{errorMessage}</p> : null}
-          {successMessage ? <p className={styles.message}>{successMessage}</p> : null}
-
-          {!isLoading && !missingChecklistId && !errorMessage ? (
-            <div className={styles.checklistShell}>
-              <ChecklistRenderer
-                checklist={editableChecklist}
-                isEditMode
-                onDeleteComponent={handleDeleteComponent}
-              />
-            </div>
-          ) : null}
-
-          <Link to="/home" className={styles.backLink}>
-            Back to Dashboard
-          </Link>
-        </section>
       </main>
     </>
   )

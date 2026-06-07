@@ -9,6 +9,8 @@ type SectionRendererProps = {
   isEditMode?: boolean
   onSectionUpdate?: (sectionId: string, patch: Record<string, unknown>) => void
   onDeleteComponent?: (componentId: string) => void
+  focusedComponentId?: string
+  onFocusComponent?: (componentId: string) => void
 }
 
 export function SectionRenderer({
@@ -17,6 +19,8 @@ export function SectionRenderer({
   isEditMode = false,
   onSectionUpdate,
   onDeleteComponent,
+  focusedComponentId,
+  onFocusComponent,
 }: SectionRendererProps) {
   return (
     <section className={styles.section} data-component-id={section.id}>
@@ -28,6 +32,7 @@ export function SectionRenderer({
             <input
               className={styles.titleInput}
               value={componentTitle(section)}
+              onClick={(event) => event.stopPropagation()}
               onChange={(event) =>
                 onSectionUpdate?.(section.id, { label: event.target.value })
               }
@@ -43,13 +48,25 @@ export function SectionRenderer({
       {!section.collapsed ? (
         <div className={styles.children}>
           {section.children.map((component) => (
-            <div key={component.id} className={styles.childWrapper}>
+            <div
+              key={component.id}
+              className={`${styles.childWrapper} ${
+                focusedComponentId === component.id ? styles.focusedChild : ''
+              }`}
+              onClick={(event) => {
+                event.stopPropagation()
+                onFocusComponent?.(component.id)
+              }}
+            >
               {isEditMode ? (
                 <button
                   type="button"
                   className={styles.childDeleteButton}
                   aria-label="Delete component"
-                  onClick={() => onDeleteComponent?.(component.id)}
+                  onClick={(event) => {
+                    event.stopPropagation()
+                    onDeleteComponent?.(component.id)
+                  }}
                 >
                   ×
                 </button>
@@ -60,6 +77,8 @@ export function SectionRenderer({
                 isEditMode={isEditMode}
                 onSectionUpdate={onSectionUpdate}
                 onDeleteComponent={onDeleteComponent}
+                focusedComponentId={focusedComponentId}
+                onFocusComponent={onFocusComponent}
               />
             </div>
           ))}
