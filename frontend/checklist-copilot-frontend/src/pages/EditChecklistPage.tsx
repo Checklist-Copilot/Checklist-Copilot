@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import {
   FiArrowLeft,
@@ -22,7 +22,12 @@ import {
 import AIPromptInput from '../components/AIPromptInput'
 import { ChecklistRenderer } from '../checklist-components'
 import type { ChecklistRoot } from '../checklist-components'
-import { getChecklistById, updateChecklistMetadata } from '../api/checklist'
+import {
+  getChecklistById,
+  patchChecklist,
+  updateChecklistMetadata,
+} from '../api/checklist'
+import type { ChecklistOperation } from '../api/checklist'
 import { editChecklistWithAi } from '../api/ai'
 import { removeToken } from '../auth/tokenStorage'
 import { useRequireAuth } from '../hooks/useRequireAuth'
@@ -60,6 +65,14 @@ function EditChecklistPage() {
   const [tree, setTree] = useState<ChecklistRoot | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
+
+  // Canvas wrapper — we attach native HTML5 drag-and-drop listeners here so
+  // the user can reorder TOP-LEVEL sections by dragging them.
+  const canvasRef = useRef<HTMLDivElement | null>(null)
+  const treeRef = useRef<ChecklistRoot | null>(null)
+  useEffect(() => {
+    treeRef.current = tree
+  }, [tree])
 
   // AI assistant chat state.
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([
@@ -103,6 +116,130 @@ function EditChecklistPage() {
       mounted = false
     }
   }, [checklist_id, isAuthorized])
+
+  // ----------------------------------------------------------------- //
+  // Drag-and-drop to reorder TOP-LEVEL sections.                        //
+  //                                                                     //
+  // Strategy: after every render where the tree is loaded, we walk the  //
+  // canvas DOM, find each direct top-level section by data-component-id,//
+  // and set draggable=true on it. A single delegated set of listeners   //
+  // on the canvas wrapper handles dragstart/dragover/drop and dispatches//
+  // a moveComponent PATCH when the drop lands.                          //
+  // ----------------------------------------------------------------- //
+  useEffect(() => {
+    const canvas = canvasRef.current
+    if (!canvas || !checklist_id || !tree) return
+
+    // Top-level section ids in current display order.
+    const topLevelIds: string[] = []
+    for (const c of tree.children ?? []) {
+      if (c && typeof c === 'object' && (c as { type?: string }).type === 'section') {
+        topLevelIds.push((c as { id: string }).id)
+      }
+    }
+
+    // Mark exactly those elements as draggable. Anything nested deeper is
+    // ignored — we only support reordering at the root level for now.
+    const sectionEls = new Map<string, HTMLElement>()
+    for (const id of topLevelIds) {
+      const el = canvas.querySelector<HTMLElement>(`[data-component-id="${CSS.escape(id)}"]`)
+      if (el) {
+        el.setAttribute('draggable', 'true')
+        el.style.cursor = 'grab'
+        sectionEls.set(id, el)
+      }
+    }
+
+    let draggedId: string | null = null
+
+    function findOwningSectionId(target: EventTarget | null): string | null {
+      if (!(target instanceof Element)) return null
+      let node: Element | null = target
+      while (node && node !== canvas) {
+        const id = (node as HTMLElement).dataset?.componentId
+        if (id && sectionEls.has(id)) return id
+        node = node.parentElement
+      }
+      return null
+    }
+
+    function onDragStart(e: DragEvent) {
+      const id = findOwningSectionId(e.target)
+      if (!id) return
+      draggedId = id
+      // Required for Firefox to actually start the drag.
+      e.dataTransfer?.setData('text/plain', id)
+      if (e.dataTransfer) e.dataTransfer.effectAllowed = 'move'
+      sectionEls.get(id)?.classList.add('dragging')
+    }
+    function onDragEnd() {
+      if (draggedId) sectionEls.get(draggedId)?.classList.remove('dragging')
+      draggedId = null
+    }
+    function onDragOver(e: DragEvent) {
+      const overId = findOwningSectionId(e.target)
+      // Allow drop only when hovering over a known top-level section.
+      if (!draggedId || !overId || overId === draggedId) return
+      e.preventDefault()
+      if (e.dataTransfer) e.dataTransfer.dropEffect = 'move'
+    }
+    async function onDrop(e: DragEvent) {
+      const overId = findOwningSectionId(e.target)
+      if (!draggedId || !overId || overId === draggedId) return
+      e.preventDefault()
+      const movingId = draggedId
+      draggedId = null
+      sectionEls.get(movingId)?.classList.remove('dragging')
+
+      // Compute the new index from the LATEST tree (the ref keeps it fresh).
+      const currentTree = treeRef.current
+      if (!currentTree) return
+      const order: string[] = []
+      for (const c of currentTree.children ?? []) {
+        if (c && typeof c === 'object' && 'id' in c) {
+          order.push((c as { id: string }).id)
+        }
+      }
+
+      const fromIdx = order.indexOf(movingId)
+      const toIdx = order.indexOf(overId)
+      if (fromIdx === -1 || toIdx === -1 || fromIdx === toIdx) return
+
+      // After removing the moving element, indices to the right shift by 1;
+      // account for that when targeting a slot after the original position.
+      const targetPosition = fromIdx < toIdx ? toIdx : toIdx
+
+      const rootId = currentTree.id
+      const op: ChecklistOperation = {
+        operation: 'moveComponent',
+        targetId: movingId,
+        targetContainerId: rootId,
+        position: targetPosition,
+      }
+      try {
+        const updated = await patchChecklist(checklist_id as string, [op])
+        setTree(updated.checklist as unknown as ChecklistRoot)
+      } catch (err) {
+        // eslint-disable-next-line no-console
+        console.warn('Reorder failed:', err)
+      }
+    }
+
+    canvas.addEventListener('dragstart', onDragStart)
+    canvas.addEventListener('dragend', onDragEnd)
+    canvas.addEventListener('dragover', onDragOver)
+    canvas.addEventListener('drop', onDrop)
+    return () => {
+      canvas.removeEventListener('dragstart', onDragStart)
+      canvas.removeEventListener('dragend', onDragEnd)
+      canvas.removeEventListener('dragover', onDragOver)
+      canvas.removeEventListener('drop', onDrop)
+      for (const el of sectionEls.values()) {
+        el.removeAttribute('draggable')
+        el.style.cursor = ''
+      }
+    }
+  }, [tree, checklist_id])
 
   async function handleTitleBlur() {
     if (!checklist_id) return
@@ -271,7 +408,7 @@ function EditChecklistPage() {
           {errorMessage ? <p className={styles.error}>{errorMessage}</p> : null}
           {tree ? (
             tree.children && tree.children.length > 0 ? (
-              <div className={styles.canvasInner}>
+              <div className={styles.canvasInner} ref={canvasRef}>
                 <ChecklistRenderer checklist={tree} />
               </div>
             ) : (

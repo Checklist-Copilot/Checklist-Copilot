@@ -5,11 +5,19 @@
    Most buttons are visual placeholders (`disabled`) — the layout is the
    point, the wiring lands in follow-up PRs. */
 
+/* Dark glassmorphism backdrop matching the rest of the app (dashboard +
+   use-mode page). Switched from the previous light slate so the dark-themed
+   component renderers (which the teammate originally designed for this
+   palette) read correctly here too. */
 .page {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background: #f8fafc;
+  background:
+    radial-gradient(circle at 80% -5%, rgba(139, 92, 246, 0.22), transparent 32rem),
+    radial-gradient(circle at 10% 50%, rgba(34, 211, 238, 0.10), transparent 28rem),
+    linear-gradient(145deg, #0d0c18, #171322 56%, #0a0a12);
+  color: #f8f5ff;
 }
 
 /* ============================ TOP BAR ============================ */
@@ -19,8 +27,9 @@
   align-items: center;
   gap: 16px;
   padding: 10px 18px;
-  background: #ffffff;
-  border-bottom: 1px solid #e2e8f0;
+  background: rgba(13, 12, 24, 0.7);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid rgba(248, 245, 255, 0.08);
   position: sticky;
   top: 0;
   z-index: 10;
@@ -46,8 +55,8 @@
 
 .titleInput {
   font-size: 16px;
-  font-weight: 600;
-  color: #0f172a;
+  font-weight: 700;
+  color: #f8f5ff;
   background: transparent;
   border: 1px solid transparent;
   border-radius: 8px;
@@ -57,13 +66,13 @@
 }
 
 .titleInput:hover {
-  background: #f1f5f9;
+  background: rgba(248, 245, 255, 0.05);
 }
 
 .titleInput:focus {
   outline: none;
-  background: #ffffff;
-  border-color: #6366f1;
+  background: rgba(248, 245, 255, 0.08);
+  border-color: rgba(167, 139, 250, 0.6);
 }
 
 .iconBtn {
@@ -75,14 +84,14 @@
   border: 1px solid transparent;
   background: transparent;
   border-radius: 8px;
-  color: #475569;
+  color: #cfc6e4;
   cursor: pointer;
   transition: background 120ms ease, color 120ms ease;
 }
 
 .iconBtn:hover:not(:disabled) {
-  background: #f1f5f9;
-  color: #0f172a;
+  background: rgba(248, 245, 255, 0.06);
+  color: #f8f5ff;
 }
 
 .iconBtn:disabled {
@@ -96,10 +105,10 @@
   gap: 6px;
   height: 34px;
   padding: 0 12px;
-  border: 1px solid #cbd5e1;
-  background: #ffffff;
+  border: 1px solid rgba(248, 245, 255, 0.12);
+  background: rgba(248, 245, 255, 0.05);
   border-radius: 8px;
-  color: #334155;
+  color: #eee9fb;
   font: inherit;
   font-size: 13px;
   font-weight: 600;
@@ -108,7 +117,7 @@
 }
 
 .textBtn:hover:not(:disabled) {
-  background: #f1f5f9;
+  background: rgba(248, 245, 255, 0.09);
 }
 
 .textBtn:disabled {
@@ -132,16 +141,16 @@
   justify-content: center;
   width: 36px;
   height: 36px;
-  border: 1px solid #cbd5e1;
-  background: #ffffff;
+  border: 1px solid rgba(248, 245, 255, 0.14);
+  background: rgba(248, 245, 255, 0.05);
   border-radius: 50%;
-  color: #475569;
+  color: #cfc6e4;
   cursor: pointer;
   transition: background 120ms ease, color 120ms ease;
 }
 .accountBtn:hover {
-  background: #f1f5f9;
-  color: #0f172a;
+  background: rgba(248, 245, 255, 0.09);
+  color: #f8f5ff;
 }
 
 /* ============================ BODY =============================== */
@@ -158,21 +167,21 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: #64748b;
+  color: #b9b0ce;
   margin: 0 0 8px;
 }
 
 .panelHint {
   font-size: 12px;
-  color: #94a3b8;
+  color: #8d849e;
   margin: 0 0 12px;
 }
 
 /* ---- left palette ---- */
 .leftPanel {
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 12px;
+  background: rgba(20, 17, 34, 0.62);
+  border: 1px solid rgba(248, 245, 255, 0.12);
+  border-radius: 16px;
   padding: 16px;
   height: fit-content;
   position: sticky;
@@ -189,27 +198,27 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 8px 10px;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
+  padding: 9px 11px;
+  background: rgba(248, 245, 255, 0.04);
+  border: 1px solid rgba(248, 245, 255, 0.08);
+  border-radius: 10px;
   font-size: 13px;
-  font-weight: 500;
-  color: #334155;
+  font-weight: 600;
+  color: #eee9fb;
   cursor: pointer;
   text-align: left;
   transition: background 120ms ease, border-color 120ms ease;
 }
 
 .paletteItem:hover:not(:disabled) {
-  background: #eef2ff;
-  border-color: #6366f1;
-  color: #312e81;
+  background: rgba(124, 58, 237, 0.15);
+  border-color: rgba(167, 139, 250, 0.45);
+  color: #ffffff;
 }
 
 .paletteItem:disabled {
   cursor: not-allowed;
-  opacity: 0.7;
+  opacity: 0.65;
 }
 
 .paletteIcon {
@@ -218,35 +227,46 @@
   justify-content: center;
   width: 22px;
   height: 22px;
-  color: #6366f1;
+  color: #c4b5fd;
   font-size: 16px;
 }
 
 /* ---- middle canvas ---- */
 .canvas {
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  padding: 20px;
+  background: rgba(20, 17, 34, 0.55);
+  border: 1px solid rgba(248, 245, 255, 0.1);
+  border-radius: 16px;
+  padding: 22px;
   min-height: 60vh;
 }
 
 .canvasInner {
   max-width: 720px;
   margin: 0 auto;
+  display: grid;
+  gap: 20px;
+}
+
+/* Visual feedback while a top-level section is being dragged.
+   `:global` because the class lands on a DOM node rendered by the shared
+   SectionRenderer module (its scoped class names are hashed). */
+.canvasInner :global(.dragging) {
+  opacity: 0.45;
+  outline: 2px dashed rgba(167, 139, 250, 0.7);
+  outline-offset: 4px;
 }
 
 .message {
   text-align: center;
-  color: #64748b;
+  color: #b9b0ce;
   padding: 40px 0;
 }
 
 .error {
   padding: 12px 14px;
-  background: #fef2f2;
-  border: 1px solid #fecaca;
-  color: #b91c1c;
+  background: rgba(251, 113, 133, 0.12);
+  border: 1px solid rgba(251, 113, 133, 0.4);
+  color: #fecdd3;
   border-radius: 10px;
   font-size: 13px;
 }
@@ -256,21 +276,21 @@
   margin: 48px auto;
   text-align: center;
   padding: 32px;
-  border: 1.5px dashed #cbd5e1;
+  border: 1.5px dashed rgba(248, 245, 255, 0.18);
   border-radius: 14px;
-  background: #f8fafc;
+  background: rgba(248, 245, 255, 0.03);
 }
 
 .emptyTitle {
   margin: 0 0 8px;
   font-size: 17px;
-  color: #0f172a;
+  color: #f8f5ff;
 }
 
 .emptyHint {
   margin: 6px 0;
   font-size: 14px;
-  color: #64748b;
+  color: #b9b0ce;
   line-height: 1.55;
 }
 
@@ -316,9 +336,9 @@
 }
 
 .aiPanel {
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 12px;
+  background: rgba(20, 17, 34, 0.62);
+  border: 1px solid rgba(248, 245, 255, 0.12);
+  border-radius: 16px;
   padding: 16px;
   display: flex;
   flex-direction: column;
@@ -344,15 +364,15 @@
 }
 
 .chatBubbleAi {
-  background: #f1f5f9;
-  color: #0f172a;
+  background: rgba(248, 245, 255, 0.05);
+  color: #eee9fb;
   align-self: flex-start;
   border-bottom-left-radius: 4px;
 }
 
 .chatBubbleUser {
-  background: #eef2ff;
-  color: #312e81;
+  background: rgba(124, 58, 237, 0.2);
+  color: #f8f5ff;
   align-self: flex-end;
   border-bottom-right-radius: 4px;
 }

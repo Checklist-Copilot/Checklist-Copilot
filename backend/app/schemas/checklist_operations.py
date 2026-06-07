@@ -25,8 +25,25 @@ class DeleteComponentOperation(BaseModel):
     targetId: str
 
 
+class MoveComponentOperation(BaseModel):
+    """
+    Reorder/relocate a component within (or between) containers.
+
+    - `targetId`: the component to move.
+    - `targetContainerId`: the container it should end up in. May be the same
+      as its current parent (the typical "drag to reorder within a section"
+      case). Use the root checklist id to reorder top-level sections.
+    - `position`: zero-based index inside the target container's children/items.
+      Use a negative index or an index ≥ length to append at the end.
+    """
+    operation: Literal["moveComponent"]
+    targetId: str
+    targetContainerId: str
+    position: int
+
+
 ChecklistOperation = Annotated[
-    AddComponentOperation | UpdateComponentOperation | DeleteComponentOperation,
+    AddComponentOperation | UpdateComponentOperation | DeleteComponentOperation | MoveComponentOperation,
     Field(discriminator="operation"),
 ]
 

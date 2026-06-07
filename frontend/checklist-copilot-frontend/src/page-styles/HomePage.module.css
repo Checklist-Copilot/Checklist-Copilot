@@ -135,8 +135,17 @@
   position: absolute;
   inset: 0;
   border-radius: 50%;
-  background: conic-gradient(#34d399 0 25%, #facc15 25% 75%, #f43f5e 75% 100%);
-  animation: slowSpin 12s linear infinite;
+  /* Three slices, in order: not-started (red), in-progress (yellow),
+     completed (green). The boundaries are driven by CSS custom properties
+     set inline from the React component, so the donut actually reflects
+     the real counts from the dashboard. Falls back to a soft gray ring
+     when there are no checklists yet. */
+  background: conic-gradient(
+    #f43f5e 0 var(--red-end, 0%),
+    #facc15 var(--red-end, 0%) var(--yellow-end, 0%),
+    #34d399 var(--yellow-end, 0%) var(--green-end, 0%),
+    rgba(248, 245, 255, 0.12) var(--green-end, 0%) 100%
+  );
 }
 
 .donut::after {

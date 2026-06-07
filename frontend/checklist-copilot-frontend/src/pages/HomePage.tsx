@@ -127,7 +127,28 @@ function HomePage() {
           <h2 className={styles.panelTitle}>Status Overview</h2>
 
           <div className={styles.statusContent}>
-            <div className={styles.donut}>
+            {/* Real donut: boundaries driven by the actual counts so the
+                three slices match the legend on the right. With 0 checklists
+                the gradient hits its fallback gray (defaults: 0% / 0% / 0%). */}
+            <div
+              className={styles.donut}
+              style={(() => {
+                const redEnd = totalChecklists > 0
+                  ? (notStartedCount / totalChecklists) * 100
+                  : 0
+                const yellowEnd = totalChecklists > 0
+                  ? ((notStartedCount + inProgressCount) / totalChecklists) * 100
+                  : 0
+                const greenEnd = totalChecklists > 0 ? 100 : 0
+                return {
+                  // CSS custom properties are strings here; TS would prefer a
+                  // typed wrapper but inline-cast keeps this readable.
+                  ['--red-end' as keyof React.CSSProperties]: `${redEnd}%`,
+                  ['--yellow-end' as keyof React.CSSProperties]: `${yellowEnd}%`,
+                  ['--green-end' as keyof React.CSSProperties]: `${greenEnd}%`,
+                } as React.CSSProperties
+              })()}
+            >
               <span className={styles.donutNumber}>{totalChecklists}</span>
               <span className={styles.donutLabel}>total</span>
             </div>

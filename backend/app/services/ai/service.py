@@ -88,6 +88,47 @@ def _resolve_target_container_id(checklist: dict, target_ref: str) -> str:
     return target_ref
 
 
+def _prune_empty_containers(node: Any) -> None:
+    """
+    Recursively drop empty `section` and `checkboxGroup` nodes from the tree.
+
+    The prompt asks the AI not to leave empties, but `gpt-4o-mini` still does
+    sometimes — especially when it runs out of rounds before filling a section
+    it just created. Pruning is the safety net so the user never sees an
+    empty container in the UI.
+
+    Containers with descendants that ARE empty get a chance to be cleaned by
+    the recursive descent: we recurse FIRST, then re-check the now-shorter
+    children list to see if THIS node should also go.
+    """
+    if not isinstance(node, dict):
+        return
+    for key in ("children", "items"):
+        if key not in node or not isinstance(node[key], list):
+            continue
+        # Recurse depth-first so a section containing only empty groups
+        # becomes empty itself (and then gets dropped on the parent level).
+        for child in node[key]:
+            _prune_empty_containers(child)
+
+        node[key] = [
+            child
+            for child in node[key]
+            if not _is_empty_container(child)
+        ]
+
+
+def _is_empty_container(child: Any) -> bool:
+    if not isinstance(child, dict):
+        return False
+    ctype = child.get("type")
+    if ctype == "section":
+        return not (isinstance(child.get("children"), list) and child["children"])
+    if ctype == "checkboxGroup":
+        return not (isinstance(child.get("items"), list) and child["items"])
+    return False
+
+
 def _count_components(node: Any, depth: int = 0) -> int:
     """
     Total count of every dict node in the checklist tree EXCEPT the root.
@@ -288,6 +329,8 @@ def generate_checklist_from_text(
         max_rounds=max_rounds,
     )
     result.reply = chat_result.reply
+    # Drop any sections / checkboxGroups the model left empty.
+    _prune_empty_containers(result.checklist)
 
     return result
 
@@ -350,6 +393,8 @@ def edit_checklist_with_ai(
         max_rounds=max_rounds,
     )
     result.reply = chat_result.reply
+    # Drop any sections / checkboxGroups the model left empty.
+    _prune_empty_containers(result.checklist)
 
     return result
 

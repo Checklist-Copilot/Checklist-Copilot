@@ -1,35 +1,33 @@
-/* Light-theme checkbox group, sits inside a (light) section card. */
 .group {
   display: grid;
-  gap: 12px;
-  padding: 14px 14px 12px;
-  border-radius: 12px;
-  border: 1px solid #e2e8f0;
-  background: #f8fafc;
+  gap: 14px;
+  padding: 18px 14px 14px;
+  border-radius: 16px;
+  border: 1px solid rgba(248, 245, 255, 0.12);
+  background: rgba(20, 17, 34, 0.62);
 }
 
 .header {
   display: grid;
-  gap: 4px;
+  gap: 6px;
   padding: 0 2px;
 }
 
 .title {
   margin: 0;
-  color: #0f172a;
-  font-size: 15px;
-  font-weight: 700;
-  letter-spacing: -0.005em;
+  color: #f8f5ff;
+  font-weight: 900;
+  letter-spacing: -0.035em;
 }
 
 .description {
   margin: 0;
-  color: #64748b;
-  font-size: 13px;
+  color: #b9b0ce;
+  font-size: 14px;
   line-height: 1.45;
 }
 
 .list {
   display: grid;
-  gap: 6px;
+  gap: 8px;
 }

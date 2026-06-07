@@ -51,6 +51,7 @@ export type ChecklistOperation =
   | { operation: 'addComponent'; targetContainerId: string; position?: string | Record<string, unknown>; component: Record<string, unknown> }
   | { operation: 'updateComponent'; targetId: string; patch: Record<string, unknown> }
   | { operation: 'deleteComponent'; targetId: string }
+  | { operation: 'moveComponent'; targetId: string; targetContainerId: string; position: number }
 
 // PATCH /api/checklists/{id} — apply a batch of operations to the tree.
 // The backend validates each one, applies them, snapshots `checklist_prev`,

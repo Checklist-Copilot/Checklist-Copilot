@@ -96,6 +96,74 @@ def delete_component_by_id(checklist: dict[str, Any], target_id: str) -> dict[st
     return checklist
 
 
+def move_component(
+    checklist: dict[str, Any],
+    target_id: str,
+    target_container_id: str,
+    position: int,
+) -> dict[str, Any]:
+    """
+    Reorder/relocate a component to a new container at a new index.
+
+    Mechanics:
+      1. Find the target's current parent and remove it from that parent's
+         children/items list (whichever it lives in).
+      2. Find the destination container by id and pick the right list
+         (`children` for sections + root, `items` for checkboxGroup).
+      3. Insert at `position` (clamped to [0, len]).
+
+    Raises:
+      ComponentNotFoundError      — target id doesn't exist in the tree.
+      InvalidTargetContainerError — destination container doesn't exist or
+                                    can't hold the moved component.
+      CannotDeleteRootError       — caller tried to move the root itself.
+    """
+    if checklist.get("id") == target_id:
+        raise CannotDeleteRootError("Cannot move the root checklist document.")
+
+    # 1. Locate the target and detach it from its current parent.
+    target_node: dict[str, Any] | None = None
+    current_parent = find_parent_container(checklist, target_id)
+    if current_parent is None:
+        raise ComponentNotFoundError(f"Component not found: {target_id}")
+
+    for key in ("children", "items"):
+        container = current_parent.get(key)
+        if isinstance(container, list):
+            for i, item in enumerate(container):
+                if isinstance(item, dict) and item.get("id") == target_id:
+                    target_node = container.pop(i)
+                    break
+            if target_node is not None:
+                break
+    if target_node is None:
+        raise ComponentNotFoundError(f"Component not found: {target_id}")
+
+    # 2. Locate destination container and the right list inside it.
+    destination = find_component_by_id(checklist, target_container_id)
+    if destination is None:
+        raise InvalidTargetContainerError(
+            f"Target container not found: {target_container_id}"
+        )
+    dest_list: list[dict[str, Any]] | None
+    target_type = target_node.get("type")
+    if target_type == "checkbox":
+        dest_list = destination.get("items") if isinstance(destination.get("items"), list) else None
+    else:
+        dest_list = destination.get("children") if isinstance(destination.get("children"), list) else None
+    if dest_list is None:
+        raise InvalidTargetContainerError(
+            f"Component {target_container_id} cannot hold a {target_type!r} (no matching children/items list)."
+        )
+
+    # 3. Insert at the clamped position.
+    if position < 0:
+        position = max(0, len(dest_list) + position)
+    position = min(position, len(dest_list))
+    dest_list.insert(position, target_node)
+    return checklist
+
+
 def update_component_by_id(checklist: dict[str, Any], target_id: str, patch: dict[str, Any]) -> dict[str, Any]:
     target = find_component_by_id(checklist, target_id)
     if target is None:
