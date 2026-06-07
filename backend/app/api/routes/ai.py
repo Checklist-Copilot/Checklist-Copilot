@@ -95,6 +95,7 @@ def ai_edit_checklist(
     if result.checklist != original_checklist:
         checklist.checklist_prev = original_checklist
         checklist.checklist = result.checklist
+        apply_stats(checklist)
         db.commit()
         db.refresh(checklist)
 
@@ -158,9 +159,12 @@ async def ai_observe(
 
     prior = [m.model_dump() for m in (payload.prior_messages or [])]
 
+    original_checklist = copy.deepcopy(checklist.checklist)
+    working_checklist = copy.deepcopy(checklist.checklist)
+
     try:
         result = observe_with_image(
-            checklist.checklist,
+            working_checklist,
             payload.instruction,
             image_id=str(file_row.id),
             image_url=image_url,
@@ -172,10 +176,10 @@ async def ai_observe(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc)
         ) from exc
 
-    # Persist only if the model actually changed something (an attach happened).
+    # Persist only if the model actually changed the checklist.
     # Pure text replies don't mutate the checklist, so no need to snapshot.
-    if result.applied_calls > 0:
-        checklist.checklist_prev = checklist.checklist
+    if result.checklist != original_checklist:
+        checklist.checklist_prev = original_checklist
         checklist.checklist = result.checklist
         apply_stats(checklist)
         db.commit()

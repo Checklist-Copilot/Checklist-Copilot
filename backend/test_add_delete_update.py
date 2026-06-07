@@ -626,6 +626,31 @@ def _():
     assert_eq(counts, {"total": 6, "edited": 5, "completed": 5}, "recount after adding untouched leaf")
 
 
+@step("clearing user input resets edited=false")
+def _():
+    global checklist
+    checklist = apply(
+        checklist,
+        {
+            "operation": "updateComponent",
+            "targetId": TEXT_FIELD_ID,
+            "patch": {"value": ""},
+        },
+    )
+    checklist = apply(
+        checklist,
+        {
+            "operation": "updateComponent",
+            "targetId": FIRST_CHECKBOX_ID,
+            "patch": {"checked": False},
+        },
+    )
+    assert_eq(find_component_by_id(checklist, TEXT_FIELD_ID)["edited"], False, "cleared textField edited flag")
+    assert_eq(find_component_by_id(checklist, FIRST_CHECKBOX_ID)["edited"], False, "unchecked checkbox edited flag")
+    counts = recount(checklist)
+    assert_eq(counts, {"total": 6, "edited": 3, "completed": 3}, "recount after clearing input")
+
+
 expect_error(
     "cannot include 'edited' in an add payload",
     InvalidComponentPayloadError,

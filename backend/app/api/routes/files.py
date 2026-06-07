@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.db.models import User
 from app.db.session import get_db
-from app.schemas.file import FileDeleteResponse, FileUploadResponse
+from app.schemas.file import FileDeleteResponse, FileRead, FileUploadResponse
 from app.services.auth import get_current_user
 from app.services.files import (
     build_file_url,
@@ -29,7 +29,7 @@ async def upload_image_route(
 ) -> FileUploadResponse:
     file_row = await upload_image_file(db, file, current_user.id, checklist_id)
     return FileUploadResponse(
-        **FileUploadResponse.model_validate(file_row).model_dump(exclude={"url"}),
+        **FileRead.model_validate(file_row).model_dump(),
         url=build_file_url(file_row.id),
     )
 
@@ -43,7 +43,7 @@ async def upload_pdf_route(
 ) -> FileUploadResponse:
     file_row = await upload_pdf_file(db, file, current_user.id, checklist_id)
     return FileUploadResponse(
-        **FileUploadResponse.model_validate(file_row).model_dump(exclude={"url"}),
+        **FileRead.model_validate(file_row).model_dump(),
         url=build_file_url(file_row.id),
     )
 
