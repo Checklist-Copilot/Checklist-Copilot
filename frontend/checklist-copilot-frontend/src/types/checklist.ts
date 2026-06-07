@@ -1,4 +1,12 @@
-export interface ChecklistSummary {
+// Denormalized completion stats — the backend recomputes these on every save
+// so the dashboard can show progress without loading the JSON column.
+export interface ChecklistStats {
+  total_items: number;
+  edited_items: number;
+  completed_items: number;
+}
+
+export interface ChecklistSummary extends ChecklistStats {
   id: string;
   user_id: string;
   title: string;
@@ -7,7 +15,7 @@ export interface ChecklistSummary {
   updated_at: string;
 }
 
-export interface Checklist {
+export interface Checklist extends ChecklistStats {
   id: string;
   user_id: string;
   title: string;

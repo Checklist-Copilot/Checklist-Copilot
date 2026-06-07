@@ -1,5 +1,6 @@
-import { useState, type FormEvent } from 'react'
+import { useEffect, useState } from 'react'
 import checklyRobot from '../assets/checkly.png'
+import AIPromptInput from './AIPromptInput'
 import styles from '../components-styles/AIChatPopUp.module.css'
 
 type AIChatPopupProps = {
@@ -24,20 +25,43 @@ function AIChatPopup({ isOpen, onClose, onSendMessage }: AIChatPopupProps) {
     },
   ])
   const [isSending, setIsSending] = useState(false)
+  const [isClosing, setIsClosing] = useState(false)
+  const [shouldRender, setShouldRender] = useState(isOpen)
 
-  if (!isOpen) {
+  useEffect(() => {
+    if (isOpen) {
+      setShouldRender(true)
+      setIsClosing(false)
+      return
+    }
+
+    if (shouldRender) {
+      setIsClosing(true)
+    }
+  }, [isOpen, shouldRender])
+
+  if (!shouldRender) {
     return null
   }
 
-  // Handles sending the user's chat message by adding it to the conversation and forwarding it to the page-level AI edit handler.
-  // While the request is running, it prevents duplicate sends and then adds Checkly's reply or an error message when the request finishes.
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault()
+  function handleClose() {
+    setIsClosing(true)
+  }
 
+  function handleAnimationEnd() {
+    if (!isClosing) return
+    setShouldRender(false)
+    setIsClosing(false)
+    onClose()
+  }
+
+  // Sends the user's chat message by appending it to the conversation and
+  // forwarding it to the page-level AI edit handler. Triggered by AIPromptInput
+  // (which fires onSubmit when the user hits Enter or clicks the send button —
+  // including after dictating via the mic).
+  async function handleSend() {
     const trimmedMessage = message.trim()
-    if (!trimmedMessage || isSending) {
-      return
-    }
+    if (!trimmedMessage || isSending) return
 
     setMessage('')
     setMessages((currentMessages) => [
@@ -67,7 +91,11 @@ function AIChatPopup({ isOpen, onClose, onSendMessage }: AIChatPopupProps) {
   }
 
   return (
-    <aside className={styles.popup} aria-label="AI chat popup">
+    <aside
+      className={`${styles.popup} ${isClosing ? styles.popupClosing : ''}`}
+      aria-label="AI chat popup"
+      onAnimationEnd={handleAnimationEnd}
+    >
       <header className={styles.header}>
         <div className={styles.titleGroup}>
           <img src={checklyRobot} alt="Checkly robot" className={styles.checklyAvatar} />
@@ -78,7 +106,7 @@ function AIChatPopup({ isOpen, onClose, onSendMessage }: AIChatPopupProps) {
 
         <button
           type="button"
-          onClick={onClose}
+          onClick={handleClose}
           aria-label="Close AI chat"
           className={styles.closeButton}
         >
@@ -102,19 +130,22 @@ function AIChatPopup({ isOpen, onClose, onSendMessage }: AIChatPopupProps) {
         ))}
       </div>
 
-      <form className={styles.form} onSubmit={handleSubmit}>
-        <input
-          type="text"
-          placeholder={isSending ? 'Updating checklist...' : 'Ask something...'}
-          className={styles.input}
+      {/* Same OpenAI-style input as the edit page — gives this popup the
+          microphone button (browser-native Web Speech API) so a worker
+          filling out the checklist can dictate hands-free. Files button
+          intentionally omitted (vision/observe is wired separately). */}
+      <div className={styles.inputWrapper}>
+        <AIPromptInput
           value={message}
-          onChange={(event) => setMessage(event.target.value)}
+          onChange={setMessage}
+          onSubmit={handleSend}
           disabled={isSending}
+          placeholder={
+            isSending ? 'Updating checklist…' : 'Ask Checkly… or tap the mic.'
+          }
+          submitLabel="Send"
         />
-        <button type="submit" className={styles.sendButton} disabled={isSending}>
-          {isSending ? 'Sending' : 'Send'}
-        </button>
-      </form>
+      </div>
     </aside>
   )
 }
