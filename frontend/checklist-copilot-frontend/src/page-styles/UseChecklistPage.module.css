@@ -66,6 +66,13 @@
   animation: cardRise 680ms cubic-bezier(.16,1,.3,1) both;
 }
 
+.editContent {
+  width: 100%;
+  margin: 0;
+  padding: 0 0 72px;
+}
+
+
 .checklistHeader {
   display: grid;
   grid-template-columns: 1fr auto;
@@ -359,10 +366,8 @@
 }
 
 .componentSidebar {
-  position: fixed;
-  left: 24px;
-  top: 96px;
-  z-index: 6;
+  position: sticky;
+  top: 92px;
   width: 220px;
   padding: 14px;
   border-radius: 18px;
@@ -370,6 +375,18 @@
   border: 1px solid rgba(248, 245, 255, 0.12);
   backdrop-filter: blur(18px);
   box-shadow: 0 18px 48px rgba(0, 0, 0, 0.28);
+}
+
+.editLayout {
+  width: min(100% - 36px, 1180px);
+  margin: 0 auto;
+  padding: 34px 0 72px;
+  display: grid;
+  grid-template-columns: 220px minmax(0, 920px);
+  gap: 28px;
+  align-items: start;
+  position: relative;
+  z-index: 1;
 }
 
 .sidebarTitle {
@@ -420,13 +437,25 @@
   font-size: 14px;
 }
 
-@media (max-width: 1180px) {
+@media (max-width: 980px) {
+  .editLayout {
+    grid-template-columns: 1fr;
+  }
+
   .componentSidebar {
     position: relative;
-    left: auto;
     top: auto;
-    width: min(100% - 36px, 920px);
-    margin: 24px auto 0;
+    width: 100%;
+  }
+
+  .componentList {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 560px) {
+  .componentList {
+    grid-template-columns: 1fr;
   }
 }
 

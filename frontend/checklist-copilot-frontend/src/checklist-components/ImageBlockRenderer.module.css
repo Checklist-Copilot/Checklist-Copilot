@@ -13,6 +13,7 @@
 
 .uploadBadge {
   border-radius: 999px;
+  margin-top: 30px;
   padding: 4px 9px;
   color: #ddcfff;
   background: rgba(124, 58, 237, 0.16);

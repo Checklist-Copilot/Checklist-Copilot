@@ -11,7 +11,7 @@ type ComponentRendererProps = {
   component: ChecklistComponent
   index?: number
   isEditMode?: boolean
-  onComponentUpdate?: (componentId: string, patch: Record<string, unknown>) => void
+  onSectionUpdate?: (sectionId: string, patch: Record<string, unknown>) => void
   onDeleteComponent?: (componentId: string) => void
 }
 
@@ -19,7 +19,7 @@ export function ComponentRenderer({
   component,
   index,
   isEditMode = false,
-  onComponentUpdate,
+  onSectionUpdate,
   onDeleteComponent,
 }: ComponentRendererProps) {
   switch (component.type) {
@@ -29,7 +29,7 @@ export function ComponentRenderer({
           section={component}
           index={index}
           isEditMode={isEditMode}
-          onComponentUpdate={onComponentUpdate}
+          onSectionUpdate={onSectionUpdate}
           onDeleteComponent={onDeleteComponent}
         />
       )

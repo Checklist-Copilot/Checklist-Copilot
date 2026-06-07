@@ -367,24 +367,76 @@ function EditChecklistPage() {
       <TopBar onLogout={handleLogout} />
 
       <main className={styles.page}>
-        <aside className={styles.componentSidebar}>
-          <p className={styles.sidebarTitle}>Components</p>
-          <p className={styles.sidebarHint}>Click an item to insert it.</p>
+        <div className={styles.editLayout}>
+          <aside className={styles.componentSidebar}>
+            <p className={styles.sidebarTitle}>Components</p>
+            <p className={styles.sidebarHint}>Click an item to insert it.</p>
 
-          <div className={styles.componentList}>
-            {componentOptions.map((option) => (
+            <div className={styles.componentList}>
+              {componentOptions.map((option) => (
+                <button
+                  key={option.type}
+                  type="button"
+                  className={styles.componentItem}
+                  onClick={() => handleAddComponent(option.type)}
+                >
+                  <FiPlus />
+                  {option.label}
+                </button>
+              ))}
+            </div>
+          </aside>
+
+          <section className={`${styles.content} ${styles.editContent}`}>
+            <header className={styles.checklistHeader}>
+              <div>
+                <p className={styles.status}>Edit Mode</p>
+                <h1 className={styles.title}>{checklist?.title ?? 'Edit Checklist'}</h1>
+                <p className={styles.description}>
+                  {checklist?.description ?? 'Add and delete checklist components manually.'}
+                </p>
+
+                <div className={styles.metaRow}>
+                  <span>{editableChecklist.children.length} components</span>
+                  {checklist ? <span>Creator {checklist.user_id}</span> : null}
+                  {checklist ? <span>Created {formatDate(checklist.created_at)}</span> : null}
+                  {checklist ? <span>Updated {formatDate(checklist.updated_at)}</span> : null}
+                  <span>Checklist ID {checklist_id ?? 'mock'}</span>
+                </div>
+              </div>
+
               <button
-                key={option.type}
                 type="button"
-                className={styles.componentItem}
-                onClick={() => handleAddComponent(option.type)}
+                className={styles.saveButton}
+                onClick={handleSaveChecklist}
+                disabled={isSaving || pendingOperations.length === 0}
               >
-                <FiPlus />
-                {option.label}
+                <FiSave />
+                {isSaving ? 'Saving...' : 'Save'}
               </button>
-            ))}
-          </div>
-        </aside>
+            </header>
+
+            {isLoading ? <p className={styles.message}>Loading checklist...</p> : null}
+            {missingChecklistId ? <p className={styles.error}>Checklist ID is missing in URL.</p> : null}
+            {errorMessage ? <p className={styles.error}>{errorMessage}</p> : null}
+            {successMessage ? <p className={styles.message}>{successMessage}</p> : null}
+
+            {!isLoading && !missingChecklistId && !errorMessage ? (
+              <div className={styles.checklistShell}>
+                <ChecklistRenderer
+                  checklist={editableChecklist}
+                  isEditMode
+                  onSectionUpdate={handleSectionUpdate}
+                  onDeleteComponent={handleDeleteComponent}
+                />
+              </div>
+            ) : null}
+
+            <Link to="/home" className={styles.backLink}>
+              Back to Dashboard
+            </Link>
+          </section>
+        </div>
 
         <button
           className={styles.aiButton}
@@ -400,56 +452,6 @@ function EditChecklistPage() {
           onClose={() => setIsAIChatOpen(false)}
           onSendMessage={handleAiMessage}
         />
-
-        <section className={styles.content}>
-          <header className={styles.checklistHeader}>
-            <div>
-              <p className={styles.status}>Edit Mode</p>
-              <h1 className={styles.title}>{checklist?.title ?? 'Edit Checklist'}</h1>
-              <p className={styles.description}>
-                {checklist?.description ?? 'Add and delete checklist components manually.'}
-              </p>
-
-              <div className={styles.metaRow}>
-                <span>{editableChecklist.children.length} components</span>
-                {checklist ? <span>Creator {checklist.user_id}</span> : null}
-                {checklist ? <span>Created {formatDate(checklist.created_at)}</span> : null}
-                {checklist ? <span>Updated {formatDate(checklist.updated_at)}</span> : null}
-                <span>Checklist ID {checklist_id ?? 'mock'}</span>
-              </div>
-            </div>
-
-            <button
-              type="button"
-              className={styles.saveButton}
-              onClick={handleSaveChecklist}
-              disabled={isSaving || pendingOperations.length === 0}
-            >
-              <FiSave />
-              {isSaving ? 'Saving...' : 'Save'}
-            </button>
-          </header>
-
-          {isLoading ? <p className={styles.message}>Loading checklist...</p> : null}
-          {missingChecklistId ? <p className={styles.error}>Checklist ID is missing in URL.</p> : null}
-          {errorMessage ? <p className={styles.error}>{errorMessage}</p> : null}
-          {successMessage ? <p className={styles.message}>{successMessage}</p> : null}
-
-          {!isLoading && !missingChecklistId && !errorMessage ? (
-            <div className={styles.checklistShell}>
-              <ChecklistRenderer
-                checklist={editableChecklist}
-                isEditMode
-                onSectionUpdate={handleSectionUpdate}
-                onDeleteComponent={handleDeleteComponent}
-              />
-            </div>
-          ) : null}
-
-          <Link to="/home" className={styles.backLink}>
-            Back to Dashboard
-          </Link>
-        </section>
       </main>
     </>
   )
