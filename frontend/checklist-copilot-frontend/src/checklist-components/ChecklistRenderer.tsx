@@ -5,14 +5,12 @@ import type { ChecklistRoot } from './types'
 type ChecklistRendererProps = {
   checklist: ChecklistRoot
   isEditMode?: boolean
-  onSectionUpdate?: (sectionId: string, patch: Record<string, unknown>) => void
   onDeleteComponent?: (componentId: string) => void
 }
 
 export function ChecklistRenderer({
   checklist,
   isEditMode = false,
-  onSectionUpdate,
   onDeleteComponent,
 }: ChecklistRendererProps) {
   return (
@@ -30,13 +28,7 @@ export function ChecklistRenderer({
             </button>
           ) : null}
 
-          <ComponentRenderer
-            component={component}
-            index={index}
-            isEditMode={isEditMode}
-            onSectionUpdate={onSectionUpdate}
-            onDeleteComponent={onDeleteComponent}
-          />
+          <ComponentRenderer component={component} index={index} />
         </div>
       ))}
     </div>
