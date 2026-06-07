@@ -22,7 +22,13 @@
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  transform-origin: 100% 100%;
   animation: popupIn 240ms cubic-bezier(.16, 1, .3, 1) both;
+}
+
+.popupClosing {
+  pointer-events: none;
+  animation: popupOut 190ms cubic-bezier(.7, 0, .84, 0) both;
 }
 
 .header {
@@ -150,6 +156,14 @@
   background: rgba(8, 8, 18, 0.46);
 }
 
+/* Wraps the Aurora-glass AIPromptInput so it sits in the same framed layer as
+   the message list without touching the popup edge. */
+.inputWrapper {
+  padding: 12px 14px 14px;
+  border-top: 1px solid rgba(248, 245, 255, 0.1);
+  background: rgba(8, 8, 18, 0.46);
+}
+
 .input {
   flex: 1;
   min-width: 0;
@@ -210,6 +224,20 @@
   to {
     opacity: 1;
     transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes popupOut {
+  from {
+    opacity: 1;
+    filter: blur(0);
+    transform: translateY(0) scale(1);
+  }
+
+  to {
+    opacity: 0;
+    filter: blur(8px);
+    transform: translateY(18px) scale(0.96);
   }
 }
 
