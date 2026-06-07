@@ -12,6 +12,7 @@ import {
   FaUser,
   FaCalendarAlt
 } from 'react-icons/fa'
+import { FaRegEdit } from 'react-icons/fa'
 
 import { IoCheckmarkCircleOutline } from "react-icons/io5";
 import { GoClock } from "react-icons/go";
@@ -190,13 +191,20 @@ function HomePage() {
                   <p className={styles.items}>Ready to open</p>
 
                   <div className={styles.actions}>
-                    <Link to={`/checklist/use/${checklist.id}`} className={styles.openButton}>
+                    <Link
+                      to={`/checklist/use/${checklist.id}`}
+                      className={styles.useButton}
+                    >
                       <FaPlay />
-                      Open
+                      Use Checklist
                     </Link>
 
-                    <Link to={`/checklist/edit/${checklist.id}`} className={styles.iconButton}>
-                      <CiFlag1 />
+                    <Link
+                      to={`/checklist/edit/${checklist.id}`}
+                      className={styles.editButton}
+                    >
+                      <FaRegEdit />
+                      Edit Checklist
                     </Link>
 
                     <button className={styles.iconButton} type="button">

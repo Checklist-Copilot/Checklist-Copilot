@@ -10,12 +10,29 @@ import type { ChecklistComponent } from './types'
 type ComponentRendererProps = {
   component: ChecklistComponent
   index?: number
+  isEditMode?: boolean
+  onSectionUpdate?: (sectionId: string, patch: Record<string, unknown>) => void
+  onDeleteComponent?: (componentId: string) => void
 }
 
-export function ComponentRenderer({ component, index }: ComponentRendererProps) {
+export function ComponentRenderer({
+  component,
+  index,
+  isEditMode = false,
+  onSectionUpdate,
+  onDeleteComponent,
+}: ComponentRendererProps) {
   switch (component.type) {
     case 'section':
-      return <SectionRenderer section={component} index={index} />
+      return (
+        <SectionRenderer
+          section={component}
+          index={index}
+          isEditMode={isEditMode}
+          onSectionUpdate={onSectionUpdate}
+          onDeleteComponent={onDeleteComponent}
+        />
+      )
     case 'checkboxGroup':
     case 'checkboxContainer':
       return <CheckboxGroupRenderer component={component} />
