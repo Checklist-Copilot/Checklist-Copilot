@@ -3,6 +3,10 @@ import type { ImageBlockComponent } from './types'
 import { componentTitle } from './utils'
 
 export function ImageBlockRenderer({ component }: { component: ImageBlockComponent }) {
+  // Defensive default — older rows (or AI-generated trees that skipped the
+  // field) can arrive without `images`. Crashing the whole page over a missing
+  // optional array isn't worth it.
+  const images = component.images ?? []
   return (
     <section className={styles.block} data-component-id={component.id}>
       <div className={styles.header}>
@@ -13,9 +17,9 @@ export function ImageBlockRenderer({ component }: { component: ImageBlockCompone
         {component.allowUpload ? <span className={styles.uploadBadge}>Upload enabled</span> : null}
       </div>
 
-      {component.images.length > 0 ? (
+      {images.length > 0 ? (
         <div className={styles.images}>
-          {component.images.map((image) => {
+          {images.map((image) => {
             const imageUrl = image.url ?? image.path
             const imageLabel = image.caption ?? image.label ?? componentTitle(component)
 

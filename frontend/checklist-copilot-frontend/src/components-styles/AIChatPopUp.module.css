@@ -150,6 +150,15 @@
   background: rgba(8, 8, 18, 0.46);
 }
 
+/* Wraps the OpenAI-style AIPromptInput inside the chat popup. The component
+   brings its own light card; we just give it a matching frame inside the
+   popup so it doesn't sit flush against the message list. */
+.inputWrapper {
+  padding: 12px 14px 14px;
+  border-top: 1px solid rgba(248, 245, 255, 0.1);
+  background: rgba(8, 8, 18, 0.46);
+}
+
 .input {
   flex: 1;
   min-width: 0;

@@ -52,6 +52,11 @@ class AIRunResult:
     # The model's natural-language message to the user (its "speech" channel).
     # Surfaced to the frontend so the AI can talk back, not just mutate the tree.
     reply: str = ""
+    # Metadata fields the model proposed via update_checklist_metadata. They
+    # live on the DB row (not in the tree JSON), so the route applies them.
+    # None = the AI didn't ask to change this field on this run.
+    proposed_title: str | None = None
+    proposed_description: str | None = None
 
 
 # --------------------------------------------------------------------------- #
@@ -81,6 +86,22 @@ def _resolve_target_container_id(checklist: dict, target_ref: str) -> str:
     if found is not None:
         return found["id"]
     return target_ref
+
+
+def _count_components(node: Any, depth: int = 0) -> int:
+    """
+    Total count of every dict node in the checklist tree EXCEPT the root.
+    Used to give the AI an "is this empty?" signal so it knows when an
+    instruction should be treated as a build-from-scratch.
+    """
+    if not isinstance(node, dict):
+        return 0
+    own = 0 if depth == 0 else 1  # don't count the root itself
+    total = own
+    for key in ("children", "items"):
+        for child in node.get(key, []) or []:
+            total += _count_components(child, depth + 1)
+    return total
 
 
 def _find_checkbox_groups(node: dict, acc: list[dict] | None = None) -> list[dict]:
@@ -139,6 +160,32 @@ def _build_callback(result: AIRunResult):
     def on_tool_call(call: ToolCall) -> dict:
         result.raw_tool_calls.append({"name": call.name, "arguments": call.arguments})
         args = call.arguments
+
+        # Metadata update is a NOT a tree operation — it sets fields the route
+        # writes onto the Checklist row alongside the tree update. We track the
+        # proposed values on the run result; the route applies them on commit.
+        if call.name == "update_checklist_metadata":
+            applied = False
+            if isinstance(args.get("title"), str):
+                t = args["title"].strip()
+                if t:
+                    result.proposed_title = t
+                    applied = True
+            if isinstance(args.get("description"), str):
+                # Empty string explicitly clears the description.
+                result.proposed_description = args["description"]
+                applied = True
+            if applied:
+                result.applied_calls += 1
+                return {
+                    "ok": True,
+                    "title": result.proposed_title,
+                    "description": result.proposed_description,
+                    "message": "Title/description will be saved when the run finishes.",
+                }
+            reason = "update_checklist_metadata: at least one of title/description must be a string"
+            result.skipped_calls.append({"call": {"name": call.name, "arguments": args}, "reason": reason})
+            return {"ok": False, "error": reason}
 
         try:
             if call.name == "add_component":
@@ -249,20 +296,47 @@ def edit_checklist_with_ai(
     checklist: dict,
     instruction: str,
     *,
-    max_rounds: int = 4,
+    current_title: str | None = None,
+    current_description: str | None = None,
+    max_rounds: int = 6,
 ) -> AIRunResult:
     """
     Apply a natural-language edit instruction to an existing checklist JSON.
 
+    `current_title` / `current_description` are the DB row's metadata. They
+    don't live in the tree JSON, so we pass them in so the model can decide
+    whether to call update_checklist_metadata (e.g. when the title is still
+    the default "Untitled checklist").
+
     The caller is responsible for:
     - snapshotting `checklist` into `checklist_prev` for undo
     - persisting `result.checklist` back to the DB
+    - applying `result.proposed_title` / `result.proposed_description` to the row
     """
     result = AIRunResult(checklist=checklist)
     on_tool_call = _build_callback(result)
 
     system_prompt = build_edit_system_prompt()
+    metadata_line = (
+        f"Current title: {current_title!r}\n"
+        f"Current description: {current_description!r}\n\n"
+        if current_title is not None or current_description is not None
+        else ""
+    )
+
+    # Count every leaf + container in the tree. We surface this number in the
+    # user message so the model has an explicit "is this empty?" signal — a
+    # tree of size 0 or 1 strongly implies a BUILD intent, even if the user's
+    # instruction is short.
+    component_count = _count_components(checklist)
+    size_hint = (
+        f"Components currently in the tree: {component_count} "
+        f"({'EMPTY — likely a build-from-scratch instruction' if component_count <= 1 else 'existing content — likely a targeted edit'})\n\n"
+    )
+
     user_prompt = (
+        f"{metadata_line}"
+        f"{size_hint}"
         f"Current checklist JSON:\n```json\n{json.dumps(checklist, indent=2)}\n```\n\n"
         f"User instruction:\n{instruction}"
     )

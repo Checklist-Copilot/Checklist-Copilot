@@ -42,9 +42,13 @@ class AiResponse(BaseModel):
     (after all valid tool calls were applied). `reply` is the model's
     natural-language message to the user — the frontend shows this in the chat
     panel. `skipped` lists any tool calls that failed validation so the frontend
-    can surface them for debugging.
+    can surface them for debugging. `title`/`description` are the row-level
+    metadata as it stands after the run (the AI may have renamed via the
+    `update_checklist_metadata` tool).
     """
     checklist: dict[str, Any]
+    title: str
+    description: str | None = None
     reply: str
     applied_calls: int
     skipped: list[AiSkippedCall]

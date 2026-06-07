@@ -1,0 +1,199 @@
+/* OpenAI-style chat input: rounded container with the textarea on top, an
+   inline toolbar at the bottom (attach files, mic on the left; send on the
+   right). Attached file chips appear between the textarea and the toolbar. */
+
+.wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: #ffffff;
+  border: 1px solid #d4d4d8;
+  border-radius: 22px;
+  padding: 12px 14px 10px;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05);
+  transition: border-color 120ms ease, box-shadow 120ms ease;
+}
+
+.wrapper:focus-within {
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+}
+
+.wrapper[data-disabled] {
+  background: #f8fafc;
+  opacity: 0.6;
+}
+
+.textarea {
+  width: 100%;
+  border: none;
+  outline: none;
+  resize: none;
+  font: inherit;
+  font-size: 15px;
+  line-height: 1.5;
+  color: #0f172a;
+  background: transparent;
+  padding: 0;
+  min-height: 28px;
+  max-height: 200px;
+}
+
+.textarea::placeholder {
+  color: #94a3b8;
+}
+
+.fileChips {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.fileChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px 4px 10px;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  border-radius: 999px;
+  font-size: 12px;
+  color: #334155;
+  max-width: 220px;
+}
+
+.chipIcon {
+  flex-shrink: 0;
+  color: #6366f1;
+}
+
+.chipName {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chipRemove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border: none;
+  background: transparent;
+  color: #64748b;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.chipRemove:hover {
+  background: #fee2e2;
+  color: #ef4444;
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 2px;
+}
+
+.leftTools {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.iconButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: #64748b;
+  cursor: pointer;
+  transition: background 120ms ease, color 120ms ease;
+}
+
+.iconButton:hover:not(:disabled) {
+  background: #f1f5f9;
+  color: #334155;
+}
+
+.iconButton:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.iconButton input[type='file'].hiddenFileInput {
+  display: none;
+}
+
+.hiddenFileInput {
+  display: none;
+}
+
+.micActive {
+  background: #ef4444;
+  color: #ffffff;
+  animation: pulse 1.4s ease-in-out infinite;
+}
+
+.micActive:hover:not(:disabled) {
+  background: #ef4444;
+  color: #ffffff;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.45);
+  }
+  50% {
+    box-shadow: 0 0 0 6px rgba(239, 68, 68, 0);
+  }
+}
+
+.sendButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border: none;
+  border-radius: 50%;
+  background: #0f172a;
+  color: #ffffff;
+  cursor: pointer;
+  transition: background 120ms ease, transform 120ms ease;
+}
+
+.sendButton:hover:not(:disabled) {
+  background: #1e293b;
+}
+
+.sendButton:disabled {
+  background: #cbd5e1;
+  color: #94a3b8;
+  cursor: not-allowed;
+}
+
+/* Inline feedback when speech recognition fails (denied permission, no mic,
+   network error, etc.). Lives below the toolbar so it doesn't push the
+   send/mic buttons around. */
+.micError {
+  margin: 4px 2px 0;
+  font-size: 12px;
+  line-height: 1.4;
+  color: #b91c1c;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  padding: 6px 8px;
+}

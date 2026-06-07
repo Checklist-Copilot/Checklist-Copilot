@@ -1,29 +1,39 @@
 .item {
-  min-height: 44px;
+  min-height: 40px;
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 9px 10px;
-  border-radius: 13px;
-  color: #eee9fb;
-  background: rgba(248, 245, 255, 0.045);
-  border: 1px solid rgba(248, 245, 255, 0.08);
-  font-weight: 700;
+  padding: 8px 10px;
+  border-radius: 10px;
+  color: #0f172a;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  font-weight: 500;
+  font-size: 14px;
+  transition: border-color 120ms ease, background 120ms ease;
+}
+
+.item:hover {
+  border-color: #c7d2fe;
+  background: #f8fafc;
 }
 
 .item input {
   width: 18px;
   height: 18px;
-  accent-color: #8b5cf6;
+  accent-color: #6366f1;
+  cursor: pointer;
 }
 
 .requiredBadge {
   margin-left: auto;
   border-radius: 999px;
-  padding: 4px 9px;
-  color: #ffe6a6;
-  background: rgba(244, 201, 93, 0.13);
-  border: 1px solid rgba(244, 201, 93, 0.26);
-  font-size: 12px;
-  font-weight: 900;
+  padding: 2px 8px;
+  color: #b91c1c;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }

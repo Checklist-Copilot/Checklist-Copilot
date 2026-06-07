@@ -1,7 +1,8 @@
 import { Link, useNavigate } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import styles from '../page-styles/HomePage.module.css'
-import { listChecklists } from '../api/checklist'
+import { deleteChecklist, listChecklists } from '../api/checklist'
+import { ApiError } from '../api/http'
 import type { ChecklistSummary } from '../types/checklist'
 import { removeToken } from '../auth/tokenStorage'
 import { useRequireAuth } from '../hooks/useRequireAuth'
@@ -30,6 +31,20 @@ function HomePage() {
   function handleLogout() {
     removeToken()
     navigate('/')
+  }
+
+  async function handleDelete(checklist: ChecklistSummary) {
+    const label = checklist.title || 'this checklist'
+    if (!window.confirm(`Delete "${label}"? This cannot be undone.`)) return
+    try {
+      await deleteChecklist(checklist.id)
+      // Optimistic: drop it from the rendered list without refetching.
+      setChecklists((prev) => prev.filter((c) => c.id !== checklist.id))
+    } catch (error) {
+      const message =
+        error instanceof ApiError ? error.message : 'Could not delete checklist.'
+      window.alert(message)
+    }
   }
 
   useEffect(() => {
@@ -70,6 +85,24 @@ function HomePage() {
 
   const totalChecklists = checklists.length
 
+  // Derive status counts from the denormalized stats columns the backend keeps
+  // in sync on every save.
+  //   - completed:   every item completed (and at least one item exists)
+  //   - inProgress:  some completed but not all
+  //   - notStarted:  nothing completed yet (or the checklist is still empty)
+  const completedCount = checklists.filter(
+    (c) => c.total_items > 0 && c.completed_items === c.total_items,
+  ).length
+  const inProgressCount = checklists.filter(
+    (c) => c.completed_items > 0 && c.completed_items < c.total_items,
+  ).length
+  const notStartedCount = totalChecklists - completedCount - inProgressCount
+
+  function progressPercent(c: ChecklistSummary): number {
+    if (c.total_items <= 0) return 0
+    return Math.round((c.completed_items / c.total_items) * 100)
+  }
+
   return (
     <>
     <TopBar onLogout={handleLogout} />
@@ -105,21 +138,21 @@ function HomePage() {
                   <CiFlag1 />
                 </span>
                 <span>Not Started</span>
-                <strong>0</strong>
+                <strong>{notStartedCount}</strong>
               </div>
               <div>
                 <span className={styles.yellowDot}>
                   <GoClock />
                 </span>
                 <span>In Progress</span>
-                <strong>0</strong>
+                <strong>{inProgressCount}</strong>
               </div>
               <div>
                 <span className={styles.greenDot}>
                   <IoCheckmarkCircleOutline />
                 </span>
                 <span>Completed</span>
-                <strong>{totalChecklists}</strong>
+                <strong>{completedCount}</strong>
               </div>
             </div>
           </div>
@@ -165,7 +198,7 @@ function HomePage() {
               return (
                 <article key={checklist.id} className={styles.card}>
                   <div className={styles.cardHeader}>
-                    <h3>{checklist.title}</h3>
+                    <h3>{checklist.title?.trim() || 'Untitled checklist'}</h3>
                     <span className={styles.progressBadge}>
                       Checklist
                     </span>
@@ -187,19 +220,49 @@ function HomePage() {
                     </span>
                   </div>
 
-                  <p className={styles.items}>Ready to open</p>
+                  {/* Inline progress: bar + numeric summary. Uses the
+                      backend's denormalized stats so the dashboard never has
+                      to load the heavy JSON column for these numbers. */}
+                  <div className={styles.progressRow}>
+                    <div className={styles.progressTrack} aria-hidden="true">
+                      <div
+                        className={styles.progressFill}
+                        style={{ width: `${progressPercent(checklist)}%` }}
+                      />
+                    </div>
+                    <span className={styles.progressLabel}>
+                      {checklist.total_items > 0
+                        ? `${checklist.completed_items}/${checklist.total_items} (${progressPercent(checklist)}%)`
+                        : 'Empty'}
+                    </span>
+                  </div>
 
                   <div className={styles.actions}>
+                    {/* Big "Open" → use mode (fill it out). Small flag →
+                        edit mode (modify the structure). Inside either
+                        page there's no mode toggle anymore — the dashboard
+                        is where the user picks. */}
                     <Link to={`/checklist/use/${checklist.id}`} className={styles.openButton}>
                       <FaPlay />
                       Open
                     </Link>
 
-                    <Link to={`/checklist/edit/${checklist.id}`} className={styles.iconButton}>
+                    <Link
+                      to={`/checklist/edit/${checklist.id}`}
+                      className={styles.iconButton}
+                      title="Edit structure"
+                      aria-label={`Edit ${checklist.title || 'checklist'}`}
+                    >
                       <CiFlag1 />
                     </Link>
 
-                    <button className={styles.iconButton} type="button">
+                    <button
+                      className={styles.iconButton}
+                      type="button"
+                      onClick={() => handleDelete(checklist)}
+                      title="Delete checklist"
+                      aria-label={`Delete ${checklist.title || 'checklist'}`}
+                    >
                       <ImBin />
                     </button>
                   </div>

@@ -1,0 +1,79 @@
+/* The new-checklist route is now just a quick "creating…" indicator while
+   the backend creates an empty checklist and we redirect to the edit page. */
+
+.page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px;
+  background: #f8fafc;
+}
+
+.spinnerBox {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 3px solid #e2e8f0;
+  border-top-color: #6366f1;
+  animation: spin 0.9s linear infinite;
+}
+
+.spinnerLabel {
+  font-size: 14px;
+  color: #64748b;
+}
+
+.errorBox {
+  max-width: 460px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 24px;
+  text-align: center;
+}
+
+.errorTitle {
+  font-size: 16px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 8px;
+}
+
+.errorMessage {
+  font-size: 14px;
+  color: #b91c1c;
+  margin: 0 0 16px;
+}
+
+.retryButton {
+  display: inline-flex;
+  align-items: center;
+  padding: 10px 18px;
+  border-radius: 10px;
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #334155;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 120ms ease;
+}
+
+.retryButton:hover {
+  background: #f1f5f9;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

@@ -1,3 +1,4 @@
+import copy
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -11,6 +12,7 @@ from app.schemas.checklist import (
     ChecklistDeleteResponse,
     ChecklistGetResponse,
     ChecklistListResponse,
+    ChecklistMetadataUpdateRequest,
     ChecklistSummaryResponse,
     ChecklistUpdateResponse,
 )
@@ -79,8 +81,17 @@ def patch_checklist_route(
     if checklist is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Checklist not found.")
 
+    # Deep-copy before mutating. `apply_checklist_operations` calls dict.update
+    # on the loaded JSONB in place, and SQLAlchemy does NOT detect in-place
+    # mutations of JSONB columns. Without the copy the tree never writes to
+    # disk — only the int stats columns persist — which gives the very
+    # confusing "tick a box, stats jump to 1/N, refresh resets everything"
+    # pattern. The AI edit route already does the same dance for the same
+    # reason; keep them aligned.
+    original_checklist = copy.deepcopy(checklist.checklist)
+    working_checklist = copy.deepcopy(checklist.checklist)
     try:
-        updated_json = apply_checklist_operations(checklist.checklist, payload.operations)
+        updated_json = apply_checklist_operations(working_checklist, payload.operations)
     except ComponentNotFoundError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
     except (
@@ -95,13 +106,39 @@ def patch_checklist_route(
     except ChecklistOperationError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
 
-    checklist.checklist_prev = checklist.checklist
+    checklist.checklist_prev = original_checklist
     checklist.checklist = updated_json
     apply_stats(checklist)
     db.commit()
     db.refresh(checklist)
 
     return ChecklistUpdateResponse.model_validate(checklist)
+
+
+@router.patch("/{checklist_id}/metadata", response_model=ChecklistGetResponse)
+def update_checklist_metadata_route(
+    checklist_id: uuid.UUID,
+    payload: ChecklistMetadataUpdateRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> ChecklistGetResponse:
+    """Edit ONLY the title/description — the JSON tree is untouched."""
+    checklist = get_checklist_for_user(db, checklist_id, current_user.id)
+    if checklist is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Checklist not found.")
+
+    if payload.title is not None:
+        # Treat empty/whitespace as "no change" to avoid blanking the title accidentally.
+        cleaned = payload.title.strip()
+        if cleaned:
+            checklist.title = cleaned
+    if payload.description is not None:
+        # Empty string is a valid "clear description"; preserve null vs "" distinction.
+        checklist.description = payload.description or None
+
+    db.commit()
+    db.refresh(checklist)
+    return ChecklistGetResponse.model_validate(checklist)
 
 
 @router.delete("/delete/{checklist_id}", response_model=ChecklistDeleteResponse)

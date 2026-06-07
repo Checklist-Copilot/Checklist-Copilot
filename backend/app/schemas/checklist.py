@@ -21,6 +21,12 @@ class ChecklistUpdateRequest(BaseModel):
     checklist: dict[str, Any]
 
 
+class ChecklistMetadataUpdateRequest(BaseModel):
+    """Edit ONLY the title/description of a checklist (no JSON tree changes)."""
+    title: str | None = None
+    description: str | None = None
+
+
 class ChecklistResponse(ChecklistBase):
     id: uuid.UUID
     user_id: uuid.UUID

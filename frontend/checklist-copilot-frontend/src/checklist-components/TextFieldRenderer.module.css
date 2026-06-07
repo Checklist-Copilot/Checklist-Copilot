@@ -1,55 +1,60 @@
 .field {
   display: grid;
-  gap: 10px;
-  padding: 14px;
-  border-radius: 16px;
-  border: 1px solid rgba(248, 245, 255, 0.12);
-  background: rgba(20, 17, 34, 0.62);
+  gap: 8px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
 }
 
 .labelRow {
   display: flex;
   align-items: center;
   gap: 8px;
-  color: #eee9fb;
-  font-weight: 850;
+  color: #0f172a;
+  font-weight: 600;
+  font-size: 14px;
 }
 
 .requiredBadge {
   border-radius: 999px;
-  padding: 4px 9px;
-  color: #ffe6a6;
-  background: rgba(244, 201, 93, 0.13);
-  border: 1px solid rgba(244, 201, 93, 0.26);
-  font-size: 12px;
-  font-weight: 900;
+  padding: 2px 8px;
+  color: #b91c1c;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
 .description {
   margin: 0;
-  color: #b9b0ce;
-  font-size: 14px;
+  color: #64748b;
+  font-size: 13px;
+  line-height: 1.45;
 }
 
 .input,
 .textarea {
   width: 100%;
-  border: 1px solid rgba(248, 245, 255, 0.12);
-  border-radius: 12px;
-  background: rgba(248, 245, 255, 0.055);
-  color: #f8f5ff;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  background: #f8fafc;
+  color: #0f172a;
   font: inherit;
-  font-weight: 650;
+  font-size: 14px;
   outline: none;
-  transition: border-color 220ms, box-shadow 220ms, background 220ms;
+  transition: border-color 120ms ease, background 120ms ease, box-shadow 120ms ease;
+  box-sizing: border-box;
 }
 
-.input { height: 46px; padding: 0 14px; }
-.textarea { min-height: 106px; resize: vertical; padding: 14px; }
+.input { height: 40px; padding: 0 12px; }
+.textarea { min-height: 90px; resize: vertical; padding: 10px 12px; line-height: 1.5; }
 
 .input:focus,
 .textarea:focus {
-  border-color: rgba(167, 139, 250, 0.76);
-  background: rgba(248, 245, 255, 0.085);
-  box-shadow: 0 0 0 4px rgba(124, 58, 237, 0.14);
+  border-color: #6366f1;
+  background: #ffffff;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.16);
 }

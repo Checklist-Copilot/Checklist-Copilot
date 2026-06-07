@@ -113,10 +113,48 @@ DELETE_COMPONENT_TOOL: dict = {
 }
 
 
-ALL_TOOLS: list[dict] = [ADD_COMPONENT_TOOL, UPDATE_COMPONENT_TOOL, DELETE_COMPONENT_TOOL]
+# Lets the model set/rename the checklist's title and description. The id and
+# url live on the DB row (not in the tree JSON), so the AI service tracks the
+# proposed values on the run result; the route applies them on commit.
+UPDATE_CHECKLIST_METADATA_TOOL: dict = {
+    "type": "function",
+    "function": {
+        "name": "update_checklist_metadata",
+        "description": (
+            "Set or rename the checklist's title and/or description. Call this "
+            "ONCE early in the conversation when the user describes what the "
+            "checklist is about, so the title reflects the real subject "
+            "(replacing placeholders like 'Untitled checklist'). Only call again "
+            "if the user explicitly asks to rename."
+        ),
+        "parameters": {
+            "type": "object",
+            "additionalProperties": False,
+            "properties": {
+                "title": {
+                    "type": "string",
+                    "description": "New checklist title (short, descriptive).",
+                },
+                "description": {
+                    "type": "string",
+                    "description": "Optional one-sentence description of the checklist.",
+                },
+            },
+        },
+    },
+}
 
-# For "create from text" we don't need update/delete — the checklist starts empty.
-CREATE_TOOLS: list[dict] = [ADD_COMPONENT_TOOL]
+
+ALL_TOOLS: list[dict] = [
+    ADD_COMPONENT_TOOL,
+    UPDATE_COMPONENT_TOOL,
+    DELETE_COMPONENT_TOOL,
+    UPDATE_CHECKLIST_METADATA_TOOL,
+]
+
+# For "create from text" the checklist starts empty and the AI is building it.
+# It can also name it via the metadata tool.
+CREATE_TOOLS: list[dict] = [ADD_COMPONENT_TOOL, UPDATE_CHECKLIST_METADATA_TOOL]
 
 
 # --------------------------------------------------------------------------- #
@@ -159,9 +197,10 @@ ADD_IMAGE_TO_BLOCK_TOOL: dict = {
 }
 
 # Tool set exposed to the model during the vision flow: regular edit ops + the
-# vision-specific image attachment tool.
+# vision-specific image attachment tool + metadata.
 OBSERVE_TOOLS: list[dict] = [
     ADD_IMAGE_TO_BLOCK_TOOL,
     UPDATE_COMPONENT_TOOL,
     DELETE_COMPONENT_TOOL,
+    UPDATE_CHECKLIST_METADATA_TOOL,
 ]

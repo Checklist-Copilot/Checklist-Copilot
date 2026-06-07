@@ -426,3 +426,36 @@
     transition-duration: 1ms !important;
   }
 }
+
+/* ---- Progress bar on each checklist card ---- */
+/* Tinted for the dark glassmorphism dashboard. The numbers come from
+   c.completed_items / c.total_items (denormalized backend stats). */
+.progressRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 8px 0 4px;
+}
+
+.progressTrack {
+  flex: 1;
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.progressFill {
+  height: 100%;
+  background: linear-gradient(90deg, #22d3ee, #8b5cf6);
+  border-radius: inherit;
+  transition: width 280ms ease;
+}
+
+.progressLabel {
+  font-size: 12px;
+  font-weight: 700;
+  color: #cfc6e4;
+  min-width: max-content;
+}

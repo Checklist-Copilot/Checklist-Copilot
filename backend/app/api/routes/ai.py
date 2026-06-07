@@ -55,9 +55,14 @@ def ai_create_from_text(
         ) from exc
 
     # Persist via the normal checklist service so ownership + timestamps are consistent.
+    # Title precedence: explicit request > AI-proposed > heuristic from tree/prompt.
     create_payload = ChecklistCreateRequest(
-        title=payload.title or _infer_title(result.checklist, payload.prompt),
-        description=payload.description,
+        title=(
+            payload.title
+            or result.proposed_title
+            or _infer_title(result.checklist, payload.prompt)
+        ),
+        description=payload.description or result.proposed_description,
         checklist=result.checklist,
     )
     checklist = create_checklist_for_user(db, current_user.id, create_payload)
@@ -84,22 +89,43 @@ def ai_edit_checklist(
     working_checklist = copy.deepcopy(checklist.checklist)
 
     try:
-        result = edit_checklist_with_ai(working_checklist, payload.instruction)
+        result = edit_checklist_with_ai(
+            working_checklist,
+            payload.instruction,
+            current_title=checklist.title,
+            current_description=checklist.description,
+        )
     except RuntimeError as exc:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc)
         ) from exc
 
-    # Snapshot for undo, then save the AI-modified JSON. If the model only replied
-    # without applying a structural/value change, leave the DB row untouched.
-    if result.checklist != original_checklist:
-        checklist.checklist_prev = original_checklist
-        checklist.checklist = result.checklist
+    # Snapshot for undo, then save the AI-modified JSON. We persist when EITHER
+    # the tree changed OR the AI proposed metadata changes (e.g. setting a
+    # title via `update_checklist_metadata`); pure text replies leave the row
+    # untouched.
+    tree_changed = result.checklist != original_checklist
+    metadata_changed = (
+        result.proposed_title is not None or result.proposed_description is not None
+    )
+    if tree_changed or metadata_changed:
+        if tree_changed:
+            checklist.checklist_prev = original_checklist
+            checklist.checklist = result.checklist
+        if result.proposed_title:
+            checklist.title = result.proposed_title
+        if result.proposed_description is not None:
+            checklist.description = result.proposed_description or None
+        # Recompute denormalized completion stats so the dashboard reflects the
+        # post-edit state without re-reading the JSON.
+        apply_stats(checklist)
         db.commit()
         db.refresh(checklist)
 
     return AiResponse(
         checklist=result.checklist,
+        title=checklist.title,
+        description=checklist.description,
         reply=result.reply,
         applied_calls=result.applied_calls,
         skipped=[AiSkippedCall(**s) for s in result.skipped_calls],
@@ -177,12 +203,18 @@ async def ai_observe(
     if result.applied_calls > 0:
         checklist.checklist_prev = checklist.checklist
         checklist.checklist = result.checklist
+        if result.proposed_title:
+            checklist.title = result.proposed_title
+        if result.proposed_description is not None:
+            checklist.description = result.proposed_description or None
         apply_stats(checklist)
         db.commit()
         db.refresh(checklist)
 
     return AiResponse(
         checklist=result.checklist,
+        title=checklist.title,
+        description=checklist.description,
         reply=result.reply,
         applied_calls=result.applied_calls,
         skipped=[AiSkippedCall(**s) for s in result.skipped_calls],
