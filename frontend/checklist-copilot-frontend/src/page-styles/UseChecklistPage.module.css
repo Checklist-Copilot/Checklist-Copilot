@@ -437,6 +437,37 @@
   font-size: 14px;
 }
 
+.toast {
+  position: fixed;
+  right: 28px;
+  top: 84px;
+  z-index: 30;
+  max-width: min(360px, calc(100% - 36px));
+  padding: 12px 14px;
+  border-radius: 16px;
+  background: rgba(20, 17, 34, 0.94);
+  border: 1px solid rgba(253, 230, 138, 0.36);
+  color: #fde68a;
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.4;
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.32);
+  backdrop-filter: blur(16px);
+  animation: toastSlide 240ms cubic-bezier(.16,1,.3,1) both;
+}
+
+@keyframes toastSlide {
+  from {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
 @media (max-width: 980px) {
   .editLayout {
     grid-template-columns: 1fr;

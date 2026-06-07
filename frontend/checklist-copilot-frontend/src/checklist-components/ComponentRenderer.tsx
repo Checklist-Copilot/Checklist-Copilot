@@ -13,6 +13,8 @@ type ComponentRendererProps = {
   isEditMode?: boolean
   onSectionUpdate?: (sectionId: string, patch: Record<string, unknown>) => void
   onDeleteComponent?: (componentId: string) => void
+  focusedComponentId?: string
+  onFocusComponent?: (componentId: string) => void
 }
 
 export function ComponentRenderer({
@@ -21,6 +23,8 @@ export function ComponentRenderer({
   isEditMode = false,
   onSectionUpdate,
   onDeleteComponent,
+  focusedComponentId,
+  onFocusComponent,
 }: ComponentRendererProps) {
   switch (component.type) {
     case 'section':
@@ -31,6 +35,8 @@ export function ComponentRenderer({
           isEditMode={isEditMode}
           onSectionUpdate={onSectionUpdate}
           onDeleteComponent={onDeleteComponent}
+          focusedComponentId={focusedComponentId}
+          onFocusComponent={onFocusComponent}
         />
       )
     case 'checkboxGroup':
