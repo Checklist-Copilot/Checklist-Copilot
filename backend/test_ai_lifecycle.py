@@ -1,7 +1,7 @@
 """
-End-to-end AI lifecycle smoke test: CREATE → EDIT on the same checklist.
+End-to-end AI lifecycle smoke test: CREATE → EDIT → OBSERVE.
 
-Two phases in one run:
+Three phases in one run:
 
   Phase 1 — generate_checklist_from_text(...)
             Builds a fresh checklist from a natural-language description.
@@ -13,9 +13,16 @@ Two phases in one run:
             produced. The instruction is crafted to require all three tool
             types: add_component, update_component, delete_component.
 
-Neither phase needs a database. Both phases exercise the same validation
-pipeline (`apply_checklist_operations`) that the manual edit route uses —
-the AI is just another caller.
+  Phase 3 — observe_with_image(...)
+            Vision flow. Uses a hand-crafted checklist with several distinct
+            imageBlocks (PPE, Engine, Site Conditions) and the local image
+            `car-engine-compressed.jpg`. Verifies the AI either describes the
+            image in text OR attaches it to the engine-related imageBlock —
+            proving it can map an image to the right place in the checklist.
+
+None of these phases need a database. Every phase exercises the same
+validation pipeline (`apply_checklist_operations`) that the manual edit route
+uses — the AI is just another caller.
 
 Run from `backend/`:
 
@@ -28,7 +35,9 @@ For unit-level validator coverage (no AI, no key, no cost), see
 """
 from __future__ import annotations
 
+import base64
 import json
+import mimetypes
 import os
 import sys
 
@@ -39,15 +48,55 @@ from app.services.ai.service import (  # noqa: E402
     AIRunResult,
     edit_checklist_with_ai,
     generate_checklist_from_text,
+    observe_with_image,
 )
 from app.services.checklist_update.tree_utils import find_component_by_id  # noqa: E402
+
+
+# Path to the local test image (committed to the repo for offline runs).
+_IMAGE_FILENAME = "car-engine-compressed.jpg"
+_IMAGE_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), _IMAGE_FILENAME)
+
+
+# Helpers used by Phase 3 to inspect imageBlocks in the lifecycle's checklist
+# and to confirm where the AI ended up attaching the image.
+
+def _collect_image_blocks(node: Any, acc: list[dict] | None = None) -> list[dict]:
+    """Return every imageBlock found anywhere in the tree."""
+    if acc is None:
+        acc = []
+    if isinstance(node, dict):
+        if node.get("type") == "imageBlock":
+            acc.append(node)
+        for key in ("children", "items"):
+            for child in node.get(key, []) or []:
+                _collect_image_blocks(child, acc)
+    return acc
+
+
+def _find_block_containing_image(node: Any, image_id: str) -> dict | None:
+    """Locate the imageBlock whose `images` array contains the given imageId."""
+    if isinstance(node, dict):
+        if node.get("type") == "imageBlock":
+            for img in node.get("images", []) or []:
+                if isinstance(img, dict) and img.get("imageId") == image_id:
+                    return node
+        for key in ("children", "items"):
+            for child in node.get(key, []) or []:
+                found = _find_block_containing_image(child, image_id)
+                if found is not None:
+                    return found
+    return None
 
 
 DEFAULT_CREATE_PROMPT = (
     "A daily pre-shift safety inspection checklist for a construction-site "
     "forklift operator. It should record the operator's name, the location "
-    "code, ambient temperature, a PPE checklist (hard hat, vest, boots), and "
-    "a small equipment status log table."
+    "code, ambient temperature, a PPE checklist (hard hat, vest, boots), "
+    "a small equipment status log table, AND an imageBlock under an engine / "
+    "forklift inspection section where the operator can attach photos of the "
+    "forklift engine or any visible damage. The imageBlock should have a clear "
+    "label like 'Engine Inspection Photos' so the AI can find it later."
 )
 
 # A realistic edit instruction phrased the way a forklift operator might
@@ -273,20 +322,131 @@ def main() -> int:
         return 1
 
     # ---------------------------------------------------------------------- #
+    # PHASE 3 — OBSERVE (vision) on the SAME checklist from phases 1 & 2     #
+    # ---------------------------------------------------------------------- #
+    print("\n" + "=" * 72)
+    print(f"[PHASE 3] Vision: sending '{_IMAGE_FILENAME}' to the AI against")
+    print("          the checklist built in phase 1 and edited in phase 2.")
+    print("          The AI should attach the image to whichever imageBlock")
+    print("          best matches an engine photo.\n")
+
+    phase3_attached_block: dict | None = None
+    phase3_skipped = False
+    phase3_checklist = edit_result.checklist  # default: the lifecycle's checklist
+    fake_image_id = "test-image-car-engine"
+
+    if not os.path.exists(_IMAGE_PATH):
+        print(
+            f"  SKIP: {_IMAGE_PATH} not found — skipping phase 3.",
+            file=sys.stderr,
+        )
+        phase3_skipped = True
+    else:
+        # Are there any imageBlocks in the lifecycle's checklist for the AI to
+        # attach to? Print them so we can see what phase 1 produced.
+        blocks_before = _collect_image_blocks(phase3_checklist)
+        print(f"imageBlocks present before observe: {len(blocks_before)}")
+        for blk in blocks_before:
+            print(f"  - {blk.get('label')!r} (id={blk.get('id')})")
+
+        if not blocks_before:
+            print(
+                "\n  WARN: no imageBlocks in the lifecycle's checklist — the AI",
+                "\n        has nowhere to attach the image. Skipping attach.",
+                file=sys.stderr,
+            )
+        else:
+            with open(_IMAGE_PATH, "rb") as fh:
+                image_bytes = fh.read()
+            mime, _ = mimetypes.guess_type(_IMAGE_PATH)
+            mime = mime or "image/jpeg"
+            image_data_url = (
+                f"data:{mime};base64,{base64.b64encode(image_bytes).decode('ascii')}"
+            )
+
+            # Fake id + URL — this test doesn't hit Supabase. The same strings
+            # are what the AI will write into the imageBlock's images[] entry,
+            # so we can recognise our image afterwards.
+            fake_image_url = f"/api/files/{fake_image_id}/raw"
+
+            observe_instruction = (
+                "I just took this photo during my pre-shift inspection. Please "
+                "look at it, briefly tell me what you see, AND add it to the "
+                "imageBlock in this checklist where it best belongs. If no block "
+                "is a good match, say so and don't attach."
+            )
+
+            print("\nCalling OpenAI (vision)...\n")
+            observe_result = observe_with_image(
+                phase3_checklist,
+                observe_instruction,
+                image_id=fake_image_id,
+                image_url=fake_image_url,
+                image_data_url=image_data_url,
+                max_rounds=3,
+            )
+
+            print(f"Tool calls returned: {len(observe_result.raw_tool_calls)}")
+            print(f"Applied:             {observe_result.applied_calls}")
+            print(f"Skipped:             {len(observe_result.skipped_calls)}")
+            if observe_result.skipped_calls:
+                print("Skipped calls:")
+                for s in observe_result.skipped_calls:
+                    print(f"  - {s['reason']}")
+            print(f"AI reply: {observe_result.reply or '(none)'}")
+
+            # The lifecycle checklist now reflects whatever the AI did.
+            phase3_checklist = observe_result.checklist
+            phase3_attached_block = _find_block_containing_image(
+                phase3_checklist, fake_image_id
+            )
+
+            if phase3_attached_block is not None:
+                print(
+                    f"\nImage landed in: "
+                    f"{phase3_attached_block.get('label')!r} "
+                    f"(id={phase3_attached_block.get('id')})"
+                )
+                print("This imageBlock now contains:")
+                print(json.dumps(phase3_attached_block, indent=2, ensure_ascii=False))
+            else:
+                print(
+                    "\n  AI did NOT attach the image — reply only. The "
+                    "checklist is unchanged in phase 3."
+                )
+
+    # Always print the final lifecycle checklist (after all three phases) so
+    # you can confirm visually where the image ended up.
+    print("\n" + "=" * 72)
+    print("Final lifecycle checklist (after phase 3):")
+    print("=" * 72)
+    print(json.dumps(phase3_checklist, indent=2, ensure_ascii=False))
+
+    # ---------------------------------------------------------------------- #
     # Summary                                                                 #
     # ---------------------------------------------------------------------- #
     print("\n" + "=" * 72)
     print("Summary")
     print("=" * 72)
-    print(f"  Phase 1 (create): {create_result.applied_calls} components added")
+    print(f"  Phase 1 (create):  {create_result.applied_calls} components added")
     print(
-        f"  Phase 2 (edit):   "
+        f"  Phase 2 (edit):    "
         f"+{edit_counts['add_component']} added, "
         f"~{edit_counts['update_component']} updated, "
         f"-{edit_counts['delete_component']} deleted"
     )
+    if phase3_skipped:
+        print("  Phase 3 (observe): SKIPPED (image file missing)")
+    elif phase3_attached_block is not None:
+        print(
+            f"  Phase 3 (observe): image attached to "
+            f"{phase3_attached_block.get('label')!r}"
+        )
+    else:
+        print("  Phase 3 (observe): text-only reply, no attachment")
+
     total_skipped = len(create_result.skipped_calls) + len(edit_result.skipped_calls)
-    print(f"  Total skipped:    {total_skipped}")
+    print(f"  Total skipped:     {total_skipped}")
 
     # Soft warning when the default edit instruction was used but the model
     # didn't reach for all three op types. Not a hard fail — the model may have
@@ -300,7 +460,7 @@ def main() -> int:
                 file=sys.stderr,
             )
 
-    print("\nOK: full create → edit lifecycle completed.")
+    print("\nOK: full create → edit → observe lifecycle completed.")
     return 0
 
 

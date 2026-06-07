@@ -23,7 +23,11 @@ class FileRead(FileBase):
 
 
 class FileUploadResponse(FileRead):
-    pass
+    # Ready-to-use URL for the uploaded file. The route fills this in as
+    # `/api/files/<id>/raw`. The frontend can drop it straight into an
+    # `imageBlock.images[].url` field; the GET endpoint streams the bytes
+    # back from Supabase Storage with the right Content-Type.
+    url: str
 
 
 class FileDeleteResponse(BaseModel):

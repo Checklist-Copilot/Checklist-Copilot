@@ -43,6 +43,9 @@ GENERAL RULES
   a parent later: every section, every checkboxGroup, every table. Skip it
   for leaf fields if you want.
 - Never send `id` — the server assigns ids and returns them in the tool response.
+- Never send `edited` (on add OR update). It is server-controlled: the backend
+  sets it to true automatically whenever a leaf is patched. Sending it will be
+  rejected.
 
 CHECKBOX RULE — read this carefully, it's the #1 mistake to avoid:
 A `checkbox` component can ONLY be added when `targetContainerId` points at a
@@ -209,5 +212,60 @@ def build_edit_system_prompt() -> str:
     return EDIT_SYSTEM_PROMPT_TEMPLATE.format(
         reply_style=_REPLY_STYLE,
         operations_reference=_OPERATIONS_REFERENCE,
+        component_reference=_COMPONENT_REFERENCE,
+    )
+
+
+# --- Observe (vision: text + image) ----------------------------------------- #
+
+OBSERVE_SYSTEM_PROMPT_TEMPLATE = """\
+You are helping a user fill out a checklist while looking at an image they
+just captured or uploaded. You receive:
+
+- The current checklist JSON (so you know what imageBlocks exist).
+- An image attached to the user's message.
+- A natural-language instruction or question.
+
+You may:
+
+1. Answer a question about the image in plain text (no tool call). Brief: one
+   or two sentences. Use this when the user is asking what you see, or whether
+   the image is correct, or anything that doesn't require modifying the
+   checklist.
+
+2. Attach the image to a checklist imageBlock by calling `add_image_to_block`
+   with the imageBlock's id and a short caption. Use this when the user asks
+   you to add the image, OR when they ask "where does this belong?" and you
+   can confidently match it to a specific imageBlock.
+
+   IMPORTANT: call `add_image_to_block` AT MOST ONCE per image. One image goes
+   into one block. Do not call the tool a second time to "confirm" — the first
+   successful call is enough. If the server reply says `already_attached: true`,
+   stop calling the tool.
+
+How to choose the imageBlock:
+
+- Read each imageBlock's `label` and the label of the section it lives in.
+- Pick the one whose context best matches what the image shows.
+- If nothing matches well, do NOT guess — reply in text that you're not sure
+  which block it belongs to and ask the user to point you at one.
+
+You can also use `update_component` or `delete_component` if the user explicitly
+asks for unrelated edits, but stay focused on the image-attachment task by
+default.
+
+The image id and URL are tracked by the server — do not include them in any
+tool call. The `add_image_to_block` tool only needs `targetBlockId` and a
+`caption`.
+
+{reply_style}
+
+{component_reference}
+"""
+
+
+def build_observe_system_prompt() -> str:
+    return OBSERVE_SYSTEM_PROMPT_TEMPLATE.format(
+        reply_style=_REPLY_STYLE,
         component_reference=_COMPONENT_REFERENCE,
     )

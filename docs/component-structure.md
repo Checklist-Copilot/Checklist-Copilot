@@ -16,6 +16,10 @@ Every component, regardless of type, carries these fields:
 | `type`          | string | yes      | One of the type strings listed below.                         |
 | `label`         | string | yes      | Human-visible display text for the component.                 |
 
+Leaf components (checkbox, textField, numberField, imageBlock, table) also
+carry a server-controlled `edited` boolean — see each component's section.
+Clients and the AI must not send this field; the server sets it automatically.
+
 ---
 
 ## Root Document
@@ -99,7 +103,8 @@ A single checkable item. Must always live inside a `checkboxGroup`.
   "type": "checkbox",
   "label": "string",
   "checked": false,
-  "required": false
+  "required": false,
+  "edited": false
 }
 ```
 
@@ -107,6 +112,7 @@ A single checkable item. Must always live inside a `checkboxGroup`.
 |------------|---------|----------|---------|------------------------------------------------|
 | `checked`  | boolean | yes      | `false` | Current checked state.                         |
 | `required` | boolean | no       | `false` | Must be checked before the checklist can be submitted. |
+| `edited`   | boolean | yes      | `false` | **Server-controlled.** Set to `true` the first time this item is patched. Clients/AI must not send it. |
 
 **Valid parents:** `checkboxGroup` only.  
 **Valid children:** none (leaf node).
@@ -128,7 +134,8 @@ A free-text input. Can be single-line or multi-line.
   "value": "",
   "placeholder": "string | null",
   "required": false,
-  "multiline": false
+  "multiline": false,
+  "edited": false
 }
 ```
 
@@ -138,6 +145,7 @@ A free-text input. Can be single-line or multi-line.
 | `placeholder` | string  | no       | `null`  | Hint text shown when the field is empty.|
 | `required`    | boolean | no       | `false` | Field must be filled before submission.|
 | `multiline`   | boolean | no       | `false` | Renders as a textarea if `true`.       |
+| `edited`      | boolean | yes      | `false` | **Server-controlled.** True once the field has been patched. |
 
 **Valid parents:** root checklist, section.  
 **Valid children:** none (leaf node).
@@ -160,7 +168,8 @@ A numeric input with optional unit and range constraints.
   "unit": "string | null",
   "min": null,
   "max": null,
-  "required": false
+  "required": false,
+  "edited": false
 }
 ```
 
@@ -171,6 +180,7 @@ A numeric input with optional unit and range constraints.
 | `min`      | number \| null | no       | `null`  | Minimum allowed value (inclusive).            |
 | `max`      | number \| null | no       | `null`  | Maximum allowed value (inclusive).            |
 | `required` | boolean        | no       | `false` | Field must be filled before submission.       |
+| `edited`   | boolean        | yes      | `false` | **Server-controlled.** True once the field has been patched. |
 
 **Valid parents:** root checklist, section.  
 **Valid children:** none (leaf node).
@@ -196,7 +206,8 @@ Displays one or more reference images and/or allows the user to upload photos.
       "caption": "string | null"
     }
   ],
-  "allowUpload": false
+  "allowUpload": false,
+  "edited": false
 }
 ```
 
@@ -204,6 +215,7 @@ Displays one or more reference images and/or allows the user to upload photos.
 |---------------|---------|----------|---------|-----------------------------------------------------|
 | `images`      | array   | yes      | `[]`    | List of image objects already attached.             |
 | `allowUpload` | boolean | no       | `false` | Whether the user can upload new photos at runtime.  |
+| `edited`      | boolean | yes      | `false` | **Server-controlled.** True once the block has been patched. |
 
 Each image object:
 
@@ -230,6 +242,7 @@ A structured data table with typed columns and editable rows.
   "humanReadableId": "string | null",
   "type": "table",
   "label": "string",
+  "edited": false,
   "columns": [
     {
       "id": "string (UUIDv7)",

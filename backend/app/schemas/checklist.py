@@ -27,6 +27,9 @@ class ChecklistResponse(ChecklistBase):
     created_at: datetime
     updated_at: datetime
     checklist_prev: dict[str, Any] | None = None
+    total_items: int = 0
+    edited_items: int = 0
+    completed_items: int = 0
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -38,6 +41,11 @@ class ChecklistSummaryResponse(BaseModel):
     description: str | None = None
     created_at: datetime
     updated_at: datetime
+    # Denormalized stats — the whole point is that the dashboard can show
+    # progress without loading the heavy `checklist` JSON column.
+    total_items: int = 0
+    edited_items: int = 0
+    completed_items: int = 0
 
     model_config = ConfigDict(from_attributes=True)
 

@@ -1,3 +1,4 @@
+import copy
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -26,6 +27,7 @@ from app.services.checklist_update.exceptions import (
 )
 from app.services.checklist_update.service import apply_checklist_operations
 from app.services.checklists import (
+    apply_stats,
     create_checklist_for_user,
     delete_checklist,
     get_checklist_for_user,
@@ -78,8 +80,14 @@ def patch_checklist_route(
     if checklist is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Checklist not found.")
 
+    # Work on detached copies because the update helpers mutate nested
+    # dicts/lists in place. This keeps checklist_prev as a real undo snapshot
+    # and avoids relying on SQLAlchemy detecting JSONB in-place mutations.
+    original_checklist = copy.deepcopy(checklist.checklist)
+    working_checklist = copy.deepcopy(checklist.checklist)
+
     try:
-        updated_json = apply_checklist_operations(checklist.checklist, payload.operations)
+        updated_json = apply_checklist_operations(working_checklist, payload.operations)
     except ComponentNotFoundError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
     except (
@@ -94,8 +102,9 @@ def patch_checklist_route(
     except ChecklistOperationError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
 
-    checklist.checklist_prev = checklist.checklist
+    checklist.checklist_prev = original_checklist
     checklist.checklist = updated_json
+    apply_stats(checklist)
     db.commit()
     db.refresh(checklist)
 
