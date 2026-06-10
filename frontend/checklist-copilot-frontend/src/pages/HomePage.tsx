@@ -2,11 +2,12 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import type { CSSProperties } from 'react'
 import styles from '../page-styles/HomePage.module.css'
-import { listChecklists } from '../api/checklist'
+import { getChecklistById, listChecklists } from '../api/checklist'
 import { getUserById } from '../api/user'
-import type { ChecklistSummary } from '../types/checklist'
+import type { Checklist, ChecklistSummary } from '../types/checklist'
 import { removeToken } from '../auth/tokenStorage'
 import { useRequireAuth } from '../hooks/useRequireAuth'
+import { ChecklistPrintReport, type ChecklistRoot } from '../checklist-components'
 
 import {
   FaPlus,
@@ -117,12 +118,33 @@ function HomePage() {
   const [sortMode, setSortMode] = useState<SortMode>('updatedDesc')
   const [searchTerm, setSearchTerm] = useState('')
   const [ownerNames, setOwnerNames] = useState<Record<string, string>>({})
+  const [pdfChecklist, setPdfChecklist] = useState<Checklist | null>(null)
+  const [isPreparingPdf, setIsPreparingPdf] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
   function handleLogout() {
     removeToken()
     navigate('/')
+  }
+
+  async function handleExportPdf() {
+    if (!selectedChecklistId) return
+
+    setIsPreparingPdf(true)
+    setErrorMessage(null)
+
+    try {
+      const response = await getChecklistById(selectedChecklistId)
+      setPdfChecklist(response)
+      window.setTimeout(() => {
+        window.print()
+        setIsPreparingPdf(false)
+      }, 100)
+    } catch {
+      setErrorMessage('Could not prepare PDF.')
+      setIsPreparingPdf(false)
+    }
   }
 
   useEffect(() => {
@@ -174,6 +196,7 @@ function HomePage() {
 
   const totalChecklists = checklists.length
   const selectedChecklist = checklists.find((checklist) => checklist.id === selectedChecklistId) ?? null
+  const pdfChecklistRoot = isChecklistRoot(pdfChecklist?.checklist) ? pdfChecklist.checklist : null
   const isSingleChecklistView = selectedChecklist !== null
   const totalItems = checklists.reduce((sum, checklist) => sum + checklist.total_items, 0)
   const completedItems = checklists.reduce((sum, checklist) => sum + checklist.completed_items, 0)
@@ -329,6 +352,15 @@ function HomePage() {
               </strong>
             </div>
           </div>
+
+          <button
+            className={styles.pdfButton}
+            type="button"
+            onClick={handleExportPdf}
+            disabled={!selectedChecklist || isPreparingPdf}
+          >
+            {isPreparingPdf ? 'Preparing PDF...' : 'Create PDF'}
+          </button>
         </div>
 
         <div className={styles.panel}>
@@ -548,9 +580,32 @@ function HomePage() {
           </div>
         ) : null}
       </section>
+
+      {pdfChecklist && selectedChecklist && pdfChecklistRoot ? (
+        <ChecklistPrintReport
+          title={pdfChecklist.title}
+          description={pdfChecklist.description}
+          checklist={pdfChecklistRoot}
+          stats={[
+            { label: 'Status', value: getChecklistStatus(selectedChecklist) },
+            { label: 'Total items', value: selectedChecklist.total_items },
+            { label: 'Completed', value: selectedChecklist.completed_items },
+            { label: 'In progress', value: statusCounts['In Progress'] },
+            { label: 'Not started', value: statusCounts['Not Started'] },
+            { label: 'Completion', value: `${completionPercent}%` },
+          ]}
+        />
+      ) : null}
     </main>
     </>
   )
 }
 
 export default HomePage
+
+function isChecklistRoot(value: unknown): value is ChecklistRoot {
+  if (!value || typeof value !== 'object') return false
+
+  const candidate = value as { type?: unknown; children?: unknown }
+  return candidate.type === 'root' && Array.isArray(candidate.children)
+}
