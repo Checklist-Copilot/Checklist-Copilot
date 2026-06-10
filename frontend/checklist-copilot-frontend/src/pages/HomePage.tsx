@@ -589,10 +589,10 @@ function HomePage() {
           stats={[
             { label: 'Status', value: getChecklistStatus(selectedChecklist) },
             { label: 'Total items', value: selectedChecklist.total_items },
-            { label: 'Completed', value: selectedChecklist.completed_items },
+            { label: 'Completion', value: `${completionPercent}%` },
             { label: 'In progress', value: statusCounts['In Progress'] },
             { label: 'Not started', value: statusCounts['Not Started'] },
-            { label: 'Completion', value: `${completionPercent}%` },
+            { label: 'Completed', value: selectedChecklist.completed_items },
           ]}
         />
       ) : null}
