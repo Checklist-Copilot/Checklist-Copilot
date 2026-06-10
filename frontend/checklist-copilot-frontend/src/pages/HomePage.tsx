@@ -26,7 +26,7 @@ import { ImBin } from "react-icons/im";
 import TopBar from '../components/TopBar'
 
 type ChecklistStatus = 'Not Started' | 'In Progress' | 'Completed'
-type ActivityMode = 'created' | 'inProgress' | 'finished'
+type ActivityMode = 'created' | 'inProgress' | 'completed'
 type SortMode = 'updatedDesc' | 'updatedAsc' | 'createdDesc' | 'createdAsc'
 
 function getChecklistStatus(checklist: ChecklistSummary): ChecklistStatus {
@@ -88,7 +88,7 @@ function getActivityDays(checklists: ChecklistSummary[], mode: ActivityMode) {
     const shouldCount =
       mode === 'created' ||
       (mode === 'inProgress' && status === 'In Progress') ||
-      (mode === 'finished' && status === 'Completed')
+      (mode === 'completed' && status === 'Completed')
 
     if (!shouldCount) return
 
@@ -228,8 +228,11 @@ function HomePage() {
   const activityLabelByMode = {
     created: 'created',
     inProgress: 'set in progress',
-    finished: 'finished',
+    completed: 'completed',
   } satisfies Record<ActivityMode, string>
+  const activityAxisLabels = Array.from(
+    new Set([maxActivityCount, Math.floor(maxActivityCount / 2), 0]),
+  )
   const normalizedSearchTerm = searchTerm.trim().toLowerCase()
   const owners = Array.from(new Set(checklists.map((checklist) => checklist.user_id))).sort()
   const getOwnerName = (ownerId: string) => ownerNames[ownerId] ?? ownerId
@@ -363,7 +366,7 @@ function HomePage() {
           </button>
         </div>
 
-        <div className={styles.panel}>
+        <div className={`${styles.panel} ${styles.activityPanel}`}>
           <div className={styles.panelHeader}>
             <div>
               <h2 className={styles.panelTitle}>Recent Activity</h2>
@@ -389,33 +392,41 @@ function HomePage() {
               </button>
               <button
                 type="button"
-                className={activityMode === 'finished' ? styles.segmentActive : ''}
-                onClick={() => setActivityMode('finished')}
+                className={activityMode === 'completed' ? styles.segmentActive : ''}
+                onClick={() => setActivityMode('completed')}
               >
-                Finished
+                Completed
               </button>
             </div>
           </div>
 
-          <div className={styles.chart}>
-            {activityDays.map((day, index) => {
-              const height = day.count === 0 ? 7 : Math.max(16, Math.round((day.count / maxActivityCount) * 100))
+          <div className={styles.chartShell}>
+            <div className={styles.chartAxis} aria-hidden="true">
+              {activityAxisLabels.map((label) => (
+                <span key={label}>{label}</span>
+              ))}
+            </div>
 
-              return (
-                <div
-                  className={styles.barGroup}
-                  key={day.key}
-                  title={`${day.count} checklist${day.count === 1 ? '' : 's'} ${activityLabelByMode[activityMode]}`}
-                >
+            <div className={styles.chart}>
+              {activityDays.map((day, index) => {
+                const height = day.count === 0 ? 7 : Math.max(16, Math.round((day.count / maxActivityCount) * 100))
+
+                return (
                   <div
-                    className={`${styles.bar} ${index === activityDays.length - 1 ? styles.activeBar : ''}`}
-                    style={{ height: `${height}px` }}
-                    aria-label={`${day.count} checklist${day.count === 1 ? '' : 's'} ${activityLabelByMode[activityMode]} on ${day.label}`}
-                  />
-                  <span>{day.label}</span>
-                </div>
-              )
-            })}
+                    className={styles.barGroup}
+                    key={day.key}
+                    title={`${day.count} checklist${day.count === 1 ? '' : 's'} ${activityLabelByMode[activityMode]}`}
+                  >
+                    <div
+                      className={`${styles.bar} ${index === activityDays.length - 1 ? styles.activeBar : ''}`}
+                      style={{ height: `${height}px` }}
+                      aria-label={`${day.count} checklist${day.count === 1 ? '' : 's'} ${activityLabelByMode[activityMode]} on ${day.label}`}
+                    />
+                    <span>{day.label}</span>
+                  </div>
+                )
+              })}
+            </div>
           </div>
         </div>
       </section>
