@@ -106,11 +106,98 @@
 
 .panel:nth-child(2) { animation-delay: 90ms; }
 
+.activityPanel {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  padding-bottom: 176px;
+}
+
+.panelHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 18px;
+  margin-bottom: 20px;
+}
+
 .panelTitle {
-  margin: 0 0 20px;
+  margin: 0;
   font-size: 18px;
   color: #e7e0f8;
   font-weight: 700;
+}
+
+.panelSubtitle {
+  margin: 6px 0 0;
+  color: #b9b0ce;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.selectLabel {
+  min-width: 190px;
+  display: grid;
+  gap: 6px;
+  color: #b9b0ce;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.selectLabel select {
+  width: 100%;
+  min-height: 40px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.07);
+  color: #f8f5ff;
+  padding: 0 12px;
+  font: inherit;
+}
+
+.selectLabel select:focus-visible,
+.segmentedControl button:focus-visible,
+.statsButton:focus-visible,
+.pdfButton:focus-visible,
+.useButton:focus-visible,
+.editButton:focus-visible,
+.iconButton:focus-visible,
+.newButton:focus-visible,
+.openButton:focus-visible {
+  outline: 3px solid rgba(34, 211, 238, 0.55);
+  outline-offset: 3px;
+}
+
+.segmentedControl {
+  display: inline-grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  min-width: 280px;
+  padding: 4px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.055);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.segmentedControl button {
+  min-height: 34px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: #b9b0ce;
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 800;
+  transition: background 180ms, color 180ms;
+}
+
+.segmentedControl button:hover {
+  color: #f8f5ff;
+}
+
+.segmentedControl .segmentActive {
+  background: rgba(34, 211, 238, 0.16);
+  color: #cffafe;
 }
 
 .statusContent {
@@ -135,7 +222,7 @@
   position: absolute;
   inset: 0;
   border-radius: 50%;
-  background: conic-gradient(#34d399 0 25%, #facc15 25% 75%, #f43f5e 75% 100%);
+  background: var(--donut-background, conic-gradient(rgba(255, 255, 255, 0.14) 0 100%));
   animation: slowSpin 12s linear infinite;
 }
 
@@ -193,6 +280,62 @@
   top: 2px;
 }
 
+.metricGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 22px;
+}
+
+.metricGrid div {
+  min-width: 0;
+  border-radius: 16px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.055);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+}
+
+.metricGrid span,
+.metricGrid strong {
+  display: block;
+}
+
+.metricGrid span {
+  color: #b9b0ce;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.metricGrid strong {
+  margin-top: 6px;
+  color: #f8f5ff;
+  font-size: 20px;
+  overflow-wrap: anywhere;
+}
+
+.pdfButton {
+  width: 100%;
+  min-height: 42px;
+  margin-top: 14px;
+  border: 1px solid rgba(34, 211, 238, 0.28);
+  border-radius: 14px;
+  background: rgba(34, 211, 238, 0.1);
+  color: #cffafe;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 800;
+  transition: transform 260ms cubic-bezier(.16,1,.3,1), background 260ms;
+}
+
+.pdfButton:hover:not(:disabled) {
+  transform: translateY(-3px);
+}
+
+.pdfButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
 .chart {
   height: 125px;
   display: flex;
@@ -200,10 +343,40 @@
   gap: 8px;
 }
 
-.barGroup {
-  flex: 1;
+.chartShell {
+  height: 125px;
+  display: grid;
+  grid-template-columns: 26px 1fr;
+  gap: 10px;
+}
+
+.activityPanel .chartShell {
+  position: absolute;
+  right: 24px;
+  bottom: 26px;
+  left: 24px;
+  margin-top: 0;
+}
+
+.chartAxis {
+  height: 100%;
   display: flex;
   flex-direction: column;
+  justify-content: space-between;
+  align-items: flex-end;
+  color: #8d849e;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1;
+  padding-bottom: 23px;
+}
+
+.barGroup {
+  flex: 1;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
   align-items: center;
   gap: 10px;
   color: #8d849e;
@@ -240,9 +413,101 @@
 
 .sectionTitle {
   font-size: 30px;
-  margin: 0 0 22px;
+  margin: 0;
   font-weight: 800;
   letter-spacing: -0.03em;
+}
+
+.listHeader {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 18px;
+  margin-bottom: 22px;
+}
+
+.listTools {
+  width: min(100%, 680px);
+  display: grid;
+  justify-items: end;
+  align-self: center;
+  gap: 10px;
+}
+
+.listFilters {
+  width: min(100%, 680px);
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: center;
+  align-self: center;
+  gap: 10px;
+}
+
+.searchLabel,
+.filterLabel {
+  min-height: 42px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.06);
+  color: #b9b0ce;
+}
+
+.searchLabel {
+  width: min(100%, 680px);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 12px;
+}
+
+.searchLabel svg {
+  flex: 0 0 auto;
+}
+
+.searchLabel input,
+.filterLabel select {
+  width: 100%;
+  min-height: 40px;
+  border: 0;
+  background: transparent;
+  color: #f8f5ff;
+  font: inherit;
+}
+
+.filterLabel select {
+  padding-right: 28px;
+}
+
+.searchLabel input {
+  min-width: 0;
+}
+
+.searchLabel input::placeholder {
+  color: #8d849e;
+}
+
+.filterLabel {
+  min-width: 0;
+  display: grid;
+  padding: 0 10px;
+}
+
+.searchLabel:focus-within,
+.filterLabel:focus-within {
+  outline: 3px solid rgba(34, 211, 238, 0.55);
+  outline-offset: 3px;
+}
+
+.visuallyHidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 .cardGrid {
@@ -277,6 +542,7 @@
 }
 
 .progressBadge,
+.notStartedBadge,
 .completedBadge {
   border-radius: 999px;
   padding: 5px 10px;
@@ -293,6 +559,13 @@
 .completedBadge {
   border: 1px solid rgba(52, 211, 153, 0.5);
   color: #86efac;
+  background: rgba(52, 211, 153, 0.08);
+}
+
+.notStartedBadge {
+  border: 1px solid rgba(251, 113, 133, 0.5);
+  color: #fda4af;
+  background: rgba(251, 113, 133, 0.08);
 }
 
 .description {
@@ -322,6 +595,11 @@
 .items {
   color: #b9b0ce;
   margin: 16px 0;
+}
+
+.selectedCard {
+  border-color: rgba(34, 211, 238, 0.55);
+  box-shadow: 0 22px 70px rgba(0, 0, 0, 0.22), 0 0 0 1px rgba(34, 211, 238, 0.22);
 }
 
 .actions {
@@ -380,6 +658,7 @@
 }
 
 .useButton,
+.statsButton,
 .editButton {
   border-radius: 14px;
   height: 42px;
@@ -395,7 +674,16 @@
     background 260ms;
 }
 
+.statsButton {
+  grid-column: 1 / -1;
+  border: 1px solid rgba(34, 211, 238, 0.28);
+  background: rgba(34, 211, 238, 0.1);
+  color: #cffafe;
+  cursor: pointer;
+}
+
 .useButton:hover,
+.statsButton:hover,
 .editButton:hover {
   transform: translateY(-3px);
 }
@@ -448,7 +736,48 @@
   }
 
   .page { padding: 24px; }
+  .listHeader {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .listTools {
+    width: 100%;
+    justify-items: stretch;
+  }
+  .listFilters {
+    width: 100%;
+    grid-template-columns: 1fr;
+  }
+  .searchLabel,
+  .filterLabel {
+    width: 100%;
+    min-width: 0;
+  }
   .statusContent { gap: 24px; }
+  .panelHeader { flex-direction: column; }
+  .selectLabel { width: 100%; }
+  .segmentedControl {
+    width: 100%;
+    min-width: 0;
+  }
+  .metricGrid { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 560px) {
+  .statusContent {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .actions {
+    grid-template-columns: 1fr;
+  }
+
+  .statsButton,
+  .iconButton {
+    grid-column: auto;
+    width: 100%;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
