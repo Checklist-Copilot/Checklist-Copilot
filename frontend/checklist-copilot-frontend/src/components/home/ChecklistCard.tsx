@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { FaCalendarAlt, FaPlay, FaUser } from 'react-icons/fa'
+import { FaCalendarAlt, FaFileAlt, FaPlay, FaUser } from 'react-icons/fa'
 import { FaRegEdit } from 'react-icons/fa'
 import { ImBin } from 'react-icons/im'
 import type { ChecklistSummary } from '../../types/checklist'
@@ -47,6 +47,11 @@ export function ChecklistCard({ checklist, isSelected, ownerName, onViewStats }:
         {checklist.completed_items}/{checklist.total_items} items completed
       </p>
 
+      <div className={styles.fileSummary}>
+        <FaFileAlt />
+        <span>{formatFileSummary(checklist)}</span>
+      </div>
+
       <div className={styles.actions}>
         <button className={styles.statsButton} type="button" onClick={() => onViewStats(checklist.id)}>
           View Stats
@@ -68,4 +73,18 @@ export function ChecklistCard({ checklist, isSelected, ownerName, onViewStats }:
       </div>
     </article>
   )
+}
+
+function formatFileSummary(checklist: ChecklistSummary) {
+  const fileCount = checklist.file_count ?? 0
+  const pdfCount = checklist.pdf_count ?? 0
+  const imageCount = checklist.image_count ?? 0
+
+  if (fileCount === 0) return 'No context files'
+
+  const parts = [`${fileCount} ${fileCount === 1 ? 'file' : 'files'}`]
+  if (pdfCount > 0) parts.push(`${pdfCount} ${pdfCount === 1 ? 'PDF' : 'PDFs'}`)
+  if (imageCount > 0) parts.push(`${imageCount} ${imageCount === 1 ? 'image' : 'images'}`)
+
+  return parts.join(' · ')
 }

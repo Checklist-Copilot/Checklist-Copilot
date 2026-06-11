@@ -30,6 +30,9 @@ class ChecklistResponse(ChecklistBase):
     total_items: int = 0
     edited_items: int = 0
     completed_items: int = 0
+    file_count: int = 0
+    pdf_count: int = 0
+    image_count: int = 0
 
     model_config = ConfigDict(from_attributes=True)
 

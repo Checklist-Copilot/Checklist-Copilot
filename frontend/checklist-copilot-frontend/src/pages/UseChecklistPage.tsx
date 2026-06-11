@@ -13,6 +13,7 @@ import { updateComponentInRoot } from '../checklist-components/treeUtils'
 import { HiOutlineSparkles } from 'react-icons/hi2'
 import TopBar from '../components/TopBar'
 import AIChatPopup from '../components/AIChatPopup'
+import { ChecklistContextFiles } from '../components/ChecklistContextFiles'
 
 function UseChecklistPage() {
   const navigate = useNavigate()
@@ -167,6 +168,8 @@ function UseChecklistPage() {
           {missingChecklistId ? <p className={styles.error}>Checklist ID is missing in URL.</p> : null}
           {errorMessage ? <p className={styles.error}>{errorMessage}</p> : null}
           {autosaveError ? <p className={styles.error}>{autosaveError}</p> : null}
+
+          <ChecklistContextFiles checklistId={checklist_id} />
 
           {!isLoading && !missingChecklistId && !errorMessage ? (
             <div className={styles.checklistShell}>

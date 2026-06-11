@@ -14,6 +14,7 @@ import type { ChecklistComponent, ChecklistRoot } from '../checklist-components'
 import { addComponentToRoot, deleteComponentFromRoot, updateComponentInRoot } from '../checklist-components/treeUtils'
 import TopBar from '../components/TopBar'
 import AIChatPopup from '../components/AIChatPopup'
+import { ChecklistContextFiles } from '../components/ChecklistContextFiles'
 
 const componentOptions = [
   { label: 'Section', type: 'section' },
@@ -412,6 +413,8 @@ function EditChecklistPage() {
             {missingChecklistId ? <p className={styles.error}>Checklist ID is missing in URL.</p> : null}
             {errorMessage ? <p className={styles.error}>{errorMessage}</p> : null}
             {autosaveError ? <p className={styles.error}>{autosaveError}</p> : null}
+
+            <ChecklistContextFiles checklistId={checklist_id} />
 
             {!isLoading && !missingChecklistId && !errorMessage ? (
               <div className={styles.checklistShell}>

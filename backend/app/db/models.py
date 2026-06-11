@@ -53,6 +53,7 @@ class File(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
     file_type: Mapped[str] = mapped_column(Text, nullable=False)
     file_name: Mapped[str] = mapped_column(Text, nullable=False)
+    title: Mapped[str | None] = mapped_column(Text, nullable=True)
     user_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
     checklist_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True),

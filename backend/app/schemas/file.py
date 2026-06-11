@@ -7,6 +7,7 @@ from pydantic import BaseModel, ConfigDict
 class FileBase(BaseModel):
     file_type: str
     file_name: str
+    title: str | None = None
 
 
 class FileCreate(FileBase):
@@ -28,6 +29,14 @@ class FileUploadResponse(FileRead):
     # `imageBlock.images[].url` field; the GET endpoint streams the bytes
     # back from Supabase Storage with the right Content-Type.
     url: str
+
+
+class ChecklistFileRead(FileRead):
+    raw_url: str
+
+
+class ChecklistFileListResponse(BaseModel):
+    files: list[ChecklistFileRead]
 
 
 class FileDeleteResponse(BaseModel):
