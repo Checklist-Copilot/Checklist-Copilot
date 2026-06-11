@@ -1,0 +1,144 @@
+import { useState } from 'react'
+import { Link } from 'react-router-dom'
+import { FaPlus, FaSearch } from 'react-icons/fa'
+import CustomDropdown, { type DropdownOption } from '../CustomDropdown'
+import type { ChecklistSummary } from '../../types/checklist'
+import styles from '../../page-styles/HomePage.module.css'
+import type { ChecklistStatus, SortMode } from './types'
+import { getChecklistStatus, getOwnerName } from './homePageUtils'
+import { ChecklistCard } from './ChecklistCard'
+
+type ChecklistListProps = {
+  checklists: ChecklistSummary[]
+  selectedChecklistId: string
+  ownerNames: Record<string, string>
+  isLoading: boolean
+  errorMessage: string | null
+  onSelectChecklist: (id: string) => void
+}
+
+const statusFilterOptions = [
+  { value: 'all', label: 'All statuses', tone: 'purple' },
+  { value: 'Not Started', label: 'Not Started', tone: 'red' },
+  { value: 'In Progress', label: 'In Progress', tone: 'yellow' },
+  { value: 'Completed', label: 'Completed', tone: 'green' },
+] satisfies DropdownOption<ChecklistStatus | 'all'>[]
+
+const sortOptions = [
+  { value: 'updatedDesc', label: 'Updated newest', tone: 'purple' },
+  { value: 'updatedAsc', label: 'Updated oldest', tone: 'purple' },
+  { value: 'createdDesc', label: 'Created newest', tone: 'purple' },
+  { value: 'createdAsc', label: 'Created oldest', tone: 'purple' },
+] satisfies DropdownOption<SortMode>[]
+
+export function ChecklistList({
+  checklists,
+  selectedChecklistId,
+  ownerNames,
+  isLoading,
+  errorMessage,
+  onSelectChecklist,
+}: ChecklistListProps) {
+  const [statusFilter, setStatusFilter] = useState<ChecklistStatus | 'all'>('all')
+  const [ownerFilter, setOwnerFilter] = useState('all')
+  const [sortMode, setSortMode] = useState<SortMode>('updatedDesc')
+  const [searchTerm, setSearchTerm] = useState('')
+
+  const normalizedSearchTerm = searchTerm.trim().toLowerCase()
+  const owners = Array.from(new Set(checklists.map((checklist) => checklist.user_id))).sort()
+  const ownerFilterOptions: DropdownOption<string>[] = [
+    { value: 'all', label: 'All owners', tone: 'purple' },
+    ...owners.map((ownerId) => ({ value: ownerId, label: getOwnerName(ownerNames, ownerId), tone: 'neutral' as const })),
+  ]
+  const sortedChecklists = checklists
+    .filter((checklist) => {
+      const matchesStatus = statusFilter === 'all' || getChecklistStatus(checklist) === statusFilter
+      const matchesOwner = ownerFilter === 'all' || checklist.user_id === ownerFilter
+      const matchesSearch = checklist.title.toLowerCase().includes(normalizedSearchTerm)
+
+      return matchesStatus && matchesOwner && matchesSearch
+    })
+    .sort((a, b) => {
+      const updatedDiff = new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
+      const createdDiff = new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+
+      if (sortMode === 'updatedAsc') return -updatedDiff
+      if (sortMode === 'createdDesc') return createdDiff
+      if (sortMode === 'createdAsc') return -createdDiff
+      return updatedDiff
+    })
+
+  return (
+    <section className={styles.content}>
+      <div className={styles.listHeader}>
+        <h2 className={styles.sectionTitle}>My Checklists</h2>
+
+        <div className={styles.listTools}>
+          <label className={styles.searchLabel}>
+            <FaSearch />
+            <span className={styles.visuallyHidden}>Search checklist by name</span>
+            <input
+              type="search"
+              placeholder="Search by name"
+              value={searchTerm}
+              onChange={(event) => setSearchTerm(event.target.value)}
+            />
+          </label>
+
+          <div className={styles.listFilters}>
+            <CustomDropdown
+              label="Filter by status"
+              value={statusFilter}
+              options={statusFilterOptions}
+              onChange={setStatusFilter}
+            />
+
+            <CustomDropdown
+              label="Filter by owner"
+              value={ownerFilter}
+              options={ownerFilterOptions}
+              onChange={setOwnerFilter}
+            />
+
+            <CustomDropdown label="Sort checklists" value={sortMode} options={sortOptions} onChange={setSortMode} />
+          </div>
+        </div>
+      </div>
+
+      {isLoading ? <p className={styles.message}>Loading checklists...</p> : null}
+      {errorMessage ? <p className={styles.error}>{errorMessage}</p> : null}
+
+      {!isLoading && !errorMessage && checklists.length === 0 ? (
+        <div className={styles.emptyState}>
+          <h3>No checklists yet</h3>
+          <p>Create your first checklist to start managing inspections.</p>
+          <Link to="/checklist/new" className={styles.openButton}>
+            <FaPlus />
+            New Checklist
+          </Link>
+        </div>
+      ) : null}
+
+      {!isLoading && !errorMessage && checklists.length > 0 && sortedChecklists.length === 0 ? (
+        <div className={styles.emptyState}>
+          <h3>No matching checklists</h3>
+          <p>Try another name, status, owner, or sort option.</p>
+        </div>
+      ) : null}
+
+      {!isLoading && !errorMessage && sortedChecklists.length > 0 ? (
+        <div className={styles.cardGrid}>
+          {sortedChecklists.map((checklist) => (
+            <ChecklistCard
+              key={checklist.id}
+              checklist={checklist}
+              isSelected={selectedChecklistId === checklist.id}
+              ownerName={getOwnerName(ownerNames, checklist.user_id)}
+              onViewStats={onSelectChecklist}
+            />
+          ))}
+        </div>
+      ) : null}
+    </section>
+  )
+}
