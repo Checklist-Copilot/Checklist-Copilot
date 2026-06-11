@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { FaPlus, FaSearch } from 'react-icons/fa'
 import CustomDropdown, { type DropdownOption } from '../CustomDropdown'
 import type { ChecklistSummary } from '../../types/checklist'
@@ -39,6 +39,7 @@ export function ChecklistList({
   errorMessage,
   onSelectChecklist,
 }: ChecklistListProps) {
+  const navigate = useNavigate()
   const [statusFilter, setStatusFilter] = useState<ChecklistStatus | 'all'>('all')
   const [ownerFilter, setOwnerFilter] = useState('all')
   const [sortMode, setSortMode] = useState<SortMode>('updatedDesc')
@@ -112,10 +113,10 @@ export function ChecklistList({
         <div className={styles.emptyState}>
           <h3>No checklists yet</h3>
           <p>Create your first checklist to start managing inspections.</p>
-          <Link to="/checklist/new" className={styles.openButton}>
+          <button type="button" className={styles.openButton} onClick={() => navigate('/checklist/new')}>
             <FaPlus />
             New Checklist
-          </Link>
+          </button>
         </div>
       ) : null}
 

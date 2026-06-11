@@ -7,6 +7,7 @@ import RegisterPage from './pages/RegisterPage'
 import EditChecklistPage from './pages/EditChecklistPage'
 import UseChecklistPage from './pages/UseChecklistPage'
 import AccountPage from './pages/AccountPage'
+import NewChecklistPage from './pages/NewChecklistPage'
 
 function App() {
   const router = createBrowserRouter([
@@ -29,6 +30,10 @@ function App() {
     {
       path: '/account',
       element: <AccountPage />,
+    },
+    {
+      path: '/checklist/new',
+      element: <NewChecklistPage />,
     },
     {
       path: '/checklist/edit/:checklist_id',
