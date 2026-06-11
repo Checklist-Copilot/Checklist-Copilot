@@ -1,9 +1,10 @@
 import uuid
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session, load_only
 
 from app.db.models import Checklist
+from app.db.models import File as FileModel
 from app.schemas.checklist import ChecklistCreateRequest, ChecklistUpdateRequest
 from app.services.checklist_update.stats import recount
 
@@ -46,6 +47,28 @@ def list_checklists_for_user(db: Session, user_id: uuid.UUID) -> list[Checklist]
         .order_by(Checklist.updated_at.desc())
     )
     return list(db.scalars(stmt).all())
+
+
+def list_checklist_file_counts_for_user(db: Session, user_id: uuid.UUID) -> dict[uuid.UUID, dict[str, int]]:
+    stmt = (
+        select(FileModel.checklist_id, FileModel.file_type, func.count(FileModel.id))
+        .where(FileModel.user_id == user_id, FileModel.checklist_id.is_not(None))
+        .group_by(FileModel.checklist_id, FileModel.file_type)
+    )
+
+    counts: dict[uuid.UUID, dict[str, int]] = {}
+    for checklist_id, file_type, count in db.execute(stmt):
+        if checklist_id is None:
+            continue
+
+        checklist_counts = counts.setdefault(checklist_id, {"file_count": 0, "pdf_count": 0, "image_count": 0})
+        checklist_counts["file_count"] += count
+        if file_type == "pdf":
+            checklist_counts["pdf_count"] += count
+        elif file_type == "image":
+            checklist_counts["image_count"] += count
+
+    return counts
 
 
 def create_checklist_for_user(db: Session, user_id: uuid.UUID, payload: ChecklistCreateRequest) -> Checklist:

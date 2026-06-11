@@ -594,7 +594,28 @@
 
 .items {
   color: #b9b0ce;
-  margin: 16px 0;
+  margin: 16px 0 10px;
+}
+
+.fileSummary {
+  min-height: 34px;
+  margin: 0 0 16px;
+  padding: 8px 10px;
+  border: 1px solid rgba(34, 211, 238, 0.18);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #cbd5e1;
+  background: rgba(34, 211, 238, 0.07);
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.fileSummary svg {
+  flex: 0 0 auto;
+  color: #67e8f9;
 }
 
 .selectedCard {

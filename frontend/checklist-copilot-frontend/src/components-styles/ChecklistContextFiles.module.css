@@ -316,7 +316,15 @@
   min-height: 0;
   display: grid;
   place-items: center;
+  overflow: hidden;
   background: #0d0c18;
+}
+
+.previewImageBody {
+  display: block;
+  overflow: auto;
+  padding: 16px;
+  text-align: center;
 }
 
 .previewFrame {
@@ -328,8 +336,9 @@
 
 .previewImage {
   max-width: 100%;
-  max-height: 100%;
+  height: auto;
   object-fit: contain;
+  vertical-align: top;
 }
 
 .previewLoading,

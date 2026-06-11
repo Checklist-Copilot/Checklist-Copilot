@@ -31,6 +31,7 @@ from app.services.checklists import (
     create_checklist_for_user,
     delete_checklist,
     get_checklist_for_user,
+    list_checklist_file_counts_for_user,
     list_checklists_for_user,
 )
 
@@ -44,7 +45,15 @@ def list_checklists_route(
     current_user: User = Depends(get_current_user),
 ) -> ChecklistListResponse:
     checklists = list_checklists_for_user(db, current_user.id)
-    return ChecklistListResponse(checklists=[ChecklistSummaryResponse.model_validate(item) for item in checklists])
+    file_counts = list_checklist_file_counts_for_user(db, current_user.id)
+    summaries: list[ChecklistSummaryResponse] = []
+
+    for item in checklists:
+        summary = ChecklistSummaryResponse.model_validate(item)
+        counts = file_counts.get(item.id, {"file_count": 0, "pdf_count": 0, "image_count": 0})
+        summaries.append(summary.model_copy(update=counts))
+
+    return ChecklistListResponse(checklists=summaries)
 
 
 @router.get("/{checklist_id}", response_model=ChecklistGetResponse)

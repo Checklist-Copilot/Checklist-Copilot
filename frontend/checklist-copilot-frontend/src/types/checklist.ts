@@ -13,6 +13,9 @@ export interface ChecklistSummary extends ChecklistStats {
   description: string | null;
   created_at: string;
   updated_at: string;
+  file_count?: number;
+  pdf_count?: number;
+  image_count?: number;
 }
 
 export interface Checklist extends ChecklistStats {

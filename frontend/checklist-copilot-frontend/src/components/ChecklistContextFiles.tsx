@@ -271,7 +271,13 @@ export function ChecklistContextFiles({ checklistId }: ChecklistContextFilesProp
               </button>
             </header>
 
-            <div className={styles.previewBody}>
+            <div
+              className={
+                previewState.file.file_type === 'image'
+                  ? `${styles.previewBody} ${styles.previewImageBody}`
+                  : styles.previewBody
+              }
+            >
               {previewState.status === 'loading' ? <div className={styles.previewLoading}>Loading preview...</div> : null}
               {previewState.status === 'error' ? (
                 <div className={styles.previewError}>{previewState.error ?? 'Could not open file.'}</div>
