@@ -1,23 +1,43 @@
 import uuid
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, Response, UploadFile, status
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, Response, UploadFile, status
 from sqlalchemy.orm import Session
 
 from app.db.models import User
 from app.db.session import get_db
-from app.schemas.file import FileDeleteResponse, FileRead, FileUploadResponse
+from app.schemas.file import ChecklistFileListResponse, ChecklistFileRead, FileDeleteResponse, FileRead, FileUploadResponse
 from app.services.auth import get_current_user
 from app.services.files import (
     build_file_url,
     delete_file_for_user,
     fetch_file_bytes,
     get_file_for_user,
+    list_files_for_checklist,
     upload_image_file,
     upload_pdf_file,
 )
 
 
 router = APIRouter(prefix="/files")
+
+
+@router.get("", response_model=ChecklistFileListResponse)
+def list_files_route(
+    checklist_id: uuid.UUID = Query(...),
+    file_type: str | None = Query(default=None, pattern="^(pdf|image)$"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> ChecklistFileListResponse:
+    files = list_files_for_checklist(db, checklist_id, current_user.id, file_type)
+    return ChecklistFileListResponse(
+        files=[
+            ChecklistFileRead(
+                **FileRead.model_validate(file_row).model_dump(),
+                raw_url=build_file_url(file_row.id),
+            )
+            for file_row in files
+        ],
+    )
 
 
 @router.post("/upload/image", response_model=FileUploadResponse, status_code=status.HTTP_201_CREATED)

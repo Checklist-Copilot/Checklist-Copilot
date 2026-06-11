@@ -146,15 +146,32 @@ def _validate_checklist_access(db: Session, checklist_id: uuid.UUID, user_id: uu
         )
 
 
+def list_files_for_checklist(
+    db: Session,
+    checklist_id: uuid.UUID,
+    user_id: uuid.UUID,
+    file_type: str | None = None,
+) -> list[FileModel]:
+    _validate_checklist_access(db, checklist_id, user_id)
+
+    stmt = select(FileModel).where(FileModel.checklist_id == checklist_id, FileModel.user_id == user_id)
+    if file_type is not None:
+        stmt = stmt.where(FileModel.file_type == file_type)
+
+    return list(db.scalars(stmt.order_by(FileModel.created_at.desc(), FileModel.id.desc())).all())
+
+
 def _create_pending_file_metadata(
     db: Session,
     file_type: str,
+    title: str | None,
     user_id: uuid.UUID,
     checklist_id: uuid.UUID | None,
 ) -> FileModel:
     file_row = FileModel(
         file_type=file_type,
         file_name="",
+        title=title,
         user_id=user_id,
         checklist_id=checklist_id,
     )
@@ -173,7 +190,7 @@ async def _upload_file_with_metadata_id(
     user_id: uuid.UUID,
     checklist_id: uuid.UUID | None,
 ) -> FileModel:
-    file_row = _create_pending_file_metadata(db, file_type, user_id, checklist_id)
+    file_row = _create_pending_file_metadata(db, file_type, file.filename, user_id, checklist_id)
     object_name = f"{user_id}/{file_row.id}{ext}"
     file_row.file_name = f"{bucket}/{object_name}"
 
