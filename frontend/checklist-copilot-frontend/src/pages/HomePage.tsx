@@ -57,7 +57,6 @@ function HomePage() {
 
   if (!isAuthorized) return null
 
-  const totalChecklists = checklists.length
   const selectedChecklist = checklists.find((checklist) => checklist.id === selectedChecklistId) ?? null
 
   return (

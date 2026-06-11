@@ -624,11 +624,15 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
+  padding: 10px;
 }
 
 .openButton {
+  border: 0;
   background: linear-gradient(135deg, #8b5cf6, #ec4899);
   color: white;
+  cursor: pointer;
+  font: inherit;
 }
 
 .iconButton {
