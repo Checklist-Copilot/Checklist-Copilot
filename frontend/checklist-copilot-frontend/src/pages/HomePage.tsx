@@ -24,6 +24,7 @@ import { CiFlag1 } from "react-icons/ci";
 import { ImBin } from "react-icons/im";
 
 import TopBar from '../components/TopBar'
+import CustomDropdown, { type DropdownOption } from '../components/CustomDropdown'
 
 type ChecklistStatus = 'Not Started' | 'In Progress' | 'Completed'
 type ActivityMode = 'created' | 'inProgress' | 'completed'
@@ -236,6 +237,26 @@ function HomePage() {
   const normalizedSearchTerm = searchTerm.trim().toLowerCase()
   const owners = Array.from(new Set(checklists.map((checklist) => checklist.user_id))).sort()
   const getOwnerName = (ownerId: string) => ownerNames[ownerId] ?? ownerId
+  const checklistOptions: DropdownOption<string>[] = [
+    { value: '', label: 'All checklists', tone: 'purple' },
+    ...checklists.map((checklist) => ({ value: checklist.id, label: checklist.title, tone: 'neutral' as const })),
+  ]
+  const statusFilterOptions = [
+    { value: 'all', label: 'All statuses', tone: 'purple' },
+    { value: 'Not Started', label: 'Not Started', tone: 'red' },
+    { value: 'In Progress', label: 'In Progress', tone: 'yellow' },
+    { value: 'Completed', label: 'Completed', tone: 'green' },
+  ] satisfies DropdownOption<ChecklistStatus | 'all'>[]
+  const ownerFilterOptions: DropdownOption<string>[] = [
+    { value: 'all', label: 'All owners', tone: 'purple' },
+    ...owners.map((ownerId) => ({ value: ownerId, label: getOwnerName(ownerId), tone: 'neutral' as const })),
+  ]
+  const sortOptions = [
+    { value: 'updatedDesc', label: 'Updated newest', tone: 'purple' },
+    { value: 'updatedAsc', label: 'Updated oldest', tone: 'purple' },
+    { value: 'createdDesc', label: 'Created newest', tone: 'purple' },
+    { value: 'createdAsc', label: 'Created oldest', tone: 'purple' },
+  ] satisfies DropdownOption<SortMode>[]
   const filteredChecklists = checklists
     .filter((checklist) => {
       const matchesStatus = statusFilter === 'all' || getChecklistStatus(checklist) === statusFilter
@@ -285,21 +306,16 @@ function HomePage() {
               </p>
             </div>
 
-            <label className={styles.selectLabel}>
+            <div className={styles.selectLabel}>
               <span>Checklist</span>
-              <select
+              <CustomDropdown
+                label="Checklist"
                 value={selectedChecklistId}
-                onChange={(event) => setSelectedChecklistId(event.target.value)}
+                options={checklistOptions}
+                onChange={setSelectedChecklistId}
                 disabled={checklists.length === 0}
-              >
-                <option value="">All checklists</option>
-                {checklists.map((checklist) => (
-                  <option key={checklist.id} value={checklist.id}>
-                    {checklist.title}
-                  </option>
-                ))}
-              </select>
-            </label>
+              />
+            </div>
           </div>
 
           <div className={styles.statusContent}>
@@ -448,46 +464,26 @@ function HomePage() {
             </label>
 
             <div className={styles.listFilters}>
-              <label className={styles.filterLabel}>
-                <span className={styles.visuallyHidden}>Filter by status</span>
-                <select
-                  value={statusFilter}
-                  onChange={(event) => setStatusFilter(event.target.value as ChecklistStatus | 'all')}
-                >
-                  <option value="all">All statuses</option>
-                  <option value="Not Started">Not Started</option>
-                  <option value="In Progress">In Progress</option>
-                  <option value="Completed">Completed</option>
-                </select>
-              </label>
+              <CustomDropdown
+                label="Filter by status"
+                value={statusFilter}
+                options={statusFilterOptions}
+                onChange={setStatusFilter}
+              />
 
-              <label className={styles.filterLabel}>
-                <span className={styles.visuallyHidden}>Filter by owner</span>
-                <select
-                  value={ownerFilter}
-                  onChange={(event) => setOwnerFilter(event.target.value)}
-                >
-                  <option value="all">All owners</option>
-                  {owners.map((ownerId) => (
-                    <option key={ownerId} value={ownerId}>
-                      {getOwnerName(ownerId)}
-                    </option>
-                  ))}
-                </select>
-              </label>
+              <CustomDropdown
+                label="Filter by owner"
+                value={ownerFilter}
+                options={ownerFilterOptions}
+                onChange={setOwnerFilter}
+              />
 
-              <label className={styles.filterLabel}>
-                <span className={styles.visuallyHidden}>Sort checklists</span>
-                <select
-                  value={sortMode}
-                  onChange={(event) => setSortMode(event.target.value as SortMode)}
-                >
-                  <option value="updatedDesc">Updated newest</option>
-                  <option value="updatedAsc">Updated oldest</option>
-                  <option value="createdDesc">Created newest</option>
-                  <option value="createdAsc">Created oldest</option>
-                </select>
-              </label>
+              <CustomDropdown
+                label="Sort checklists"
+                value={sortMode}
+                options={sortOptions}
+                onChange={setSortMode}
+              />
             </div>
           </div>
         </div>
