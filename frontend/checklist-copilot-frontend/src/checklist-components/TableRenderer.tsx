@@ -1,11 +1,26 @@
+import { EditableLabel } from './EditableLabel'
 import styles from './TableRenderer.module.css'
 import type { TableCellValue, TableColumn, TableComponent } from './types'
-import { componentTitle } from './utils'
+import { componentTitle, defaultLabelForType } from './utils'
 
-export function TableRenderer({ component }: { component: TableComponent }) {
+type TableRendererProps = {
+  component: TableComponent
+  isEditMode?: boolean
+  onComponentUpdate?: (componentId: string, patch: Record<string, unknown>) => void
+}
+
+export function TableRenderer({ component, isEditMode = false, onComponentUpdate }: TableRendererProps) {
   return (
     <section className={styles.block} data-component-id={component.id}>
-      <h3 className={styles.title}>{componentTitle(component)}</h3>
+      <h3 className={styles.title}>
+        <EditableLabel
+          value={componentTitle(component)}
+          fallbackValue={defaultLabelForType(component.type)}
+          isEditMode={isEditMode}
+          ariaLabel="Table label"
+          onChange={(value) => onComponentUpdate?.(component.id, { label: value })}
+        />
+      </h3>
       {component.description ? <p className={styles.description}>{component.description}</p> : null}
       <div className={styles.wrap}>
         <table className={styles.table}>

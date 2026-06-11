@@ -26,28 +26,149 @@
 }
 
 .description,
-.hint { margin: 0; color: #b9b0ce; font-size: 14px; }
-.hint { color: #8d849e; font-size: 13px; }
-.inputWrap { display: flex; align-items: center; gap: 10px; }
+.hint {
+  margin: 0;
+  color: #b9b0ce;
+  font-size: 14px;
+}
 
-.input {
-  width: 100%;
+.hint {
+  color: #8d849e;
+  font-size: 13px;
+}
+
+.inputGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: end;
+}
+
+.numberControl {
+  min-width: 0;
   height: 46px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 38px;
+  overflow: hidden;
   border: 1px solid rgba(248, 245, 255, 0.12);
   border-radius: 12px;
   background: rgba(248, 245, 255, 0.055);
-  color: #f8f5ff;
-  font: inherit;
-  font-weight: 650;
-  padding: 0 14px;
-  outline: none;
   transition: border-color 220ms, box-shadow 220ms, background 220ms;
 }
 
-.input:focus {
+.numberControl:focus-within {
   border-color: rgba(167, 139, 250, 0.76);
   background: rgba(248, 245, 255, 0.085);
   box-shadow: 0 0 0 4px rgba(124, 58, 237, 0.14);
 }
 
-.unit { min-width: max-content; color: #cfc6e4; font-weight: 900; }
+.input {
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  color: #f8f5ff;
+  font: inherit;
+  font-weight: 750;
+  padding: 0 14px;
+  outline: none;
+  appearance: textfield;
+}
+
+.input::-webkit-outer-spin-button,
+.input::-webkit-inner-spin-button {
+  appearance: none;
+  margin: 0;
+}
+
+.stepper {
+  display: grid;
+  border-left: 1px solid rgba(248, 245, 255, 0.1);
+  background: rgba(248, 245, 255, 0.045);
+}
+
+.stepButton {
+  border: 0;
+  color: #ded7ee;
+  background: transparent;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 950;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 180ms, color 180ms;
+}
+
+.stepButton:first-child {
+  border-bottom: 1px solid rgba(248, 245, 255, 0.1);
+}
+
+.stepButton:hover:not(:disabled),
+.stepButton:focus-visible:not(:disabled) {
+  color: #f8f5ff;
+  background: rgba(139, 92, 246, 0.28);
+  outline: none;
+}
+
+.stepButton:disabled {
+  color: rgba(222, 215, 238, 0.32);
+  cursor: not-allowed;
+}
+
+.unit {
+  min-height: 46px;
+  min-width: max-content;
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid rgba(248, 245, 255, 0.1);
+  border-radius: 12px;
+  padding: 0 14px;
+  color: #cfc6e4;
+  background: rgba(248, 245, 255, 0.045);
+  font-weight: 900;
+}
+
+.unitField {
+  display: grid;
+  gap: 5px;
+  min-width: 128px;
+  color: #9f96b4;
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.unitInput {
+  height: 46px;
+  width: 150px;
+  border: 1px solid rgba(248, 245, 255, 0.12);
+  border-radius: 12px;
+  background: rgba(248, 245, 255, 0.055);
+  color: #f8f5ff;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 750;
+  letter-spacing: 0;
+  text-transform: none;
+  padding: 0 12px;
+  outline: none;
+  transition: border-color 220ms, box-shadow 220ms, background 220ms;
+}
+
+.unitInput:focus {
+  border-color: rgba(167, 139, 250, 0.76);
+  background: rgba(248, 245, 255, 0.085);
+  box-shadow: 0 0 0 4px rgba(124, 58, 237, 0.14);
+}
+
+@media (max-width: 620px) {
+  .inputGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .unitField,
+  .unitInput {
+    width: 100%;
+  }
+}

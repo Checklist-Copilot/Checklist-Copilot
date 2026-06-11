@@ -1,13 +1,28 @@
+import { EditableLabel } from './EditableLabel'
 import styles from './ImageBlockRenderer.module.css'
 import type { ImageBlockComponent } from './types'
-import { componentTitle } from './utils'
+import { componentTitle, defaultLabelForType } from './utils'
 
-export function ImageBlockRenderer({ component }: { component: ImageBlockComponent }) {
+type ImageBlockRendererProps = {
+  component: ImageBlockComponent
+  isEditMode?: boolean
+  onComponentUpdate?: (componentId: string, patch: Record<string, unknown>) => void
+}
+
+export function ImageBlockRenderer({ component, isEditMode = false, onComponentUpdate }: ImageBlockRendererProps) {
   return (
     <section className={styles.block} data-component-id={component.id}>
       <div className={styles.header}>
         <div>
-          <h3 className={styles.title}>{componentTitle(component)}</h3>
+          <h3 className={styles.title}>
+            <EditableLabel
+              value={componentTitle(component)}
+              fallbackValue={defaultLabelForType(component.type)}
+              isEditMode={isEditMode}
+              ariaLabel="Image block label"
+              onChange={(value) => onComponentUpdate?.(component.id, { label: value })}
+            />
+          </h3>
           {component.description ? <p className={styles.description}>{component.description}</p> : null}
         </div>
         {component.allowUpload ? <span className={styles.uploadBadge}>Upload enabled</span> : null}

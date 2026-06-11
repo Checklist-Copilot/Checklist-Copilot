@@ -1,13 +1,14 @@
 import { ComponentRenderer } from './ComponentRenderer'
+import { EditableLabel } from './EditableLabel'
 import styles from './SectionRenderer.module.css'
 import type { SectionComponent } from './types'
-import { componentTitle } from './utils'
+import { componentTitle, defaultLabelForType } from './utils'
 
 type SectionRendererProps = {
   section: SectionComponent
   index?: number
   isEditMode?: boolean
-  onSectionUpdate?: (sectionId: string, patch: Record<string, unknown>) => void
+  onComponentUpdate?: (componentId: string, patch: Record<string, unknown>) => void
   onDeleteComponent?: (componentId: string) => void
   focusedComponentId?: string
   onFocusComponent?: (componentId: string) => void
@@ -17,7 +18,7 @@ export function SectionRenderer({
   section,
   index,
   isEditMode = false,
-  onSectionUpdate,
+  onComponentUpdate,
   onDeleteComponent,
   focusedComponentId,
   onFocusComponent,
@@ -29,13 +30,12 @@ export function SectionRenderer({
           <h2 className={styles.title}>
             {index !== undefined ? <span className={styles.index}>{index + 1}</span> : null}
 
-            <input
-              className={styles.titleInput}
+            <EditableLabel
               value={componentTitle(section)}
-              onClick={(event) => event.stopPropagation()}
-              onChange={(event) =>
-                onSectionUpdate?.(section.id, { label: event.target.value })
-              }
+              fallbackValue={defaultLabelForType(section.type)}
+              isEditMode={isEditMode}
+              ariaLabel="Section label"
+              onChange={(value) => onComponentUpdate?.(section.id, { label: value })}
             />
           </h2>
 
@@ -75,7 +75,7 @@ export function SectionRenderer({
               <ComponentRenderer
                 component={component}
                 isEditMode={isEditMode}
-                onSectionUpdate={onSectionUpdate}
+                onComponentUpdate={onComponentUpdate}
                 onDeleteComponent={onDeleteComponent}
                 focusedComponentId={focusedComponentId}
                 onFocusComponent={onFocusComponent}

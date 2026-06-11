@@ -11,9 +11,10 @@
   font-weight: 700;
 }
 
-.item input {
+.checkboxInput {
   width: 18px;
   height: 18px;
+  flex: 0 0 auto;
   accent-color: #8b5cf6;
 }
 

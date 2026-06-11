@@ -5,6 +5,7 @@ from pydantic import BaseModel, Field
 
 class AddComponentPayload(BaseModel):
     type: str
+    label: str
 
 
 class AddComponentOperation(BaseModel):

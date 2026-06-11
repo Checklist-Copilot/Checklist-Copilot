@@ -1,743 +1,1342 @@
-openapi: 3.0.3
+openapi: 3.1.0
 info:
-  title: AI Checklist Backend API
+  title: AI Checklist Backend
   version: 0.1.0
-  description: >
-    API for an AI-assisted checklist web application.
-    It supports authentication, checklist CRUD, undo snapshots,
-    AI-based checklist editing/creation, and image upload.
-
-servers:
-  - url: http://localhost:8000
-    description: Local FastAPI development server
-
-tags:
-  - name: auth
-    description: User registration, login, and current-user lookup
-  - name: checklists
-    description: Normal checklist CRUD operations
-  - name: ai
-    description: AI-assisted checklist creation and editing
-  - name: images
-    description: Image upload endpoints
-
-security:
-  - bearerAuth: []
-
 paths:
-  /api/auth/register:
-    post:
+  /api/health:
+    get:
       tags:
-        - auth
-      summary: Register a new user
-      operationId: registerUser
-      security: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/RegisterRequest"
-            example:
-              email: user@example.com
-              password: secret123
+        - health
+      summary: Health Check
+      operationId: health_check_api_health_get
       responses:
-        "200":
-          description: User registered successfully and access token returned
+        '200':
+          description: Successful Response
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/AuthResponse"
-        "400":
-          $ref: "#/components/responses/BadRequest"
-
+                additionalProperties:
+                  type: string
+                type: object
+                title: Response Health Check Api Health Get
+  /api/users/create:
+    post:
+      tags:
+        - users
+      summary: Create User Route
+      operationId: create_user_route_api_users_create_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserCreateRequest'
+        required: true
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserCreateResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/users:
+    get:
+      tags:
+        - users
+      summary: List Users Route
+      operationId: list_users_route_api_users_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserListResponse'
+  '/api/users/{user_id}':
+    get:
+      tags:
+        - users
+      summary: Get User Route
+      operationId: get_user_route_api_users__user_id__get
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+            title: User Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserGetResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  '/api/users/delete/{user_id}':
+    delete:
+      tags:
+        - users
+      summary: Delete User Route
+      operationId: delete_user_route_api_users_delete__user_id__delete
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+            title: User Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserDeleteResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
   /api/auth/login:
     post:
       tags:
         - auth
-      summary: Log in an existing user
-      operationId: loginUser
-      security: []
+      summary: Login
+      operationId: login_api_auth_login_post
       requestBody:
-        required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/LoginRequest"
-            example:
-              email: user@example.com
-              password: secret123
+              $ref: '#/components/schemas/LoginRequest'
+        required: true
       responses:
-        "200":
-          description: Login successful and access token returned
+        '200':
+          description: Successful Response
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/AuthResponse"
-        "401":
-          $ref: "#/components/responses/Unauthorized"
-
+                $ref: '#/components/schemas/AuthResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
   /api/auth/me:
     get:
       tags:
         - auth
-      summary: Get the currently authenticated user
-      operationId: getCurrentUser
+      summary: Read Me
+      operationId: read_me_api_auth_me_get
       responses:
-        "200":
-          description: Current user information
+        '200':
+          description: Successful Response
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UserResponse"
-        "401":
-          $ref: "#/components/responses/Unauthorized"
-
+                $ref: '#/components/schemas/UserResponse'
+      security:
+        - HTTPBearer: []
+    patch:
+      tags:
+        - auth
+      summary: Update Me
+      operationId: update_me_api_auth_me_patch
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CurrentUserUpdateRequest'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+        - HTTPBearer: []
+  /api/auth/me/password:
+    patch:
+      tags:
+        - auth
+      summary: Change Me Password
+      operationId: change_me_password_api_auth_me_password_patch
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangePasswordRequest'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+        - HTTPBearer: []
   /api/checklists:
     get:
       tags:
         - checklists
-      summary: List all checklists owned by the current user
-      operationId: listChecklists
+      summary: List Checklists Route
+      operationId: list_checklists_route_api_checklists_get
       responses:
-        "200":
-          description: A list of checklists
+        '200':
+          description: Successful Response
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/ChecklistResponse"
-        "401":
-          $ref: "#/components/responses/Unauthorized"
-
-    post:
-      tags:
-        - checklists
-      summary: Create a new checklist manually
-      operationId: createChecklist
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/ChecklistCreateRequest"
-            example:
-              title: Engine Startup Procedure
-              data:
-                title: Engine Startup Procedure
-                sections:
-                  - uid: sec_1001
-                    humanId: engine-preparation
-                    title: Engine Preparation
-                    items:
-                      - uid: item_2001
-                        humanId: check-oil-level
-                        text: Check oil level
-                        checked: false
-      responses:
-        "200":
-          description: Checklist created successfully
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ChecklistResponse"
-        "400":
-          $ref: "#/components/responses/BadRequest"
-        "401":
-          $ref: "#/components/responses/Unauthorized"
-
-  /api/checklists/{checklist_id}:
+                $ref: '#/components/schemas/ChecklistListResponse'
+      security:
+        - HTTPBearer: []
+  '/api/checklists/{checklist_id}':
     get:
       tags:
         - checklists
-      summary: Get a checklist by ID
-      operationId: getChecklist
+      summary: Get Checklist Route
+      operationId: get_checklist_route_api_checklists__checklist_id__get
+      security:
+        - HTTPBearer: []
       parameters:
-        - $ref: "#/components/parameters/ChecklistId"
+        - name: checklist_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+            title: Checklist Id
       responses:
-        "200":
-          description: Checklist found
+        '200':
+          description: Successful Response
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ChecklistResponse"
-        "401":
-          $ref: "#/components/responses/Unauthorized"
-        "404":
-          $ref: "#/components/responses/NotFound"
-
-    put:
+                $ref: '#/components/schemas/ChecklistGetResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    patch:
       tags:
         - checklists
-      summary: Update a checklist manually
-      operationId: updateChecklist
+      summary: Patch Checklist Route
+      operationId: patch_checklist_route_api_checklists__checklist_id__patch
+      security:
+        - HTTPBearer: []
       parameters:
-        - $ref: "#/components/parameters/ChecklistId"
+        - name: checklist_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+            title: Checklist Id
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/ChecklistUpdateRequest"
-            example:
-              title: Updated Engine Startup Procedure
-              data:
-                title: Updated Engine Startup Procedure
-                sections:
-                  - uid: sec_1001
-                    humanId: engine-preparation
-                    title: Engine Preparation
-                    items:
-                      - uid: item_2001
-                        humanId: check-oil-level
-                        text: Check oil level before startup
-                        checked: false
+              $ref: '#/components/schemas/ChecklistOperationsPatchRequest'
       responses:
-        "200":
-          description: Checklist updated successfully
+        '200':
+          description: Successful Response
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ChecklistResponse"
-        "400":
-          $ref: "#/components/responses/BadRequest"
-        "401":
-          $ref: "#/components/responses/Unauthorized"
-        "404":
-          $ref: "#/components/responses/NotFound"
-
+                $ref: '#/components/schemas/ChecklistUpdateResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/checklists/create:
+    post:
+      tags:
+        - checklists
+      summary: Create Checklist Route
+      operationId: create_checklist_route_api_checklists_create_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChecklistCreateRequest'
+        required: true
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChecklistCreateResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+        - HTTPBearer: []
+  '/api/checklists/delete/{checklist_id}':
     delete:
       tags:
         - checklists
-      summary: Delete a checklist
-      operationId: deleteChecklist
+      summary: Delete Checklist Route
+      operationId: delete_checklist_route_api_checklists_delete__checklist_id__delete
+      security:
+        - HTTPBearer: []
       parameters:
-        - $ref: "#/components/parameters/ChecklistId"
+        - name: checklist_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+            title: Checklist Id
       responses:
-        "200":
-          description: Checklist deleted successfully
+        '200':
+          description: Successful Response
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/DeleteResponse"
-              example:
-                status: deleted
-        "401":
-          $ref: "#/components/responses/Unauthorized"
-        "404":
-          $ref: "#/components/responses/NotFound"
-
-  /api/checklists/{checklist_id}/undo:
+                $ref: '#/components/schemas/ChecklistDeleteResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/files/upload/image:
     post:
       tags:
-        - checklists
-      summary: Undo the last checklist change
-      operationId: undoChecklistChange
-      parameters:
-        - $ref: "#/components/parameters/ChecklistId"
-      responses:
-        "200":
-          description: Checklist restored to previous snapshot
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ChecklistResponse"
-        "400":
-          description: No snapshot available or invalid undo operation
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
-              example:
-                detail: No snapshot available
-        "401":
-          $ref: "#/components/responses/Unauthorized"
-        "404":
-          $ref: "#/components/responses/NotFound"
-
-  /api/ai/checklists/{checklist_id}/edit:
-    post:
-      tags:
-        - ai
-      summary: Edit an existing checklist using AI
-      operationId: editChecklistWithAi
-      parameters:
-        - $ref: "#/components/parameters/ChecklistId"
+        - files
+      summary: Upload Image Route
+      operationId: upload_image_route_api_files_upload_image_post
       requestBody:
-        required: true
         content:
-          application/json:
+          multipart/form-data:
             schema:
-              $ref: "#/components/schemas/AiEditChecklistRequest"
-            example:
-              instruction: Add a safety section with two checklist items.
+              $ref: >-
+                #/components/schemas/Body_upload_image_route_api_files_upload_image_post
+        required: true
       responses:
-        "200":
-          description: AI edit applied successfully
+        '201':
+          description: Successful Response
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/AiEditResponse"
-              example:
-                operations:
-                  - type: add_section
-                    payload:
-                      section:
-                        uid: sec_3001
-                        humanId: safety-checks
-                        title: Safety Checks
-                        items:
-                          - uid: item_4001
-                            humanId: wear-gloves
-                            text: Wear protective gloves
-                            checked: false
-                          - uid: item_4002
-                            humanId: inspect-work-area
-                            text: Inspect the work area for hazards
-                            checked: false
-                checklist:
-                  title: Engine Startup Procedure
-                  sections:
-                    - uid: sec_3001
-                      humanId: safety-checks
-                      title: Safety Checks
-                      items:
-                        - uid: item_4001
-                          humanId: wear-gloves
-                          text: Wear protective gloves
-                          checked: false
-                        - uid: item_4002
-                          humanId: inspect-work-area
-                          text: Inspect the work area for hazards
-                          checked: false
-                explanation: Added a new safety section with two safety-related items.
-        "400":
-          $ref: "#/components/responses/BadRequest"
-        "401":
-          $ref: "#/components/responses/Unauthorized"
-        "404":
-          $ref: "#/components/responses/NotFound"
-
+                $ref: '#/components/schemas/FileUploadResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+        - HTTPBearer: []
+  /api/files/upload/pdf:
+    post:
+      tags:
+        - files
+      summary: Upload Pdf Route
+      operationId: upload_pdf_route_api_files_upload_pdf_post
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: >-
+                #/components/schemas/Body_upload_pdf_route_api_files_upload_pdf_post
+        required: true
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FileUploadResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+        - HTTPBearer: []
+  '/api/files/{file_id}/raw':
+    get:
+      tags:
+        - files
+      summary: Get File Raw Route
+      description: |-
+        Stream the raw bytes of a stored file. The frontend uses this to render
+        images (e.g. an `imageBlock.images[].url`) and to feed images to the AI
+        /observe endpoint. Ownership is enforced — non-owners get 404.
+      operationId: get_file_raw_route_api_files__file_id__raw_get
+      security:
+        - HTTPBearer: []
+      parameters:
+        - name: file_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+            title: File Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  '/api/files/delete_file/{file_id}':
+    delete:
+      tags:
+        - files
+      summary: Delete File Route
+      operationId: delete_file_route_api_files_delete_file__file_id__delete
+      security:
+        - HTTPBearer: []
+      parameters:
+        - name: file_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+            title: File Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FileDeleteResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
   /api/ai/checklists/create-from-text:
     post:
       tags:
         - ai
-      summary: Create a new checklist from natural language text
-      operationId: createChecklistFromTextWithAi
+      summary: Ai Create From Text
+      operationId: ai_create_from_text_api_ai_checklists_create_from_text_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AiCreateFromTextRequest'
+        required: true
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChecklistCreateResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+        - HTTPBearer: []
+  '/api/ai/checklists/{checklist_id}/edit':
+    post:
+      tags:
+        - ai
+      summary: Ai Edit Checklist
+      operationId: ai_edit_checklist_api_ai_checklists__checklist_id__edit_post
+      security:
+        - HTTPBearer: []
+      parameters:
+        - name: checklist_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+            title: Checklist Id
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/AiCreateFromTextRequest"
-            example:
-              text: >
-                Create a checklist for starting an industrial pump.
-                Include preparation, safety checks, startup, and final verification.
+              $ref: '#/components/schemas/AiEditChecklistRequest'
       responses:
-        "200":
-          description: Checklist created successfully from text
+        '200':
+          description: Successful Response
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ChecklistResponse"
-        "400":
-          $ref: "#/components/responses/BadRequest"
-        "401":
-          $ref: "#/components/responses/Unauthorized"
-
-  /api/images/upload:
+                $ref: '#/components/schemas/AiResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  '/api/ai/checklists/{checklist_id}/observe':
     post:
       tags:
-        - images
-      summary: Upload an image
-      operationId: uploadImage
+        - ai
+      summary: Ai Observe
+      description: >-
+        Vision flow. The user has already uploaded an image (POST
+        /files/upload/image)
+
+        and passes the resulting image_id here along with a natural-language
+
+        instruction or question. The AI sees the image + the checklist and can:
+
+
+        - reply in text only (e.g. "Yes, I see 4 screws installed"), OR
+
+        - call `add_image_to_block` to attach the image to a specific imageBlock
+        —
+          the server appends the new entry to that block's `images` array and
+          persists the checklist (with `checklist_prev` snapshotted for undo).
+
+        If the user rejects the image afterwards, they call DELETE
+        /api/files/{id}
+
+        to remove the unused upload from Supabase Storage.
+      operationId: ai_observe_api_ai_checklists__checklist_id__observe_post
+      security:
+        - HTTPBearer: []
+      parameters:
+        - name: checklist_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+            title: Checklist Id
       requestBody:
         required: true
         content:
-          multipart/form-data:
+          application/json:
             schema:
-              $ref: "#/components/schemas/ImageUploadRequest"
+              $ref: '#/components/schemas/AiObserveRequest'
       responses:
-        "200":
-          description: Image uploaded successfully
+        '200':
+          description: Successful Response
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ImageUploadResponse"
-              example:
-                filename: 8c50b2c1-f77f-43d4-8e76-21d87c6e5f32.png
-                url: /uploads/images/1/8c50b2c1-f77f-43d4-8e76-21d87c6e5f32.png
-                contentType: image/png
-                sizeBytes: 128034
-        "400":
-          $ref: "#/components/responses/BadRequest"
-        "401":
-          $ref: "#/components/responses/Unauthorized"
-
+                $ref: '#/components/schemas/AiResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
 components:
-  securitySchemes:
-    bearerAuth:
-      type: http
-      scheme: bearer
-      bearerFormat: JWT
-
-  parameters:
-    ChecklistId:
-      name: checklist_id
-      in: path
-      required: true
-      description: Numeric ID of the checklist
-      schema:
-        type: integer
-        minimum: 1
-      example: 5
-
-  responses:
-    BadRequest:
-      description: Invalid request
-      content:
-        application/json:
-          schema:
-            $ref: "#/components/schemas/ErrorResponse"
-          example:
-            detail: Invalid request body
-
-    Unauthorized:
-      description: Missing, invalid, or expired authentication token
-      content:
-        application/json:
-          schema:
-            $ref: "#/components/schemas/ErrorResponse"
-          example:
-            detail: Invalid token
-
-    NotFound:
-      description: Requested resource was not found
-      content:
-        application/json:
-          schema:
-            $ref: "#/components/schemas/ErrorResponse"
-          example:
-            detail: Checklist not found
-
   schemas:
-    RegisterRequest:
+    AddComponentOperation:
+      properties:
+        operation:
+          type: string
+          const: addComponent
+          title: Operation
+        targetContainerId:
+          type: string
+          title: Targetcontainerid
+        position:
+          anyOf:
+            - type: string
+            - additionalProperties: true
+              type: object
+          title: Position
+          default: end
+        component:
+          anyOf:
+            - $ref: '#/components/schemas/AddComponentPayload'
+            - additionalProperties: true
+              type: object
+          title: Component
       type: object
       required:
-        - email
-        - password
-      properties:
-        email:
-          type: string
-          format: email
-          example: user@example.com
-        password:
-          type: string
-          format: password
-          minLength: 6
-          example: secret123
-
-    LoginRequest:
-      type: object
-      required:
-        - email
-        - password
-      properties:
-        email:
-          type: string
-          format: email
-          example: user@example.com
-        password:
-          type: string
-          format: password
-          example: secret123
-
-    AuthResponse:
-      type: object
-      required:
-        - access_token
-        - token_type
-      properties:
-        access_token:
-          type: string
-          description: JWT access token
-          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
-        token_type:
-          type: string
-          example: bearer
-
-    UserResponse:
-      type: object
-      required:
-        - id
-        - email
-      properties:
-        id:
-          type: integer
-          example: 1
-        email:
-          type: string
-          format: email
-          example: user@example.com
-
-    ChecklistCreateRequest:
-      type: object
-      required:
-        - title
-        - data
-      properties:
-        title:
-          type: string
-          example: Engine Startup Procedure
-        data:
-          $ref: "#/components/schemas/ChecklistData"
-
-    ChecklistUpdateRequest:
-      type: object
-      description: >
-        Partial update request. At least one of title or data should be provided.
-        If data is provided, the backend should save a snapshot before replacing it.
-      properties:
-        title:
-          type: string
-          nullable: true
-          example: Updated Engine Startup Procedure
-        data:
-          allOf:
-            - $ref: "#/components/schemas/ChecklistData"
-          nullable: true
-
-    ChecklistResponse:
-      type: object
-      required:
-        - id
-        - title
-        - data
-        - created_at
-        - updated_at
-      properties:
-        id:
-          type: integer
-          example: 5
-        title:
-          type: string
-          example: Engine Startup Procedure
-        data:
-          $ref: "#/components/schemas/ChecklistData"
-        created_at:
-          type: string
-          format: date-time
-          example: "2026-05-10T12:00:00Z"
-        updated_at:
-          type: string
-          format: date-time
-          example: "2026-05-10T12:30:00Z"
-
-    ChecklistData:
-      type: object
-      description: >
-        Main checklist JSON document. This is the source of truth for the checklist structure.
-      required:
-        - title
-        - sections
-      properties:
-        title:
-          type: string
-          example: Engine Startup Procedure
-        sections:
-          type: array
-          items:
-            $ref: "#/components/schemas/ChecklistSection"
-      additionalProperties: true
-
-    ChecklistSection:
-      type: object
-      required:
-        - uid
-        - humanId
-        - title
-        - items
-      properties:
-        uid:
-          type: string
-          description: Stable unique machine-readable ID
-          example: sec_1001
-        humanId:
-          type: string
-          description: Human-readable stable ID
-          example: engine-preparation
-        title:
-          type: string
-          example: Engine Preparation
-        items:
-          type: array
-          items:
-            $ref: "#/components/schemas/ChecklistItem"
-      additionalProperties: true
-
-    ChecklistItem:
-      type: object
-      required:
-        - uid
-        - humanId
-        - text
-        - checked
-      properties:
-        uid:
-          type: string
-          description: Stable unique machine-readable ID
-          example: item_2001
-        humanId:
-          type: string
-          description: Human-readable stable ID
-          example: check-oil-level
-        text:
-          type: string
-          example: Check oil level
-        checked:
-          type: boolean
-          example: false
-        imageRefs:
-          type: array
-          description: Optional image references attached to this checklist item
-          items:
-            $ref: "#/components/schemas/ImageReference"
-      additionalProperties: true
-
-    ImageReference:
-      type: object
-      required:
-        - filename
-        - url
-      properties:
-        filename:
-          type: string
-          example: 8c50b2c1-f77f-43d4-8e76-21d87c6e5f32.png
-        url:
-          type: string
-          example: /uploads/images/1/8c50b2c1-f77f-43d4-8e76-21d87c6e5f32.png
-        altText:
-          type: string
-          nullable: true
-          example: Photo of pressure gauge
-
-    AiEditChecklistRequest:
-      type: object
-      required:
-        - instruction
-      properties:
-        instruction:
-          type: string
-          example: Add a safety section with two checklist items.
-
-    AiCreateFromTextRequest:
-      type: object
-      required:
-        - text
-      properties:
-        text:
-          type: string
-          example: Create a checklist for starting an industrial pump.
-
-    AiEditResponse:
-      type: object
-      required:
-        - operations
-        - checklist
-      properties:
-        operations:
-          type: array
-          items:
-            $ref: "#/components/schemas/AiOperation"
-        checklist:
-          $ref: "#/components/schemas/ChecklistData"
-        explanation:
-          type: string
-          nullable: true
-          example: Added a new safety section.
-
-    AiOperation:
-      type: object
-      required:
-        - type
+        - operation
+        - targetContainerId
+        - component
+      title: AddComponentOperation
+    AddComponentPayload:
       properties:
         type:
           type: string
-          description: Operation type generated by the AI and applied by the backend
-          enum:
-            - add_section
-            - update_section
-            - delete_section
-            - add_item
-            - update_item
-            - delete_item
-            - reorder_item
-            - reorder_section
-        target_uid:
+          title: Type
+        label:
           type: string
-          nullable: true
-          description: UID of the target section or item, depending on operation type
-          example: sec_1001
-        payload:
-          type: object
-          nullable: true
-          additionalProperties: true
-          example:
-            item:
-              uid: item_4001
-              humanId: wear-gloves
-              text: Wear protective gloves
-              checked: false
-
-    ImageUploadRequest:
+          minLength: 1
+          title: Label
       type: object
       required:
-        - file
+        - type
+        - label
+      title: AddComponentPayload
+    AiCreateFromTextRequest:
+      properties:
+        prompt:
+          type: string
+          title: Prompt
+        title:
+          anyOf:
+            - type: string
+            - type: 'null'
+          title: Title
+        description:
+          anyOf:
+            - type: string
+            - type: 'null'
+          title: Description
+      type: object
+      required:
+        - prompt
+      title: AiCreateFromTextRequest
+    AiEditChecklistRequest:
+      properties:
+        instruction:
+          type: string
+          title: Instruction
+      type: object
+      required:
+        - instruction
+      title: AiEditChecklistRequest
+    AiObserveChatMessage:
+      properties:
+        role:
+          type: string
+          title: Role
+        content:
+          type: string
+          title: Content
+      type: object
+      required:
+        - role
+        - content
+      title: AiObserveChatMessage
+      description: 'One turn of conversation history, kept flat for easy frontend handling.'
+    AiObserveRequest:
+      properties:
+        instruction:
+          type: string
+          title: Instruction
+        image_id:
+          title: Image Id
+        prior_messages:
+          anyOf:
+            - items:
+                $ref: '#/components/schemas/AiObserveChatMessage'
+              type: array
+            - type: 'null'
+          title: Prior Messages
+      type: object
+      required:
+        - instruction
+        - image_id
+      title: AiObserveRequest
+      description: >-
+        Vision request. The image must already exist in storage (uploaded via
+
+        POST /api/files/upload/image) — pass its id here. The frontend keeps the
+
+        running conversation in memory and replays it via `prior_messages` so
+        the
+
+        user can ask follow-up questions about the same image.
+    AiResponse:
+      properties:
+        checklist:
+          additionalProperties: true
+          type: object
+          title: Checklist
+        reply:
+          type: string
+          title: Reply
+        applied_calls:
+          type: integer
+          title: Applied Calls
+        skipped:
+          items:
+            $ref: '#/components/schemas/AiSkippedCall'
+          type: array
+          title: Skipped
+      type: object
+      required:
+        - checklist
+        - reply
+        - applied_calls
+        - skipped
+      title: AiResponse
+      description: >-
+        Returned by the AI edit endpoint. `checklist` is the resulting JSON tree
+
+        (after all valid tool calls were applied). `reply` is the model's
+
+        natural-language message to the user — the frontend shows this in the
+        chat
+
+        panel. `skipped` lists any tool calls that failed validation so the
+        frontend
+
+        can surface them for debugging.
+    AiSkippedCall:
+      properties:
+        call:
+          additionalProperties: true
+          type: object
+          title: Call
+        reason:
+          type: string
+          title: Reason
+      type: object
+      required:
+        - call
+        - reason
+      title: AiSkippedCall
+    AuthResponse:
+      properties:
+        access_token:
+          type: string
+          title: Access Token
+        token_type:
+          type: string
+          title: Token Type
+          default: bearer
+        user:
+          $ref: '#/components/schemas/UserResponse'
+      type: object
+      required:
+        - access_token
+        - user
+      title: AuthResponse
+    Body_upload_image_route_api_files_upload_image_post:
       properties:
         file:
           type: string
-          format: binary
-
-    ImageUploadResponse:
+          contentMediaType: application/octet-stream
+          title: File
+        checklist_id:
+          anyOf:
+            - type: string
+              format: uuid
+            - type: 'null'
+          title: Checklist Id
       type: object
       required:
-        - filename
-        - url
+        - file
+      title: Body_upload_image_route_api_files_upload_image_post
+    Body_upload_pdf_route_api_files_upload_pdf_post:
       properties:
-        filename:
+        file:
           type: string
-          example: 8c50b2c1-f77f-43d4-8e76-21d87c6e5f32.png
+          contentMediaType: application/octet-stream
+          title: File
+        checklist_id:
+          anyOf:
+            - type: string
+              format: uuid
+            - type: 'null'
+          title: Checklist Id
+      type: object
+      required:
+        - file
+      title: Body_upload_pdf_route_api_files_upload_pdf_post
+    ChangePasswordRequest:
+      properties:
+        current_password:
+          type: string
+          title: Current Password
+        new_password:
+          type: string
+          title: New Password
+      type: object
+      required:
+        - current_password
+        - new_password
+      title: ChangePasswordRequest
+    ChecklistCreateRequest:
+      properties:
+        title:
+          type: string
+          title: Title
+        description:
+          anyOf:
+            - type: string
+            - type: 'null'
+          title: Description
+        checklist:
+          additionalProperties: true
+          type: object
+          title: Checklist
+      type: object
+      required:
+        - title
+        - checklist
+      title: ChecklistCreateRequest
+    ChecklistCreateResponse:
+      properties:
+        title:
+          type: string
+          title: Title
+        description:
+          anyOf:
+            - type: string
+            - type: 'null'
+          title: Description
+        checklist:
+          additionalProperties: true
+          type: object
+          title: Checklist
+        id:
+          type: string
+          format: uuid
+          title: Id
+        user_id:
+          type: string
+          format: uuid
+          title: User Id
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+        updated_at:
+          type: string
+          format: date-time
+          title: Updated At
+        checklist_prev:
+          anyOf:
+            - additionalProperties: true
+              type: object
+            - type: 'null'
+          title: Checklist Prev
+        total_items:
+          type: integer
+          title: Total Items
+          default: 0
+        edited_items:
+          type: integer
+          title: Edited Items
+          default: 0
+        completed_items:
+          type: integer
+          title: Completed Items
+          default: 0
+      type: object
+      required:
+        - title
+        - checklist
+        - id
+        - user_id
+        - created_at
+        - updated_at
+      title: ChecklistCreateResponse
+    ChecklistDeleteResponse:
+      properties:
+        message:
+          type: string
+          title: Message
+      type: object
+      required:
+        - message
+      title: ChecklistDeleteResponse
+    ChecklistGetResponse:
+      properties:
+        title:
+          type: string
+          title: Title
+        description:
+          anyOf:
+            - type: string
+            - type: 'null'
+          title: Description
+        checklist:
+          additionalProperties: true
+          type: object
+          title: Checklist
+        id:
+          type: string
+          format: uuid
+          title: Id
+        user_id:
+          type: string
+          format: uuid
+          title: User Id
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+        updated_at:
+          type: string
+          format: date-time
+          title: Updated At
+        checklist_prev:
+          anyOf:
+            - additionalProperties: true
+              type: object
+            - type: 'null'
+          title: Checklist Prev
+        total_items:
+          type: integer
+          title: Total Items
+          default: 0
+        edited_items:
+          type: integer
+          title: Edited Items
+          default: 0
+        completed_items:
+          type: integer
+          title: Completed Items
+          default: 0
+      type: object
+      required:
+        - title
+        - checklist
+        - id
+        - user_id
+        - created_at
+        - updated_at
+      title: ChecklistGetResponse
+    ChecklistListResponse:
+      properties:
+        checklists:
+          items:
+            $ref: '#/components/schemas/ChecklistSummaryResponse'
+          type: array
+          title: Checklists
+      type: object
+      required:
+        - checklists
+      title: ChecklistListResponse
+    ChecklistOperationsPatchRequest:
+      properties:
+        operations:
+          items:
+            oneOf:
+              - $ref: '#/components/schemas/AddComponentOperation'
+              - $ref: '#/components/schemas/UpdateComponentOperation'
+              - $ref: '#/components/schemas/DeleteComponentOperation'
+            discriminator:
+              propertyName: operation
+              mapping:
+                addComponent: '#/components/schemas/AddComponentOperation'
+                deleteComponent: '#/components/schemas/DeleteComponentOperation'
+                updateComponent: '#/components/schemas/UpdateComponentOperation'
+          type: array
+          title: Operations
+      type: object
+      required:
+        - operations
+      title: ChecklistOperationsPatchRequest
+    ChecklistSummaryResponse:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        user_id:
+          type: string
+          format: uuid
+          title: User Id
+        title:
+          type: string
+          title: Title
+        description:
+          anyOf:
+            - type: string
+            - type: 'null'
+          title: Description
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+        updated_at:
+          type: string
+          format: date-time
+          title: Updated At
+        total_items:
+          type: integer
+          title: Total Items
+          default: 0
+        edited_items:
+          type: integer
+          title: Edited Items
+          default: 0
+        completed_items:
+          type: integer
+          title: Completed Items
+          default: 0
+      type: object
+      required:
+        - id
+        - user_id
+        - title
+        - created_at
+        - updated_at
+      title: ChecklistSummaryResponse
+    ChecklistUpdateResponse:
+      properties:
+        title:
+          type: string
+          title: Title
+        description:
+          anyOf:
+            - type: string
+            - type: 'null'
+          title: Description
+        checklist:
+          additionalProperties: true
+          type: object
+          title: Checklist
+        id:
+          type: string
+          format: uuid
+          title: Id
+        user_id:
+          type: string
+          format: uuid
+          title: User Id
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+        updated_at:
+          type: string
+          format: date-time
+          title: Updated At
+        checklist_prev:
+          anyOf:
+            - additionalProperties: true
+              type: object
+            - type: 'null'
+          title: Checklist Prev
+        total_items:
+          type: integer
+          title: Total Items
+          default: 0
+        edited_items:
+          type: integer
+          title: Edited Items
+          default: 0
+        completed_items:
+          type: integer
+          title: Completed Items
+          default: 0
+      type: object
+      required:
+        - title
+        - checklist
+        - id
+        - user_id
+        - created_at
+        - updated_at
+      title: ChecklistUpdateResponse
+    CurrentUserUpdateRequest:
+      properties:
+        username:
+          type: string
+          title: Username
+        email:
+          type: string
+          format: email
+          title: Email
+      type: object
+      required:
+        - username
+        - email
+      title: CurrentUserUpdateRequest
+    DeleteComponentOperation:
+      properties:
+        operation:
+          type: string
+          const: deleteComponent
+          title: Operation
+        targetId:
+          type: string
+          title: Targetid
+      type: object
+      required:
+        - operation
+        - targetId
+      title: DeleteComponentOperation
+    FileDeleteResponse:
+      properties:
+        message:
+          type: string
+          title: Message
+      type: object
+      required:
+        - message
+      title: FileDeleteResponse
+    FileUploadResponse:
+      properties:
+        file_type:
+          type: string
+          title: File Type
+        file_name:
+          type: string
+          title: File Name
+        id:
+          type: string
+          format: uuid
+          title: Id
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+        user_id:
+          anyOf:
+            - type: string
+              format: uuid
+            - type: 'null'
+          title: User Id
+        checklist_id:
+          anyOf:
+            - type: string
+              format: uuid
+            - type: 'null'
+          title: Checklist Id
         url:
           type: string
-          example: /uploads/images/1/8c50b2c1-f77f-43d4-8e76-21d87c6e5f32.png
-        contentType:
-          type: string
-          example: image/png
-        sizeBytes:
-          type: integer
-          example: 128034
-
-    DeleteResponse:
+          title: Url
       type: object
       required:
-        - status
-      properties:
-        status:
-          type: string
-          example: deleted
-
-    ErrorResponse:
-      type: object
-      required:
-        - detail
+        - file_type
+        - file_name
+        - id
+        - created_at
+        - url
+      title: FileUploadResponse
+    HTTPValidationError:
       properties:
         detail:
-          oneOf:
-            - type: string
-            - type: array
-              items:
-                type: object
-                additionalProperties: true
-          example: Invalid token
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    LoginRequest:
+      properties:
+        email:
+          type: string
+          format: email
+          title: Email
+        password:
+          type: string
+          title: Password
+      type: object
+      required:
+        - email
+        - password
+      title: LoginRequest
+    UpdateComponentOperation:
+      properties:
+        operation:
+          type: string
+          const: updateComponent
+          title: Operation
+        targetId:
+          type: string
+          title: Targetid
+        patch:
+          additionalProperties: true
+          type: object
+          title: Patch
+      type: object
+      required:
+        - operation
+        - targetId
+        - patch
+      title: UpdateComponentOperation
+    UserCreateRequest:
+      properties:
+        username:
+          type: string
+          title: Username
+        email:
+          type: string
+          format: email
+          title: Email
+        password:
+          type: string
+          title: Password
+      type: object
+      required:
+        - username
+        - email
+        - password
+      title: UserCreateRequest
+    UserCreateResponse:
+      properties:
+        username:
+          type: string
+          title: Username
+        email:
+          type: string
+          format: email
+          title: Email
+        id:
+          type: string
+          format: uuid
+          title: Id
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+        access_token:
+          type: string
+          title: Access Token
+        token_type:
+          type: string
+          title: Token Type
+          default: bearer
+      type: object
+      required:
+        - username
+        - email
+        - id
+        - created_at
+        - access_token
+      title: UserCreateResponse
+    UserDeleteResponse:
+      properties:
+        message:
+          type: string
+          title: Message
+      type: object
+      required:
+        - message
+      title: UserDeleteResponse
+    UserGetResponse:
+      properties:
+        username:
+          type: string
+          title: Username
+        email:
+          type: string
+          format: email
+          title: Email
+        id:
+          type: string
+          format: uuid
+          title: Id
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+      type: object
+      required:
+        - username
+        - email
+        - id
+        - created_at
+      title: UserGetResponse
+    UserListResponse:
+      properties:
+        users:
+          items:
+            $ref: '#/components/schemas/UserResponse'
+          type: array
+          title: Users
+      type: object
+      required:
+        - users
+      title: UserListResponse
+    UserResponse:
+      properties:
+        username:
+          type: string
+          title: Username
+        email:
+          type: string
+          format: email
+          title: Email
+        id:
+          type: string
+          format: uuid
+          title: Id
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+      type: object
+      required:
+        - username
+        - email
+        - id
+        - created_at
+      title: UserResponse
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+              - type: string
+              - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
+      type: object
+      required:
+        - loc
+        - msg
+        - type
+      title: ValidationError
+  securitySchemes:
+    HTTPBearer:
+      type: http
+      scheme: bearer
+

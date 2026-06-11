@@ -47,10 +47,48 @@ export function deleteChecklist(checklistId: string): Promise<{ message: string 
 
 // One operation in the checklist-update protocol. Matches the discriminated
 // union the backend validates (see app/schemas/checklist_operations.py).
+export type AddComponentPayload = { type: string; label: string } & Record<string, unknown>
+
 export type ChecklistOperation =
-  | { operation: 'addComponent'; targetContainerId: string; position?: string | Record<string, unknown>; component: Record<string, unknown> }
+  | { operation: 'addComponent'; targetContainerId: string; position?: string | Record<string, unknown>; component: AddComponentPayload }
   | { operation: 'updateComponent'; targetId: string; patch: Record<string, unknown> }
   | { operation: 'deleteComponent'; targetId: string }
+
+function defaultComponentLabel(type: string) {
+  switch (type) {
+    case 'section':
+      return 'New Section'
+    case 'textField':
+      return 'New Text Field'
+    case 'numberField':
+      return 'New Number Field'
+    case 'checkboxGroup':
+      return 'New Checkbox Group'
+    case 'checkbox':
+      return 'New checkbox item'
+    case 'imageBlock':
+      return 'New Image Block'
+    case 'table':
+      return 'New Table'
+    default:
+      return 'New Component'
+  }
+}
+
+function toApiOperation(operation: ChecklistOperation): ChecklistOperation {
+  if (operation.operation !== 'addComponent') return operation
+
+  const type = String(operation.component.type)
+  const rawLabel = operation.component.label
+  const label = typeof rawLabel === 'string' && rawLabel.trim() ? rawLabel : defaultComponentLabel(type)
+
+  // The backend owns generated ids/default structure for new components, but
+  // add handlers require a real label.
+  return {
+    ...operation,
+    component: { type, label },
+  }
+}
 
 // PATCH /api/checklists/{id} — apply a batch of operations to the tree.
 // The backend validates each one, applies them, snapshots `checklist_prev`,
@@ -61,6 +99,6 @@ export function updateChecklistById(
 ): Promise<Checklist> {
   return apiRequest<Checklist>(`/checklists/${checklistId}`, {
     method: 'PATCH',
-    body: JSON.stringify({ operations }),
+    body: JSON.stringify({ operations: operations.map(toApiOperation) }),
   })
 }
