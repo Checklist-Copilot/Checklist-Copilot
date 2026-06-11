@@ -1,9 +1,14 @@
 from typing import Annotated, Any, Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class AddComponentPayload(BaseModel):
+    # Keep optional per-component fields such as humanReadableId, children,
+    # items, value, required, etc. The specific add handlers validate those
+    # fields by component type.
+    model_config = ConfigDict(extra="allow")
+
     type: str
     label: str
 

@@ -1,5 +1,6 @@
 from app.schemas.checklist_operations import AddComponentOperation
 from app.services.checklist_update._common import (
+    materialize_section_children,
     payload_to_dict,
     reject_unknown_fields,
     require_str,
@@ -29,9 +30,7 @@ def add_section(checklist: dict, operation: AddComponentOperation) -> dict:
     reject_unknown_fields(payload, _ALLOWED_FIELDS, "section")
     label = require_str(payload, "label", "section")
 
-    children = payload.get("children", [])
-    if not isinstance(children, list):
-        raise InvalidComponentPayloadError("section: 'children' must be a list")
+    children = materialize_section_children(payload.get("children", []))
 
     component: dict = {
         "id": generate_component_id("section"),

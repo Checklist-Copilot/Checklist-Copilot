@@ -1,5 +1,6 @@
 from app.schemas.checklist_operations import AddComponentOperation
 from app.services.checklist_update._common import (
+    materialize_checkbox_items,
     payload_to_dict,
     reject_unknown_fields,
     require_str,
@@ -29,9 +30,7 @@ def add_checkbox_group(checklist: dict, operation: AddComponentOperation) -> dic
     reject_unknown_fields(payload, _ALLOWED_FIELDS, "checkboxGroup")
     label = require_str(payload, "label", "checkboxGroup")
 
-    items = payload.get("items", [])
-    if not isinstance(items, list):
-        raise InvalidComponentPayloadError("checkboxGroup: 'items' must be a list")
+    items = materialize_checkbox_items(payload.get("items", []))
 
     component: dict = {
         "id": generate_component_id("checkboxGroup"),
