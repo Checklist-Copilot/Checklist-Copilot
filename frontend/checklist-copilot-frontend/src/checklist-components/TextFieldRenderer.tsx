@@ -1,14 +1,35 @@
+import { EditableLabel } from './EditableLabel'
 import styles from './TextFieldRenderer.module.css'
 import type { TextFieldComponent } from './types'
-import { componentTitle } from './utils'
+import { componentTitle, defaultLabelForType } from './utils'
 
-export function TextFieldRenderer({ component }: { component: TextFieldComponent }) {
+type TextFieldRendererProps = {
+  component: TextFieldComponent
+  isEditMode?: boolean
+  onComponentUpdate?: (componentId: string, patch: Record<string, unknown>) => void
+}
+
+export function TextFieldRenderer({ component, isEditMode = false, onComponentUpdate }: TextFieldRendererProps) {
+  const labelContent = (
+    <>
+      <EditableLabel
+        value={componentTitle(component)}
+        fallbackValue={defaultLabelForType(component.type)}
+        isEditMode={isEditMode}
+        ariaLabel="Text field label"
+        onChange={(value) => onComponentUpdate?.(component.id, { label: value })}
+      />
+      {component.required ? <span className={styles.requiredBadge}>Required</span> : null}
+    </>
+  )
+
   return (
     <div className={styles.field} data-component-id={component.id}>
-      <label className={styles.labelRow} htmlFor={component.id}>
-        {componentTitle(component)}
-        {component.required ? <span className={styles.requiredBadge}>Required</span> : null}
-      </label>
+      {isEditMode ? (
+        <div className={styles.labelRow}>{labelContent}</div>
+      ) : (
+        <label className={styles.labelRow} htmlFor={component.id}>{labelContent}</label>
+      )}
 
       {component.description ? <p className={styles.description}>{component.description}</p> : null}
 
@@ -16,7 +37,8 @@ export function TextFieldRenderer({ component }: { component: TextFieldComponent
         <textarea
           id={component.id}
           className={styles.textarea}
-          defaultValue={component.value}
+          value={component.value}
+          onChange={(event) => onComponentUpdate?.(component.id, { value: event.target.value })}
           placeholder={component.placeholder ?? undefined}
           required={component.required}
         />
@@ -25,7 +47,8 @@ export function TextFieldRenderer({ component }: { component: TextFieldComponent
           id={component.id}
           className={styles.input}
           type="text"
-          defaultValue={component.value}
+          value={component.value}
+          onChange={(event) => onComponentUpdate?.(component.id, { value: event.target.value })}
           placeholder={component.placeholder ?? undefined}
           required={component.required}
         />

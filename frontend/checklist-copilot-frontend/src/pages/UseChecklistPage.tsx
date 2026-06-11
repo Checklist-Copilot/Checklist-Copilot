@@ -1,19 +1,16 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import styles from '../page-styles/UseChecklistPage.module.css'
 import { editChecklistWithAi } from '../api/ai'
-import {
-  getChecklistById,
-  updateChecklistById,
-  type ChecklistOperation,
-} from '../api/checklist'
+import { getChecklistById } from '../api/checklist'
 import type { Checklist } from '../types/checklist'
 import { removeToken } from '../auth/tokenStorage'
 import { useRequireAuth } from '../hooks/useRequireAuth'
+import { useChecklistAutosave } from '../hooks/useChecklistAutosave'
 import { ChecklistRenderer, mockChecklist } from '../checklist-components'
 import type { ChecklistRoot } from '../checklist-components'
+import { updateComponentInRoot } from '../checklist-components/treeUtils'
 import { HiOutlineSparkles } from 'react-icons/hi2'
-import { FiSave } from 'react-icons/fi'
 import TopBar from '../components/TopBar'
 import AIChatPopup from '../components/AIChatPopup'
 
@@ -22,81 +19,46 @@ function UseChecklistPage() {
   const { isCheckingAuth, isAuthorized } = useRequireAuth()
   const { checklist_id } = useParams<{ checklist_id: string }>()
   const [checklist, setChecklist] = useState<Checklist | null>(null)
-  const [pendingOperations, setPendingOperations] = useState<ChecklistOperation[]>([])
   const [isLoading, setIsLoading] = useState(false)
-  const [isSaving, setIsSaving] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
-  const [successMessage, setSuccessMessage] = useState<string | null>(null)
-  const [checklistRenderVersion, setChecklistRenderVersion] = useState(0)
   const [isAIChatOpen, setIsAIChatOpen] = useState(false)
 
   const missingChecklistId = isAuthorized && !checklist_id
+
+  const acceptServerChecklist = useCallback((response: Checklist) => {
+    setChecklist(response)
+  }, [])
+
+  const { enqueueOperation, clearQueue, pendingCount, isSaving, autosaveError } = useChecklistAutosave({
+    checklistId: checklist_id,
+    onServerChecklist: acceptServerChecklist,
+  })
 
   function handleLogout() {
     removeToken()
     navigate('/')
   }
 
-  function handleSectionUpdate(sectionId: string, patch: Record<string, unknown>) {
+  function handleComponentUpdate(componentId: string, patch: Record<string, unknown>) {
     setChecklist((currentChecklist) => {
-      if (!currentChecklist || !isChecklistRoot(currentChecklist.checklist)) {
-        return currentChecklist
-      }
+      if (!currentChecklist || !isChecklistRoot(currentChecklist.checklist)) return currentChecklist
 
       return {
         ...currentChecklist,
-        checklist: {
-          ...currentChecklist.checklist,
-          children: currentChecklist.checklist.children.map((component) =>
-            component.id === sectionId ? { ...component, ...patch } : component,
-          ),
-        },
+        checklist: updateComponentInRoot(currentChecklist.checklist, componentId, patch) as unknown as Record<string, unknown>,
       }
     })
 
-    setPendingOperations((current) => [
-      ...current,
-      {
-        operation: 'updateComponent',
-        targetId: sectionId,
-        patch,
-      },
-    ])
-
-    setSuccessMessage(null)
-  }
-
-  async function handleSaveChecklist() {
-    if (!checklist_id || pendingOperations.length === 0) return
-
-    setIsSaving(true)
-    setErrorMessage(null)
-    setSuccessMessage(null)
-
-    try {
-      const response = await updateChecklistById(checklist_id, pendingOperations)
-      setChecklist(response)
-      setPendingOperations([])
-      setChecklistRenderVersion((version) => version + 1)
-      setSuccessMessage('Checklist saved successfully.')
-    } catch {
-      setErrorMessage('Could not save checklist.')
-    } finally {
-      setIsSaving(false)
-    }
+    enqueueOperation({ operation: 'updateComponent', targetId: componentId, patch })
   }
 
   async function handleAiMessage(message: string) {
-    if (!checklist_id) {
-      throw new Error('Checklist ID is missing.')
-    }
+    if (!checklist_id) throw new Error('Checklist ID is missing.')
 
     const response = await editChecklistWithAi(checklist_id, message)
 
     setChecklist((currentChecklist) => {
-      if (!currentChecklist) {
-        return currentChecklist
-      }
+      if (!currentChecklist) return currentChecklist
 
       return {
         ...currentChecklist,
@@ -106,16 +68,12 @@ function UseChecklistPage() {
       }
     })
 
-    setPendingOperations([])
-    setChecklistRenderVersion((version) => version + 1)
-
+    clearQueue()
     return response.reply
   }
 
   useEffect(() => {
-    if (!isAuthorized || !checklist_id) {
-      return
-    }
+    if (!isAuthorized || !checklist_id) return
 
     const checklistId = checklist_id
     let isMounted = true
@@ -125,18 +83,12 @@ function UseChecklistPage() {
       setErrorMessage(null)
 
       try {
-        const response = await getChecklistById(checklistId as string)
-        if (isMounted) {
-          setChecklist(response)
-        }
+        const response = await getChecklistById(checklistId)
+        if (isMounted) setChecklist(response)
       } catch {
-        if (isMounted) {
-          setErrorMessage('Could not load checklist.')
-        }
+        if (isMounted) setErrorMessage('Could not load checklist.')
       } finally {
-        if (isMounted) {
-          setIsLoading(false)
-        }
+        if (isMounted) setIsLoading(false)
       }
     }
 
@@ -157,9 +109,7 @@ function UseChecklistPage() {
     )
   }
 
-  if (!isAuthorized) {
-    return null
-  }
+  if (!isAuthorized) return null
 
   const renderedChecklist = isChecklistRoot(checklist?.checklist) ? checklist.checklist : mockChecklist
 
@@ -201,15 +151,7 @@ function UseChecklistPage() {
               </div>
             </div>
 
-            <button
-              type="button"
-              className={styles.saveButton}
-              onClick={handleSaveChecklist}
-              disabled={isSaving || pendingOperations.length === 0}
-            >
-              <FiSave />
-              {isSaving ? 'Saving...' : 'Save'}
-            </button>
+            <SaveStatus isSaving={isSaving} pendingCount={pendingCount} />
           </header>
 
           <div className={styles.progressHeader}>
@@ -224,15 +166,11 @@ function UseChecklistPage() {
           {isLoading ? <p className={styles.message}>Loading checklist...</p> : null}
           {missingChecklistId ? <p className={styles.error}>Checklist ID is missing in URL.</p> : null}
           {errorMessage ? <p className={styles.error}>{errorMessage}</p> : null}
-          {successMessage ? <p className={styles.message}>{successMessage}</p> : null}
+          {autosaveError ? <p className={styles.error}>{autosaveError}</p> : null}
 
           {!isLoading && !missingChecklistId && !errorMessage ? (
             <div className={styles.checklistShell}>
-              <ChecklistRenderer
-                key={checklistRenderVersion}
-                checklist={renderedChecklist}
-                onSectionUpdate={handleSectionUpdate}
-              />
+              <ChecklistRenderer checklist={renderedChecklist} onComponentUpdate={handleComponentUpdate} />
             </div>
           ) : null}
 
@@ -242,6 +180,17 @@ function UseChecklistPage() {
         </section>
       </main>
     </>
+  )
+}
+
+function SaveStatus({ isSaving, pendingCount }: { isSaving: boolean; pendingCount: number }) {
+  if (!isSaving && pendingCount === 0) return null
+
+  return (
+    <div className={styles.saveStatus} role="status" aria-live="polite">
+      <span className={isSaving ? styles.savingDot : styles.pendingDot} />
+      {isSaving ? 'Saving...' : 'Changes pending'}
+    </div>
   )
 }
 

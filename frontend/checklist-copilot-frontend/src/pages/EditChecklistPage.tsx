@@ -1,19 +1,17 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { FiPlus, FiSave } from 'react-icons/fi'
+import { FiPlus } from 'react-icons/fi'
 import { HiOutlineSparkles } from 'react-icons/hi2'
 import styles from '../page-styles/UseChecklistPage.module.css'
-import {
-  getChecklistById,
-  updateChecklistById,
-  type ChecklistOperation,
-} from '../api/checklist'
+import { getChecklistById } from '../api/checklist'
 import { editChecklistWithAi } from '../api/ai'
 import type { Checklist } from '../types/checklist'
 import { removeToken } from '../auth/tokenStorage'
 import { useRequireAuth } from '../hooks/useRequireAuth'
+import { useChecklistAutosave } from '../hooks/useChecklistAutosave'
 import { ChecklistRenderer, mockChecklist } from '../checklist-components'
 import type { ChecklistComponent, ChecklistRoot } from '../checklist-components'
+import { addComponentToRoot, deleteComponentFromRoot, updateComponentInRoot } from '../checklist-components/treeUtils'
 import TopBar from '../components/TopBar'
 import AIChatPopup from '../components/AIChatPopup'
 
@@ -22,6 +20,7 @@ const componentOptions = [
   { label: 'Text Field', type: 'textField' },
   { label: 'Number Field', type: 'numberField' },
   { label: 'Checkbox Group', type: 'checkboxGroup' },
+  { label: 'Checkbox Item', type: 'checkbox' },
   { label: 'Image Block', type: 'imageBlock' },
   { label: 'Table', type: 'table' },
 ] as const
@@ -33,16 +32,23 @@ function EditChecklistPage() {
 
   const [checklist, setChecklist] = useState<Checklist | null>(null)
   const [editableChecklist, setEditableChecklist] = useState<ChecklistRoot>(mockChecklist)
-  const [pendingOperations, setPendingOperations] = useState<ChecklistOperation[]>([])
   const [isLoading, setIsLoading] = useState(false)
-  const [isSaving, setIsSaving] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
-  const [successMessage, setSuccessMessage] = useState<string | null>(null)
   const [isAIChatOpen, setIsAIChatOpen] = useState(false)
   const [focusedComponentId, setFocusedComponentId] = useState<string>('root')
   const [toastMessage, setToastMessage] = useState<string | null>(null)
 
   const missingChecklistId = isAuthorized && !checklist_id
+
+  const acceptServerChecklist = useCallback((response: Checklist) => {
+    setChecklist(response)
+    if (isChecklistRoot(response.checklist)) setEditableChecklist(response.checklist)
+  }, [])
+
+  const { enqueueOperation, clearQueue, pendingCount, isSaving, autosaveError } = useChecklistAutosave({
+    checklistId: checklist_id,
+    onServerChecklist: acceptServerChecklist,
+  })
 
   function handleLogout() {
     removeToken()
@@ -116,6 +122,17 @@ function EditChecklistPage() {
               required: false,
             },
           ],
+        }
+
+      case 'checkbox':
+      case 'checkboxItem':
+        return {
+          id,
+          humanReadableId: `checkbox_item_${id}`,
+          type: 'checkbox',
+          label: 'New checkbox item',
+          checked: false,
+          required: false,
         }
 
       case 'imageBlock':
@@ -210,6 +227,7 @@ function EditChecklistPage() {
 
   function getFallbackTargetId(type: ChecklistComponent['type']) {
     if (type === 'section') return 'root'
+    if (type === 'checkbox' || type === 'checkboxItem') return null
 
     const latestSection = [...editableChecklist.children]
       .reverse()
@@ -226,7 +244,11 @@ function EditChecklistPage() {
     const fallbackTargetId = getFallbackTargetId(type)
 
     if (!fallbackTargetId) {
-      showToast('Add a section first before adding this component.')
+      showToast(
+        type === 'checkbox' || type === 'checkboxItem'
+          ? 'Focus a checkbox group before adding a checkbox item.'
+          : 'Add a section first before adding this component.',
+      )
       return
     }
 
@@ -241,127 +263,31 @@ function EditChecklistPage() {
 
   const newComponent =
     targetContainerId !== 'root' &&
-    findComponentById(editableChecklist, targetContainerId)?.type === 'checkboxGroup'
+    ['checkboxGroup', 'checkboxContainer'].includes(String(findComponentById(editableChecklist, targetContainerId)?.type))
       ? createComponent('checkbox')
       : createComponent(type)
 
-  if (targetContainerId === 'root') {
-    setEditableChecklist((current) => ({
-      ...current,
-      children: [...current.children, newComponent],
-    }))
-  } else {
-    setEditableChecklist((current) => ({
-      ...current,
-      children: current.children.map((component) => {
-        if (component.type === 'section' && component.id === targetContainerId) {
-          return {
-            ...component,
-            children: [...component.children, newComponent],
-          }
-        }
+  setEditableChecklist((current) => addComponentToRoot(current, targetContainerId, newComponent))
 
-        if (
-          (component.type === 'checkboxGroup' || component.type === 'checkboxContainer') &&
-          component.id === targetContainerId &&
-          (newComponent.type === 'checkbox' || newComponent.type === 'checkboxItem')
-        ) {
-          return {
-            ...component,
-            items: [...component.items, newComponent],
-          }
-        }
-
-        return component
-      }),
-    }))
-  }
-
-  setPendingOperations((current) => [
-    ...current,
-    {
-      operation: 'addComponent',
-      targetContainerId,
-      position: 'end',
-      component: newComponent as unknown as Record<string, unknown>,
-    },
-  ])
+  enqueueOperation({
+    operation: 'addComponent',
+    targetContainerId,
+    position: 'end',
+    component: newComponent as unknown as { type: string; label: string } & Record<string, unknown>,
+  })
 
   setFocusedComponentId(newComponent.id)
-  setSuccessMessage(null)
 }
 
   function handleDeleteComponent(componentId: string) {
-  setEditableChecklist((current) => ({
-    ...current,
-    children: current.children
-      .filter((component) => component.id !== componentId)
-      .map((component) => {
-        if (component.type !== 'section') {
-          return component
-        }
-
-        return {
-          ...component,
-          children: component.children.filter((child) => child.id !== componentId),
-        }
-      }),
-  }))
-
-  setPendingOperations((current) => [
-    ...current,
-    {
-      operation: 'deleteComponent',
-      targetId: componentId,
-    },
-  ])
-
-  setSuccessMessage(null)
+  setEditableChecklist((current) => deleteComponentFromRoot(current, componentId))
+  enqueueOperation({ operation: 'deleteComponent', targetId: componentId })
 }
 
-  function handleSectionUpdate(sectionId: string, patch: Record<string, unknown>) {
-  setEditableChecklist((current) => ({
-    ...current,
-    children: current.children.map((component) =>
-      component.id === sectionId ? { ...component, ...patch } : component,
-    ),
-  }))
-
-  setPendingOperations((current) => [
-    ...current,
-    {
-      operation: 'updateComponent',
-      targetId: sectionId,
-      patch,
-    },
-  ])
-
-  setSuccessMessage(null)
+  function handleComponentUpdate(componentId: string, patch: Record<string, unknown>) {
+  setEditableChecklist((current) => updateComponentInRoot(current, componentId, patch))
+  enqueueOperation({ operation: 'updateComponent', targetId: componentId, patch })
 }
-
-  async function handleSaveChecklist() {
-    if (!checklist_id || pendingOperations.length === 0) return
-
-    setIsSaving(true)
-    setErrorMessage(null)
-    setSuccessMessage(null)
-
-    try {
-      const response = await updateChecklistById(checklist_id, pendingOperations)
-      setChecklist(response)
-
-      if (isChecklistRoot(response.checklist)) {
-        setEditableChecklist(response.checklist)
-      }
-
-      setPendingOperations([])
-      setSuccessMessage('Checklist saved successfully.')
-    } catch {
-      setErrorMessage('Could not save checklist.')
-    } finally {
-      setIsSaving(false)
-    }
-  }
 
   async function handleAiMessage(message: string) {
     if (!checklist_id) {
@@ -385,8 +311,7 @@ function EditChecklistPage() {
       setEditableChecklist(response.checklist)
     }
 
-    setPendingOperations([])
-    setSuccessMessage('Checklist updated by AI.')
+    clearQueue()
 
     return response.reply
   }
@@ -480,21 +405,13 @@ function EditChecklistPage() {
                 </div>
               </div>
 
-              <button
-                type="button"
-                className={styles.saveButton}
-                onClick={handleSaveChecklist}
-                disabled={isSaving || pendingOperations.length === 0}
-              >
-                <FiSave />
-                {isSaving ? 'Saving...' : 'Save'}
-              </button>
+              <SaveStatus isSaving={isSaving} pendingCount={pendingCount} />
             </header>
 
             {isLoading ? <p className={styles.message}>Loading checklist...</p> : null}
             {missingChecklistId ? <p className={styles.error}>Checklist ID is missing in URL.</p> : null}
             {errorMessage ? <p className={styles.error}>{errorMessage}</p> : null}
-            {successMessage ? <p className={styles.message}>{successMessage}</p> : null}
+            {autosaveError ? <p className={styles.error}>{autosaveError}</p> : null}
 
             {!isLoading && !missingChecklistId && !errorMessage ? (
               <div className={styles.checklistShell}>
@@ -503,7 +420,7 @@ function EditChecklistPage() {
                   isEditMode
                   focusedComponentId={focusedComponentId}
                   onFocusComponent={setFocusedComponentId}
-                  onSectionUpdate={handleSectionUpdate}
+                  onComponentUpdate={handleComponentUpdate}
                   onDeleteComponent={handleDeleteComponent}
                 />
               </div>
@@ -537,6 +454,17 @@ function EditChecklistPage() {
         />
       </main>
     </>
+  )
+}
+
+function SaveStatus({ isSaving, pendingCount }: { isSaving: boolean; pendingCount: number }) {
+  if (!isSaving && pendingCount === 0) return null
+
+  return (
+    <div className={styles.saveStatus} role="status" aria-live="polite">
+      <span className={isSaving ? styles.savingDot : styles.pendingDot} />
+      {isSaving ? 'Saving...' : 'Changes pending'}
+    </div>
   )
 }
 

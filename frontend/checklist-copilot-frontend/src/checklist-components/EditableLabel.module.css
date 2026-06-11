@@ -1,0 +1,19 @@
+.input {
+  width: min(100%, 520px);
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-weight: inherit;
+  letter-spacing: inherit;
+  line-height: inherit;
+  padding: 3px 7px;
+  outline: none;
+}
+
+.input:hover,
+.input:focus {
+  border-color: rgba(248, 245, 255, 0.18);
+  background: rgba(248, 245, 255, 0.06);
+}

@@ -11,7 +11,7 @@ type ComponentRendererProps = {
   component: ChecklistComponent
   index?: number
   isEditMode?: boolean
-  onSectionUpdate?: (sectionId: string, patch: Record<string, unknown>) => void
+  onComponentUpdate?: (componentId: string, patch: Record<string, unknown>) => void
   onDeleteComponent?: (componentId: string) => void
   focusedComponentId?: string
   onFocusComponent?: (componentId: string) => void
@@ -21,7 +21,7 @@ export function ComponentRenderer({
   component,
   index,
   isEditMode = false,
-  onSectionUpdate,
+  onComponentUpdate,
   onDeleteComponent,
   focusedComponentId,
   onFocusComponent,
@@ -33,7 +33,7 @@ export function ComponentRenderer({
           section={component}
           index={index}
           isEditMode={isEditMode}
-          onSectionUpdate={onSectionUpdate}
+          onComponentUpdate={onComponentUpdate}
           onDeleteComponent={onDeleteComponent}
           focusedComponentId={focusedComponentId}
           onFocusComponent={onFocusComponent}
@@ -41,20 +41,20 @@ export function ComponentRenderer({
       )
     case 'checkboxGroup':
     case 'checkboxContainer':
-      return <CheckboxGroupRenderer component={component} />
+      return <CheckboxGroupRenderer component={component} isEditMode={isEditMode} onComponentUpdate={onComponentUpdate} />
     case 'checkbox':
     case 'checkboxItem':
-      return <CheckboxRenderer component={component} />
+      return <CheckboxRenderer component={component} isEditMode={isEditMode} onComponentUpdate={onComponentUpdate} />
     case 'textField':
-      return <TextFieldRenderer component={component} />
+      return <TextFieldRenderer component={component} isEditMode={isEditMode} onComponentUpdate={onComponentUpdate} />
     case 'numberField':
     case 'numericField':
-      return <NumberFieldRenderer component={component} />
+      return <NumberFieldRenderer component={component} isEditMode={isEditMode} onComponentUpdate={onComponentUpdate} />
     case 'imageBlock':
     case 'imagesSection':
-      return <ImageBlockRenderer component={component} />
+      return <ImageBlockRenderer component={component} isEditMode={isEditMode} onComponentUpdate={onComponentUpdate} />
     case 'table':
-      return <TableRenderer component={component} />
+      return <TableRenderer component={component} isEditMode={isEditMode} onComponentUpdate={onComponentUpdate} />
     default:
       return null
   }
