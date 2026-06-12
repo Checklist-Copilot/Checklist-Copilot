@@ -5,6 +5,7 @@ import TopBar from '../components/TopBar'
 import { removeToken } from '../auth/tokenStorage'
 import { useRequireAuth } from '../hooks/useRequireAuth'
 import { createChecklist } from '../api/checklist'
+import { generateChecklistFromPdfs } from '../api/ai'
 import { uploadChecklistPdf } from '../api/files'
 import styles from '../pages-styles/NewChecklistPage.module.css'
 
@@ -93,6 +94,13 @@ function NewChecklistPage() {
       for (const [index, file] of pdfFiles.entries()) {
         setProgressMessage(`Uploading PDF ${index + 1} of ${pdfFiles.length}...`)
         await uploadChecklistPdf(createdChecklist.id, file)
+      }
+
+      setProgressMessage('Generating checklist with AI...')
+      try {
+        await generateChecklistFromPdfs(createdChecklist.id, trimmedDescription)
+      } catch {
+        // AI generation failed — navigate anyway, checklist exists but is empty
       }
 
       navigate(`/checklist/edit/${createdChecklist.id}`)

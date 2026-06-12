@@ -15,6 +15,7 @@ type ChecklistListProps = {
   isLoading: boolean
   errorMessage: string | null
   onSelectChecklist: (id: string) => void
+  onDelete: (id: string) => void
 }
 
 const statusFilterOptions = [
@@ -38,6 +39,7 @@ export function ChecklistList({
   isLoading,
   errorMessage,
   onSelectChecklist,
+  onDelete,
 }: ChecklistListProps) {
   const navigate = useNavigate()
   const [statusFilter, setStatusFilter] = useState<ChecklistStatus | 'all'>('all')
@@ -136,6 +138,7 @@ export function ChecklistList({
               isSelected={selectedChecklistId === checklist.id}
               ownerName={getOwnerName(ownerNames, checklist.user_id)}
               onViewStats={onSelectChecklist}
+              onDelete={onDelete}
             />
           ))}
         </div>
