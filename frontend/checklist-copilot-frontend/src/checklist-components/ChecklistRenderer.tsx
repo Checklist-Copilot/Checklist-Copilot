@@ -4,6 +4,7 @@ import type { ChecklistRoot } from './types'
 
 type ChecklistRendererProps = {
   checklist: ChecklistRoot
+  checklistId?: string
   isEditMode?: boolean
   onComponentUpdate?: (componentId: string, patch: Record<string, unknown>) => void
   onDeleteComponent?: (componentId: string) => void
@@ -13,6 +14,7 @@ type ChecklistRendererProps = {
 
 export function ChecklistRenderer({
   checklist,
+  checklistId,
   isEditMode = false,
   onComponentUpdate,
   onDeleteComponent,
@@ -49,6 +51,7 @@ export function ChecklistRenderer({
           <ComponentRenderer
             component={component}
             index={index}
+            checklistId={checklistId}
             isEditMode={isEditMode}
             onComponentUpdate={onComponentUpdate}
             onDeleteComponent={onDeleteComponent}
