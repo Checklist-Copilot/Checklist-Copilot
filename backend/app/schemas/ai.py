@@ -13,6 +13,10 @@ class AiEditChecklistRequest(BaseModel):
     instruction: str
 
 
+class AiGenerateRequest(BaseModel):
+    prompt: str
+
+
 class AiObserveChatMessage(BaseModel):
     """One turn of conversation history, kept flat for easy frontend handling."""
     role: str  # "user" | "assistant"

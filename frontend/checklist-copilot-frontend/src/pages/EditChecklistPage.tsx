@@ -475,7 +475,7 @@ function isChecklistRoot(value: unknown): value is ChecklistRoot {
   if (!value || typeof value !== 'object') return false
 
   const candidate = value as { type?: unknown; children?: unknown }
-  return candidate.type === 'root' && Array.isArray(candidate.children)
+  return (candidate.type === 'root' || candidate.type === 'checklist') && Array.isArray(candidate.children)
 }
 
 function formatDate(value: string) {

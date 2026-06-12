@@ -79,6 +79,29 @@ class OpenAIClient:
         self.model = model or os.environ.get("OPENAI_MODEL", _DEFAULT_MODEL)
 
     # ----------------------------------------------------------------------- #
+    # Single-turn JSON extraction (no tools).                                  #
+    # ----------------------------------------------------------------------- #
+    def complete_json(
+        self,
+        system_prompt: str,
+        user_prompt: str,
+        *,
+        temperature: float = 0.1,
+    ) -> dict:
+        """Single-turn call that returns parsed JSON. Use for structured extraction tasks."""
+        response = self._client.chat.completions.create(
+            model=self.model,
+            temperature=temperature,
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt},
+            ],
+            response_format={"type": "json_object"},
+        )
+        content = response.choices[0].message.content or "{}"
+        return json.loads(content)
+
+    # ----------------------------------------------------------------------- #
     # Single-turn (kept for simple callers / debugging).                       #
     # ----------------------------------------------------------------------- #
     def complete_with_tools(

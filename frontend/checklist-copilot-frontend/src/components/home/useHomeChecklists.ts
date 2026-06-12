@@ -74,5 +74,5 @@ export function useHomeChecklists(isAuthorized: boolean) {
     }
   }, [isAuthorized])
 
-  return { checklists, ownerNames, isLoading, errorMessage, setErrorMessage }
+  return { checklists, setChecklists, ownerNames, isLoading, errorMessage, setErrorMessage }
 }
