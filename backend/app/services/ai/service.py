@@ -21,7 +21,6 @@ payload would be.
 from __future__ import annotations
 
 import json
-import uuid
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -212,10 +211,10 @@ def generate_checklist_from_text(
     Returns an AIRunResult whose `.checklist` field is the final JSON tree,
     ready to persist via the regular `create_checklist_for_user` service.
     """
-    root_id = f"root_{uuid.uuid4().hex[:12]}"
+    root_id = "root"
     checklist: dict[str, Any] = {
         "id": root_id,
-        "type": "checklist",
+        "type": "root",
         "title": title,
         "description": description,
         "children": [],
