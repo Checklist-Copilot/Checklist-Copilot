@@ -1,5 +1,6 @@
 import base64
 import copy
+import logging
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -23,6 +24,7 @@ from app.services.ai.service import (
     observe_with_image,
 )
 from app.services.auth import get_current_user
+from app.services.checklist_update.exceptions import ChecklistOperationError
 from app.services.checklists import (
     apply_stats,
     create_checklist_for_user,
@@ -30,12 +32,12 @@ from app.services.checklists import (
 )
 from app.services.files import (
     build_file_url,
-    extract_pdf_text,
     fetch_file_bytes,
     get_file_for_user,
     get_pdf_files_for_checklist,
 )
 
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/ai/checklists")
 
@@ -220,40 +222,31 @@ async def ai_generate_from_pdfs(
         )
 
     pdf_files = get_pdf_files_for_checklist(db, checklist_id)
-    print(f"\n{'='*60}")
-    print(f"[PDF PIPELINE] START — checklist: {checklist_id}")
-    print(f"[PDF PIPELINE] Found {len(pdf_files)} PDF file(s)")
-    print(f"{'='*60}")
-    pdf_texts: list[str] = []
-    for i, pdf_file in enumerate(pdf_files, 1):
+    logger.info("Starting PDF checklist generation for checklist=%s, %d PDF(s)", checklist_id, len(pdf_files))
+
+    attachments: list[tuple[str, bytes]] = []
+    for pdf_file in pdf_files:
         try:
             raw_bytes, _ = await fetch_file_bytes(pdf_file)
-            text = extract_pdf_text(raw_bytes)
-            print(f"\n[STEP 1 — PDF {i}/{len(pdf_files)}] file_id={pdf_file.id} | {len(text)} chars")
-            print(f"[STEP 1 — PDF {i}/{len(pdf_files)}] --- TEXT START ---")
-            print(text)
-            print(f"[STEP 1 — PDF {i}/{len(pdf_files)}] ---- TEXT END ----")
-            if text.strip():
-                pdf_texts.append(f"[Document {i}]\n{text}")
-        except Exception as exc:
-            print(f"[STEP 1 — PDF {i}/{len(pdf_files)}] ERROR for {pdf_file.id}: {exc}")
+            attachments.append((pdf_file.file_name, raw_bytes))
+        except Exception:
+            logger.exception("Failed to fetch PDF bytes for file_id=%s", pdf_file.id)
 
-    combined_pdf_text = "\n\n---\n\n".join(pdf_texts)
-    print(f"\n[PDF PIPELINE] Combined: {len(combined_pdf_text)} chars from {len(pdf_texts)} document(s)")
-
-    # Only run AI generation when PDF text was actually extracted.
-    # If no PDFs were uploaded (or all failed to extract), leave the checklist empty.
-    if not combined_pdf_text.strip():
-        print("[PDF PIPELINE] No PDF text available — skipping generation")
+    # Only run AI generation when at least one PDF was successfully fetched.
+    # If no PDFs were uploaded (or all failed to fetch), leave the checklist empty.
+    if not attachments:
+        logger.info("No PDF attachments available — skipping generation")
         return ChecklistResponse.model_validate(checklist)
 
     try:
         result = generate_checklist_from_pdf(
-            combined_pdf_text,
+            attachments,
             title=checklist.title,
             description=checklist.description,
+            prompt=payload.prompt,
         )
-    except RuntimeError as exc:
+    except (RuntimeError, ValueError, ChecklistOperationError) as exc:
+        logger.exception("PDF checklist generation failed for checklist=%s", checklist_id)
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc)
         ) from exc
@@ -265,64 +258,12 @@ async def ai_generate_from_pdfs(
     db.commit()
     db.refresh(checklist)
 
-    print(f"[PDF PIPELINE] Saved checklist with {len(result.checklist.get('children') or [])} top-level children")
+    logger.info(
+        "Saved generated checklist=%s with %d top-level children",
+        checklist_id,
+        len(result.checklist.get("children") or []),
+    )
     return ChecklistResponse.model_validate(checklist)
-
-
-@router.post("/{checklist_id}/debug-pdf", response_model=dict)
-async def ai_debug_pdf_pipeline(
-    checklist_id: uuid.UUID,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-) -> dict:
-    """
-    TEMPORARY DEBUG endpoint. Shows every step of the PDF pipeline:
-    1. Raw extracted PDF text
-    2. Phase-1 JSON (sections + items from AI)
-    3. Phase-2 result (final checklist tree + applied/skipped calls)
-    """
-    from app.services.ai.service import extract_checklist_structure_from_pdf
-
-    checklist = get_checklist_for_user(db, checklist_id, current_user.id)
-    if checklist is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Checklist not found.")
-
-    pdf_files = get_pdf_files_for_checklist(db, checklist_id)
-    if not pdf_files:
-        return {"error": "No PDF files found for this checklist."}
-
-    pdf_texts: list[str] = []
-    pdf_meta: list[dict] = []
-    for pdf_file in pdf_files:
-        try:
-            raw_bytes, _ = await fetch_file_bytes(pdf_file)
-            text = extract_pdf_text(raw_bytes)
-            pdf_texts.append(text)
-            pdf_meta.append({"file_id": str(pdf_file.id), "chars": len(text), "preview": text[:500]})
-        except Exception as exc:
-            pdf_meta.append({"file_id": str(pdf_file.id), "error": str(exc)})
-
-    combined_pdf_text = "\n\n---\n\n".join(pdf_texts)
-
-    phase1 = extract_checklist_structure_from_pdf(combined_pdf_text) if combined_pdf_text.strip() else {}
-
-    from app.services.ai.service import generate_checklist_from_pdf
-    result = generate_checklist_from_pdf(
-        combined_pdf_text,
-        title=checklist.title,
-        description=checklist.description,
-    ) if combined_pdf_text.strip() else None
-
-    return {
-        "step1_pdf_extraction": pdf_meta,
-        "step2_phase1_ai_structure": phase1,
-        "step3_phase2_result": {
-            "applied_calls": result.applied_calls if result else 0,
-            "skipped_calls": result.skipped_calls if result else [],
-            "checklist_children_count": len((result.checklist.get("children") or [])) if result else 0,
-            "checklist": result.checklist if result else {},
-        },
-    }
 
 
 def _infer_title(checklist: dict, prompt: str) -> str:

@@ -97,13 +97,14 @@ function NewChecklistPage() {
       }
 
       setProgressMessage('Generating checklist with AI...')
+      let generationWarning: string | null = null
       try {
         await generateChecklistFromPdfs(createdChecklist.id, trimmedDescription)
-      } catch {
-        // AI generation failed — navigate anyway, checklist exists but is empty
+      } catch (error) {
+        generationWarning = `AI generation failed: ${getErrorMessage(error)}. You can edit the checklist manually.`
       }
 
-      navigate(`/checklist/edit/${createdChecklist.id}`)
+      navigate(`/checklist/edit/${createdChecklist.id}`, { state: generationWarning ? { warning: generationWarning } : undefined })
     } catch (error) {
       if (newChecklistId) {
         setErrorMessage(`Checklist was created, but PDF upload failed: ${getErrorMessage(error)}`)
