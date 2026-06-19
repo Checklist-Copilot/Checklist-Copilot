@@ -302,6 +302,62 @@
 .blueIcon { color: var(--cyan); }
 .greenIcon { color: #34d399; }
 
+.demoOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(8, 6, 16, 0.82);
+  backdrop-filter: blur(6px);
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  z-index: 50;
+  animation: fadeIn 200ms ease both;
+}
+
+.demoModal {
+  position: relative;
+  width: min(100%, 960px);
+  background: #0d0c18;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 24px;
+  overflow: hidden;
+  box-shadow: 0 30px 90px rgba(0, 0, 0, 0.5);
+}
+
+.demoVideo {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: #000;
+}
+
+.demoCloseButton {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  color: var(--text);
+  font-size: 22px;
+  line-height: 1;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: background 200ms;
+}
+
+.demoCloseButton:hover {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
 @keyframes revealUp {
   from { opacity: 0; transform: translateY(26px) scale(.98); }
   to { opacity: 1; transform: translateY(0) scale(1); }
