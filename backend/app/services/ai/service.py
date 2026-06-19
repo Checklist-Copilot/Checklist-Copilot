@@ -21,8 +21,11 @@ payload would be.
 from __future__ import annotations
 
 import json
+import logging
 from dataclasses import dataclass, field
 from typing import Any
+
+logger = logging.getLogger(__name__)
 
 from app.schemas.checklist_operations import (
     AddComponentOperation,
@@ -127,6 +130,27 @@ def _build_hint_for_failure(call: ToolCall, checklist: dict, exc: Exception) -> 
     return None
 
 
+def _find_existing_checkbox_group(checklist: dict, container_id: str, label: str) -> dict | None:
+    """
+    Look for a `checkboxGroup` with a matching (trimmed, case-insensitive)
+    label already inside `container_id`. Used to stop the model from creating
+    duplicate groups in the same section across tool-call rounds.
+    """
+    container = find_component_by_id(checklist, container_id)
+    if container is None:
+        return None
+    target_label = label.strip().lower()
+    for key in ("children", "items"):
+        for child in container.get(key, []) or []:
+            if (
+                isinstance(child, dict)
+                and child.get("type") == "checkboxGroup"
+                and (child.get("label") or "").strip().lower() == target_label
+            ):
+                return child
+    return None
+
+
 def _build_callback(result: AIRunResult):
     """
     Build the `on_tool_call` callback the OpenAI client invokes for each tool
@@ -142,6 +166,28 @@ def _build_callback(result: AIRunResult):
         try:
             if call.name == "add_component":
                 target = _resolve_target_container_id(result.checklist, args["targetContainerId"])
+                component = args.get("component", {})
+
+                # Idempotency: the model sometimes re-creates a checkboxGroup it
+                # already added earlier in the same section (e.g. across rounds).
+                # Reuse the existing one instead of creating a duplicate.
+                if component.get("type") == "checkboxGroup":
+                    existing_group = _find_existing_checkbox_group(
+                        result.checklist, target, component.get("label", "")
+                    )
+                    if existing_group is not None:
+                        return {
+                            "ok": True,
+                            "id": existing_group["id"],
+                            "humanReadableId": component.get("humanReadableId"),
+                            "already_exists": True,
+                            "message": (
+                                "A checkboxGroup with this label already exists in this "
+                                "section — reusing it. Do not create another one; add "
+                                "checkboxes to this existing group instead."
+                            ),
+                        }
+
                 op = AddComponentOperation.model_construct(
                     operation="addComponent",
                     targetContainerId=target,
@@ -204,10 +250,14 @@ def generate_checklist_from_text(
     title: str | None = None,
     description: str | None = None,
     pdf_context: str | None = None,
+    pdf_files: list[tuple[str, bytes]] | None = None,
     max_rounds: int = 5,
 ) -> AIRunResult:
     """
     Build a brand-new checklist tree from a natural-language description.
+
+    `pdf_files` (filename, raw_bytes) attachments are sent directly to the
+    model when provided, instead of the text-extraction `pdf_context` path.
 
     Returns an AIRunResult whose `.checklist` field is the final JSON tree,
     ready to persist via the regular `create_checklist_for_user` service.
@@ -225,27 +275,32 @@ def generate_checklist_from_text(
     on_tool_call = _build_callback(result)
 
     system_prompt = build_create_system_prompt(root_id)
+
+    pdf_rules = (
+        "STRICT RULES — you MUST follow these:\n"
+        "1. ONLY create checklist items, sections, and fields that are EXPLICITLY "
+        "mentioned in the PDF document(s). Do NOT add anything from general knowledge "
+        "or common practice that is not stated in the document(s).\n"
+        "2. Every checkbox item must correspond to a specific requirement or step "
+        "listed in the document(s) — use the document's exact wording as the label.\n"
+        "3. Every section must correspond to a heading or logical group FROM the document(s).\n"
+        "4. Where the document(s) specify concrete values (names, codes, units, thresholds, "
+        "dates), use those exact values as field labels, placeholders, or defaults.\n"
+        "5. Do NOT invent fields, items, or sections that are not in the document(s).\n"
+        "6. If the document(s) say to collect a piece of data (e.g. 'record inspector name'), "
+        "create the appropriate input field for it.\n"
+        "7. If the document(s) mention uploading a photo, create an imageBlock.\n\n"
+    )
     context_prefix = (
         f"The following text was extracted from a reference PDF document.\n\n"
-        f"STRICT RULES — you MUST follow these:\n"
-        f"1. ONLY create checklist items, sections, and fields that are EXPLICITLY "
-        f"mentioned in the PDF text below. Do NOT add anything from general knowledge "
-        f"or common practice that is not stated in the PDF.\n"
-        f"2. Every checkbox item must correspond to a specific requirement or step "
-        f"listed in the PDF — use the PDF's exact wording as the label.\n"
-        f"3. Every section must correspond to a heading or logical group FROM the PDF.\n"
-        f"4. Where the PDF specifies concrete values (names, codes, units, thresholds, "
-        f"dates), use those exact values as field labels, placeholders, or defaults.\n"
-        f"5. Do NOT invent fields, items, or sections that are not in the PDF.\n"
-        f"6. If the PDF says to collect a piece of data (e.g. 'record inspector name'), "
-        f"create the appropriate input field for it.\n"
-        f"7. If the PDF mentions uploading a photo, create an imageBlock.\n\n"
+        f"{pdf_rules}"
         f"PDF CONTENT:\n{pdf_context}\n\n---\n\n"
         if pdf_context
         else ""
     )
     user_prompt = (
         f"{context_prefix}"
+        f"{'One or more PDF documents are attached to this message. ' + pdf_rules if pdf_files else ''}"
         f"Build a checklist for:\n\n{prompt}\n\n"
         f"The root container id is `{root_id}`. Use it as `targetContainerId` "
         f"for the top-level sections, then fill every section with the "
@@ -253,276 +308,48 @@ def generate_checklist_from_text(
     )
 
     client = OpenAIClient()
-    chat_result = client.chat_with_tools(
-        system_prompt,
-        user_prompt,
-        CREATE_TOOLS,
-        on_tool_call,
-        max_rounds=max_rounds,
-    )
+    if pdf_files:
+        chat_result = client.chat_with_tools_and_files(
+            system_prompt,
+            user_prompt,
+            pdf_files,
+            CREATE_TOOLS,
+            on_tool_call,
+            max_rounds=max_rounds,
+        )
+    else:
+        chat_result = client.chat_with_tools(
+            system_prompt,
+            user_prompt,
+            CREATE_TOOLS,
+            on_tool_call,
+            max_rounds=max_rounds,
+        )
     result.reply = chat_result.reply
 
     return result
 
 
-def extract_checklist_structure_from_pdf(pdf_text: str) -> dict:
-    """
-    Phase 1: AI reads the raw PDF text and returns a structured JSON describing
-    sections and items. Supports combined text from multiple PDFs (separated by ---).
-    """
-    client = OpenAIClient()
-    system = (
-        "You are a document analyst. You will receive text extracted from one or more PDF documents. "
-        "Multiple documents are separated by '---'. Extract all content as a single unified checklist definition.\n\n"
-        "Return ONLY valid JSON with this shape:\n"
-        "{\n"
-        '  "sections": ["Section Name 1", ...],\n'
-        '  "required_fields": ["exact label of item that is required", ...],\n'
-        '  "items": [\n'
-        '    {"label": "...", "section": "Section Name", '
-        '"fieldType": "checkbox|textField|numberField|imageBlock", "required": false}\n'
-        '  ]\n'
-        "}\n\n"
-        "SECTION RULES:\n"
-        "- Derive sections from document headings or logical topic groups.\n"
-        "- If multiple documents cover the same topic, merge into one section — do NOT create duplicate section names.\n"
-        "- Ignore intro/purpose sections that contain no actionable items.\n\n"
-        "ITEM RULES:\n"
-        "- One item per requirement, data field, or action mentioned.\n"
-        "- Use the document's exact wording for labels (trim trailing periods).\n"
-        "- Do NOT add items not mentioned in the documents.\n"
-        "- Do NOT omit items that are mentioned.\n\n"
-        "FIELD TYPE RULES:\n"
-        "- 'checkbox': yes/no verification steps ('verify that...', 'check that...', 'confirm...', 'inspect...').\n"
-        "- 'textField': free-text input (name, date as text, comments, descriptions, corrective actions).\n"
-        "- 'numberField': numeric values with units (temperature, count, weight, pressure).\n"
-        "- 'imageBlock': when the document says to upload, attach, or photograph something.\n\n"
-        "REQUIRED FIELD RULES — mark required=true when the document contains ANY of:\n"
-        "- The word 'mandatory', 'required', 'must', 'shall', 'obligatory' near the item.\n"
-        "- Phrases like 'every X must', 'all X must', 'is required to', 'failure to X'.\n"
-        "- The item appears in a section explicitly titled 'Required ...' or 'Mandatory ...'.\n"
-        "- The item is a data collection field that the document says must be recorded/filled.\n"
-        "- Also list every required item's exact label in the top-level 'required_fields' array.\n"
-        "- When in doubt, prefer required=true for safety/inspection items."
-    )
-    return client.complete_json(system, f"Document text:\n\n{pdf_text}")
-
-
-def _add_section(result: AIRunResult, root_id: str, section_name: str) -> str:
-    """Create a section in root and return its generated id."""
-    op = AddComponentOperation.model_construct(
-        operation="addComponent",
-        targetContainerId=root_id,
-        component={"type": "section", "label": section_name},
-        position="end",
-    )
-    result.checklist = apply_checklist_operations(result.checklist, [op])
-    result.applied_calls += 1
-    for child in reversed(result.checklist["children"]):
-        if child.get("type") == "section" and child.get("label") == section_name:
-            return child["id"]
-    raise RuntimeError(f"Section '{section_name}' was not found after creation")
-
-
-def _add_checkbox_group(result: AIRunResult, section_id: str, label: str) -> str:
-    """Create a checkboxGroup inside a section and return its generated id."""
-    op = AddComponentOperation.model_construct(
-        operation="addComponent",
-        targetContainerId=section_id,
-        component={"type": "checkboxGroup", "label": label},
-        position="end",
-    )
-    result.checklist = apply_checklist_operations(result.checklist, [op])
-    result.applied_calls += 1
-
-    def _find_section(node: dict, sid: str) -> dict | None:
-        if node.get("id") == sid:
-            return node
-        for child in node.get("children", []):
-            found = _find_section(child, sid)
-            if found:
-                return found
-        return None
-
-    sec_node = _find_section(result.checklist, section_id)
-    if sec_node:
-        for child in reversed(sec_node.get("children", [])):
-            if child.get("type") == "checkboxGroup" and child.get("label") == label:
-                return child["id"]
-    raise RuntimeError(f"checkboxGroup '{label}' was not found after creation in section {section_id}")
-
-
-def _build_checklist_from_structure(
-    structure: dict,
-    *,
-    title: str | None,
-    description: str | None,
-) -> AIRunResult:
-    """
-    Phase 2 (deterministic): build the checklist tree from the Phase-1 JSON.
-
-    Hierarchy rules enforced here (not left to AI):
-      root → section → checkboxGroup → checkbox
-      root → section → textField / numberField / imageBlock
-
-    Every component is always inside a section. checkboxes are always inside
-    a checkboxGroup which is always inside a section.
-    """
-    sections: list[str] = structure.get("sections") or []
-    items: list[dict] = structure.get("items") or []
-    required_labels: set[str] = {
-        lbl.rstrip(".").strip().lower()
-        for lbl in (structure.get("required_fields") or [])
-        if isinstance(lbl, str)
-    }
-
-    root_id = f"root_{uuid.uuid4().hex[:12]}"
-    checklist: dict[str, Any] = {
-        "id": root_id,
-        "type": "checklist",
-        "title": title,
-        "description": description,
-        "children": [],
-    }
-    result = AIRunResult(checklist=checklist)
-
-    # ------------------------------------------------------------------ #
-    # Step 1: create all sections from Phase-1 list                       #
-    # ------------------------------------------------------------------ #
-    section_ids: dict[str, str] = {}
-    for section_name in sections:
-        sid = _add_section(result, root_id, section_name)
-        section_ids[section_name] = sid
-        print(f"  [STEP 3] section \"{section_name}\" → {sid}")
-
-    # Fallback section — created on demand if an item names an unknown section
-    _fallback_section_id: str | None = None
-
-    def _get_or_create_section(name: str) -> str:
-        nonlocal _fallback_section_id
-        if name in section_ids:
-            return section_ids[name]
-        # Unknown section name from Phase 1 — create it on the fly
-        if name:
-            sid = _add_section(result, root_id, name)
-            section_ids[name] = sid
-            print(f"  [STEP 3] section (on-demand) \"{name}\" → {sid}")
-            return sid
-        # Empty section name — use/create a generic fallback
-        if _fallback_section_id is None:
-            _fallback_section_id = _add_section(result, root_id, "General")
-            section_ids["General"] = _fallback_section_id
-            print(f"  [STEP 3] section (fallback) \"General\" → {_fallback_section_id}")
-        return _fallback_section_id
-
-    # ------------------------------------------------------------------ #
-    # Step 2: add items                                                    #
-    # One checkboxGroup per section, created lazily on first checkbox.    #
-    # ------------------------------------------------------------------ #
-    checkbox_group_ids: dict[str, str] = {}
-
-    for item in items:
-        label = (item.get("label") or "").rstrip(".").strip()
-        if not label:
-            continue
-        field_type = item.get("fieldType", "checkbox")
-        section_name = item.get("section", "")
-        required = bool(item.get("required", False)) or label.lower() in required_labels
-        section_id = _get_or_create_section(section_name)
-
-        if field_type == "checkbox":
-            # Rule: checkbox must be inside a checkboxGroup which must be inside a section
-            if section_name not in checkbox_group_ids:
-                group_label = f"{section_name} Items" if section_name else "Inspection Items"
-                gid = _add_checkbox_group(result, section_id, group_label)
-                checkbox_group_ids[section_name] = gid
-                print(f"  [STEP 3] checkboxGroup \"{group_label}\" in \"{section_name}\" → {gid}")
-
-            op = AddComponentOperation.model_construct(
-                operation="addComponent",
-                targetContainerId=checkbox_group_ids[section_name],
-                component={"type": "checkbox", "label": label, "required": required},
-                position="end",
-            )
-
-        elif field_type == "textField":
-            op = AddComponentOperation.model_construct(
-                operation="addComponent",
-                targetContainerId=section_id,
-                component={"type": "textField", "label": label, "required": required},
-                position="end",
-            )
-
-        elif field_type == "numberField":
-            op = AddComponentOperation.model_construct(
-                operation="addComponent",
-                targetContainerId=section_id,
-                component={"type": "numberField", "label": label, "required": required},
-                position="end",
-            )
-
-        elif field_type == "imageBlock":
-            op = AddComponentOperation.model_construct(
-                operation="addComponent",
-                targetContainerId=section_id,
-                component={"type": "imageBlock", "label": label, "allowUpload": True},
-                position="end",
-            )
-
-        else:
-            result.skipped_calls.append({"item": item, "reason": f"unknown fieldType {field_type!r}"})
-            print(f"  [STEP 3] SKIP \"{label}\" — unknown fieldType {field_type!r}")
-            continue
-
-        result.checklist = apply_checklist_operations(result.checklist, [op])
-        result.applied_calls += 1
-        req_marker = " [REQUIRED]" if required else ""
-        print(f"  [STEP 3] OK [{field_type}] \"{label}\"{req_marker}")
-
-    print(f"\n[STEP 3 — PHASE 2] DONE — applied={result.applied_calls} skipped={len(result.skipped_calls)}")
-    print(f"{'='*60}\n")
-    return result
-
-
 def generate_checklist_from_pdf(
-    pdf_text: str,
+    pdf_files: list[tuple[str, bytes]],
     *,
     title: str | None = None,
     description: str | None = None,
+    prompt: str | None = None,
 ) -> AIRunResult:
     """
-    Two-phase PDF-to-checklist generation:
-    Phase 1 — AI extracts structured JSON (sections + items) from the PDF text.
-    Phase 2 — deterministic Python builds the checklist tree from that JSON.
+    Generate a checklist from one or more PDF attachments. Thin wrapper
+    around `generate_checklist_from_text` — the PDFs are sent directly to the
+    model (see `OpenAIClient.chat_with_tools_and_files`) instead of being
+    text-extracted first.
     """
-    print(f"\n[STEP 2 — PHASE 1] Sending PDF text to AI for structured extraction...")
-    structure = extract_checklist_structure_from_pdf(pdf_text)
-
-    sections: list[str] = structure.get("sections") or []
-    items: list[dict] = structure.get("items") or []
-
-    required_fields_raw: list[str] = structure.get("required_fields") or []
-    print(f"[STEP 2 — PHASE 1] AI returned {len(sections)} section(s), {len(items)} item(s), {len(required_fields_raw)} required field(s)")
-    print(f"[STEP 2 — PHASE 1] SECTIONS:")
-    for i, s in enumerate(sections):
-        print(f"  [{i+1}] {s}")
-    print(f"[STEP 2 — PHASE 1] REQUIRED FIELDS (cross-check list):")
-    for rf in required_fields_raw:
-        print(f"  • {rf}")
-    print(f"[STEP 2 — PHASE 1] ITEMS:")
-    for i, item in enumerate(items):
-        print(f"  [{i+1}] [{item.get('fieldType','?')}] \"{item.get('label','?')}\" → section=\"{item.get('section','?')}\" required={item.get('required',False)}")
-
-    if not sections and not items:
-        print("[STEP 2 — PHASE 1] Nothing extracted — falling back to text generation")
-        return generate_checklist_from_text(
-            description or title or "checklist",
-            title=title,
-            description=description,
-        )
-
-    print(f"\n[STEP 3 — PHASE 2] Building checklist deterministically from {len(items)} items...")
-    return _build_checklist_from_structure(structure, title=title, description=description)
+    logger.info("Generating checklist from %d PDF attachment(s)", len(pdf_files))
+    return generate_checklist_from_text(
+        prompt or description or title or "checklist",
+        title=title,
+        description=description,
+        pdf_files=pdf_files,
+    )
 
 
 def edit_checklist_with_ai(

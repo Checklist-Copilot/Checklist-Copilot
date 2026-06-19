@@ -1,4 +1,3 @@
-import io
 import uuid
 from contextlib import suppress
 from pathlib import Path
@@ -11,8 +10,6 @@ from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.db.models import Checklist
 from app.db.models import File as FileModel
-
-_PDF_TEXT_MAX_CHARS = 12_000
 
 _IMAGE_CONTENT_TYPES = {"image/png", "image/jpeg"}
 _PDF_CONTENT_TYPES = {"application/pdf"}
@@ -279,21 +276,6 @@ def get_pdf_files_for_checklist(db: Session, checklist_id: uuid.UUID) -> list[Fi
         FileModel.file_type == "pdf",
     )
     return list(db.scalars(stmt).all())
-
-
-def extract_pdf_text(pdf_bytes: bytes) -> str:
-    try:
-        from pypdf import PdfReader
-    except ImportError:
-        return ""
-
-    reader = PdfReader(io.BytesIO(pdf_bytes))
-    parts: list[str] = []
-    for page in reader.pages:
-        text = page.extract_text() or ""
-        parts.append(text)
-    combined = "\n".join(parts)
-    return combined[:_PDF_TEXT_MAX_CHARS]
 
 
 async def delete_file_for_user(db: Session, file_row: FileModel) -> None:

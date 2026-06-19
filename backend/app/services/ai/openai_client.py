@@ -12,6 +12,7 @@ or JWT secret set.
 """
 from __future__ import annotations
 
+import base64
 import json
 import os
 from dataclasses import dataclass
@@ -77,29 +78,6 @@ class OpenAIClient:
 
         self._client = OpenAI(api_key=api_key)
         self.model = model or os.environ.get("OPENAI_MODEL", _DEFAULT_MODEL)
-
-    # ----------------------------------------------------------------------- #
-    # Single-turn JSON extraction (no tools).                                  #
-    # ----------------------------------------------------------------------- #
-    def complete_json(
-        self,
-        system_prompt: str,
-        user_prompt: str,
-        *,
-        temperature: float = 0.1,
-    ) -> dict:
-        """Single-turn call that returns parsed JSON. Use for structured extraction tasks."""
-        response = self._client.chat.completions.create(
-            model=self.model,
-            temperature=temperature,
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_prompt},
-            ],
-            response_format={"type": "json_object"},
-        )
-        content = response.choices[0].message.content or "{}"
-        return json.loads(content)
 
     # ----------------------------------------------------------------------- #
     # Single-turn (kept for simple callers / debugging).                       #
@@ -194,6 +172,46 @@ class OpenAIClient:
         messages: list[dict[str, Any]] = [
             {"role": "system", "content": system_prompt},
             *(prior_messages or []),
+            {"role": "user", "content": user_content},
+        ]
+        return self._run_tool_loop(messages, tools, on_tool_call, max_rounds, temperature)
+
+    # ----------------------------------------------------------------------- #
+    # Multi-turn agentic loop with PDF attachments.                            #
+    # ----------------------------------------------------------------------- #
+    def chat_with_tools_and_files(
+        self,
+        system_prompt: str,
+        user_text: str,
+        files: list[tuple[str, bytes]],
+        tools: list[dict],
+        on_tool_call: Callable[[ToolCall], dict],
+        *,
+        max_rounds: int = 5,
+        temperature: float = 0.2,
+    ) -> ChatResult:
+        """
+        Same as `chat_with_tools`, but the user message includes one or more
+        PDF attachments so the model can read them directly — no separate
+        text-extraction step needed.
+
+        - `files` is a list of `(filename, raw_bytes)` tuples. Each is sent as
+          a `file` content part with base64-encoded `file_data`.
+        """
+        user_content: list[dict[str, Any]] = [{"type": "text", "text": user_text}]
+        for filename, raw_bytes in files:
+            encoded = base64.b64encode(raw_bytes).decode("ascii")
+            user_content.append(
+                {
+                    "type": "file",
+                    "file": {
+                        "filename": filename,
+                        "file_data": f"data:application/pdf;base64,{encoded}",
+                    },
+                }
+            )
+        messages: list[dict[str, Any]] = [
+            {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_content},
         ]
         return self._run_tool_loop(messages, tools, on_tool_call, max_rounds, temperature)
