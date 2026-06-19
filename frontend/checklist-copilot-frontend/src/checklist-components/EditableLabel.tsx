@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import styles from './EditableLabel.module.css'
 
 type EditableLabelProps = {
@@ -19,9 +19,6 @@ export function EditableLabel({
   const [draftValue, setDraftValue] = useState(value)
   const [isFocused, setIsFocused] = useState(false)
 
-  useEffect(() => {
-    if (!isFocused) setDraftValue(value)
-  }, [isFocused, value])
 
   if (!isEditMode) return <>{value}</>
 

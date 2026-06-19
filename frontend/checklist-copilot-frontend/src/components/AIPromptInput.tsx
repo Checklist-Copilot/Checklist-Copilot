@@ -186,7 +186,6 @@ function AIPromptInput({
       // Calling getUserMedia explicitly triggers the browser permission prompt
       // when possible. If the user previously blocked the site, browsers will
       // reject immediately and the user must unblock it from site settings.
-      // eslint-disable-next-line no-console
       console.warn('[speech] microphone permission failed:', err)
       setIsListening(false)
       setMicError(describeMediaDevicesError(err))
@@ -202,21 +201,18 @@ function AIPromptInput({
       onChange(value ? `${value.trim()} ${transcript}` : transcript)
     }
     rec.onstart = () => {
-      // eslint-disable-next-line no-console
       console.log('[speech] listening…')
       stopMicrophoneStream(permissionStream)
       permissionStream = null
       setMicError(null)
     }
     rec.onend = () => {
-      // eslint-disable-next-line no-console
       console.log('[speech] ended')
       stopMicrophoneStream(permissionStream)
       permissionStream = null
       setIsListening(false)
     }
     rec.onerror = (event) => {
-      // eslint-disable-next-line no-console
       console.warn('[speech] error:', event.error, event)
       stopMicrophoneStream(permissionStream)
       permissionStream = null
@@ -233,7 +229,6 @@ function AIPromptInput({
       // .start() throws if recognition is already active or if the browser
       // refuses to begin (e.g. permission previously denied without ever
       // prompting again). Surface it instead of failing silently.
-      // eslint-disable-next-line no-console
       console.warn('[speech] start() failed:', err)
       stopMicrophoneStream(permissionStream)
       setIsListening(false)

@@ -138,16 +138,16 @@ export function ImageBlockRenderer({
 }
 
 function AuthenticatedImage({ src, alt }: { src: string; alt: string }) {
+  if (src.startsWith('data:') || src.startsWith('blob:')) return <img src={src} alt={alt} />
+
+  return <FetchedImage src={src} alt={alt} />
+}
+
+function FetchedImage({ src, alt }: { src: string; alt: string }) {
   const [objectUrl, setObjectUrl] = useState<string | null>(null)
   const [hasError, setHasError] = useState(false)
 
   useEffect(() => {
-    if (src.startsWith('data:') || src.startsWith('blob:')) {
-      setObjectUrl(src)
-      setHasError(false)
-      return
-    }
-
     const abortController = new AbortController()
     let currentObjectUrl: string | null = null
 
@@ -170,7 +170,7 @@ function AuthenticatedImage({ src, alt }: { src: string; alt: string }) {
         const blob = await response.blob()
         currentObjectUrl = URL.createObjectURL(blob)
         setObjectUrl(currentObjectUrl)
-      } catch (error) {
+      } catch {
         if (!abortController.signal.aborted) setHasError(true)
       }
     }
@@ -191,9 +191,12 @@ function AuthenticatedImage({ src, alt }: { src: string; alt: string }) {
 
 function resolveImageUrl(src: string) {
   if (/^https?:\/\//i.test(src)) return src
-  if (src.startsWith('/api/')) return `${new URL(API_BASE_URL).origin}${src}`
-  if (src.startsWith('/')) return `${new URL(API_BASE_URL).origin}${src}`
-  return src
+
+  const apiBaseUrl = new URL(API_BASE_URL, window.location.origin)
+  if (src.startsWith('/api/')) return `${apiBaseUrl.origin}${src}`
+  if (src.startsWith('/')) return `${apiBaseUrl.origin}${src}`
+
+  return `${API_BASE_URL.replace(/\/$/, '')}/${src}`
 }
 
 function isTemporaryComponentId(componentId: string) {
