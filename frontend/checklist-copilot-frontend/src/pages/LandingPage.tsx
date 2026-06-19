@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
   FiMenu,
@@ -9,6 +10,24 @@ import { HiOutlineSparkles } from 'react-icons/hi2'
 import styles from '../page-styles/LandingPage.module.css'
 
 function LandingPage() {
+  const [isDemoOpen, setIsDemoOpen] = useState(false)
+
+  useEffect(() => {
+    if (!isDemoOpen) return
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') setIsDemoOpen(false)
+    }
+
+    document.body.style.overflow = 'hidden'
+    window.addEventListener('keydown', handleKeyDown)
+
+    return () => {
+      document.body.style.overflow = ''
+      window.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [isDemoOpen])
+
   return (
     <main className={styles.page}>
       <div className={styles.ambient} aria-hidden="true">
@@ -54,10 +73,14 @@ function LandingPage() {
             → Start for Free
           </Link>
 
-          <Link to="/login" className={styles.secondaryButton}>
+          <button
+            type="button"
+            className={styles.secondaryButton}
+            onClick={() => setIsDemoOpen(true)}
+          >
             <FiPlay />
             Watch Demo
-          </Link>
+          </button>
         </div>
 
         <div className={styles.featureGrid}>
@@ -86,6 +109,29 @@ function LandingPage() {
           </div>
         </div>
       </section>
+
+      {isDemoOpen && (
+        <div
+          className={styles.demoOverlay}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Product demo video"
+          onClick={() => setIsDemoOpen(false)}
+        >
+          <div className={styles.demoModal} onClick={(event) => event.stopPropagation()}>
+            <button
+              type="button"
+              className={styles.demoCloseButton}
+              aria-label="Close demo video"
+              onClick={() => setIsDemoOpen(false)}
+            >
+              ×
+            </button>
+
+            <video className={styles.demoVideo} src="/demo.mp4" controls autoPlay />
+          </div>
+        </div>
+      )}
     </main>
   )
 }
