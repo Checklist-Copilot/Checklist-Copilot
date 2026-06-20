@@ -7,6 +7,7 @@ import type { Checklist } from '../types/checklist'
 import { removeToken } from '../auth/tokenStorage'
 import { useRequireAuth } from '../hooks/useRequireAuth'
 import TopBar from '../components/TopBar'
+import { ConfirmDeleteModal } from '../components/ConfirmDeleteModal'
 import { ChecklistList } from '../components/home/ChecklistList'
 import { HomePrintReport } from '../components/home/HomePrintReport'
 import { RecentActivityPanel } from '../components/home/RecentActivityPanel'
@@ -22,15 +23,29 @@ function HomePage() {
   const [activityMode, setActivityMode] = useState<ActivityMode>('created')
   const [pdfChecklist, setPdfChecklist] = useState<Checklist | null>(null)
   const [isPreparingPdf, setIsPreparingPdf] = useState(false)
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; title: string } | null>(null)
+  const [isDeletingChecklist, setIsDeletingChecklist] = useState(false)
 
-  async function handleDeleteChecklist(id: string) {
-    if (!window.confirm('Delete this checklist? This cannot be undone.')) return
+  // Opens the custom confirmation modal with the checklist title for safer destructive action copy.
+  function handleDeleteChecklist(id: string) {
+    const checklist = checklists.find((item) => item.id === id)
+    setDeleteTarget({ id, title: checklist?.title ?? 'this checklist' })
+  }
+
+  // Performs the checklist deletion after the modal confirms the user's intent.
+  async function confirmDeleteChecklist() {
+    if (!deleteTarget || isDeletingChecklist) return
+
+    setIsDeletingChecklist(true)
     try {
-      await deleteChecklist(id)
-      setChecklists((prev) => prev.filter((c) => c.id !== id))
-      if (selectedChecklistId === id) setSelectedChecklistId('')
+      await deleteChecklist(deleteTarget.id)
+      setChecklists((prev) => prev.filter((c) => c.id !== deleteTarget.id))
+      if (selectedChecklistId === deleteTarget.id) setSelectedChecklistId('')
+      setDeleteTarget(null)
     } catch {
       setErrorMessage('Could not delete checklist.')
+    } finally {
+      setIsDeletingChecklist(false)
     }
   }
 
@@ -117,6 +132,16 @@ function HomePage() {
 
         <HomePrintReport pdfChecklist={pdfChecklist} selectedChecklist={selectedChecklist} />
       </main>
+
+      <ConfirmDeleteModal
+        isOpen={deleteTarget !== null}
+        title={`Delete “${deleteTarget?.title ?? 'this checklist'}”?`}
+        message="This removes the checklist and its linked context files. You cannot undo this action."
+        confirmLabel="Delete checklist"
+        isConfirming={isDeletingChecklist}
+        onConfirm={confirmDeleteChecklist}
+        onClose={() => setDeleteTarget(null)}
+      />
     </>
   )
 }
