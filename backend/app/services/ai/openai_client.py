@@ -117,6 +117,44 @@ class OpenAIClient:
         return calls
 
     # ----------------------------------------------------------------------- #
+    # Plain text completion with optional PDF attachments.                     #
+    # ----------------------------------------------------------------------- #
+    def complete_text(
+        self,
+        system_prompt: str,
+        user_text: str,
+        *,
+        files: list[tuple[str, bytes]] | None = None,
+        temperature: float = 0.2,
+    ) -> str:
+        """Return a plain text response, optionally grounded in attached PDFs."""
+        user_content: str | list[dict[str, Any]] = user_text
+        if files:
+            content_parts: list[dict[str, Any]] = [{"type": "text", "text": user_text}]
+            for filename, raw_bytes in files:
+                encoded = base64.b64encode(raw_bytes).decode("ascii")
+                content_parts.append(
+                    {
+                        "type": "file",
+                        "file": {
+                            "filename": filename,
+                            "file_data": f"data:application/pdf;base64,{encoded}",
+                        },
+                    }
+                )
+            user_content = content_parts
+
+        response = self._client.chat.completions.create(
+            model=self.model,
+            temperature=temperature,
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_content},
+            ],
+        )
+        return (response.choices[0].message.content or "").strip()
+
+    # ----------------------------------------------------------------------- #
     # Multi-turn agentic loop (text-only convenience wrapper).                 #
     # ----------------------------------------------------------------------- #
     def chat_with_tools(

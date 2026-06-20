@@ -40,6 +40,10 @@ class AiSkippedCall(BaseModel):
     reason: str
 
 
+class AiReviewResponse(BaseModel):
+    reply: str
+
+
 class AiResponse(BaseModel):
     """
     Returned by the AI edit endpoint. `checklist` is the resulting JSON tree

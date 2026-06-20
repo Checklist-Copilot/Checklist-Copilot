@@ -345,6 +345,36 @@ def generate_checklist_with_context(
     )
 
 
+def review_checklist_with_ai(
+    checklist: dict,
+    *,
+    pdf_files: list[tuple[str, bytes]] | None = None,
+) -> str:
+    """Review checklist quality using general knowledge and optional PDF context."""
+    system_prompt = (
+        "You are a senior checklist reviewer for a checklist-building app. Review "
+        "the checklist for missing steps, unclear wording, weak validation points, "
+        "and mismatches with any provided PDF context. Use the PDFs as high-priority "
+        "context, but also use general domain knowledge. Do not modify the checklist.\n\n"
+        "APP CAPABILITIES AND LIMITS:\n"
+        "- The app can show sections, checkbox groups, checkboxes, text fields, number fields, image blocks, and tables.\n"
+        "- Fields can be marked required and number fields can define min, max, unit, and value.\n"
+        "- Tables can have text, number, and checkbox columns.\n"
+        "- The app cannot do conditional logic, branching, formulas, dynamic visibility, automatic date validation, cross-field validation, workflows, approvals, reminders, or permissions.\n"
+        "- If a best-practice idea needs unsupported behavior, translate it into something representable, such as an explicit checklist item, required field, section, table column, or instruction in a label.\n"
+        "- Do not recommend features the app cannot implement unless you clearly phrase them as manual checklist wording.\n\n"
+        "Return concise, actionable recommendations in markdown. Prioritize changes that can be applied with the available checklist components."
+    )
+    user_prompt = (
+        "Review this checklist and suggest practical improvements. If PDFs are "
+        "attached, compare the checklist against them and call out important gaps.\n\n"
+        f"Checklist JSON:\n```json\n{json.dumps(checklist, indent=2)}\n```"
+    )
+
+    client = OpenAIClient()
+    return client.complete_text(system_prompt, user_prompt, files=pdf_files)
+
+
 def edit_checklist_with_ai(
     checklist: dict,
     instruction: str,
@@ -526,4 +556,5 @@ __all__ = [
     "find_component_by_id",
     "generate_checklist_from_text",
     "observe_with_image",
+    "review_checklist_with_ai",
 ]

@@ -13,6 +13,10 @@ export type AiEditChecklistResponse = {
   }>
 }
 
+export type AiReviewResponse = {
+  reply: string
+}
+
 export type AiCreateFromTextRequest = {
   prompt: string
   title?: string | null
@@ -38,6 +42,13 @@ export function createChecklistFromText(
   return apiRequest<Checklist>('/ai/checklists/create-from-text', {
     method: 'POST',
     body: JSON.stringify(payload),
+  })
+}
+
+// Requests an AI quality review of the checklist using linked PDFs as context.
+export function reviewChecklistWithAi(checklistId: string): Promise<AiReviewResponse> {
+  return apiRequest<AiReviewResponse>(`/ai/checklists/${checklistId}/review`, {
+    method: 'POST',
   })
 }
 

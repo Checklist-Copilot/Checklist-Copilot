@@ -14,6 +14,7 @@ from app.schemas.ai import (
     AiGenerateRequest,
     AiObserveRequest,
     AiResponse,
+    AiReviewResponse,
     AiSkippedCall,
 )
 from app.schemas.checklist import ChecklistCreateRequest, ChecklistCreateResponse, ChecklistResponse
@@ -22,6 +23,7 @@ from app.services.ai.service import (
     generate_checklist_from_text,
     generate_checklist_with_context,
     observe_with_image,
+    review_checklist_with_ai,
 )
 from app.services.auth import get_current_user
 from app.services.checklist_update.exceptions import ChecklistOperationError
@@ -115,6 +117,29 @@ def ai_edit_checklist(
         applied_calls=result.applied_calls,
         skipped=[AiSkippedCall(**s) for s in result.skipped_calls],
     )
+
+
+@router.post("/{checklist_id}/review", response_model=AiReviewResponse)
+async def ai_review_checklist(
+    checklist_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> AiReviewResponse:
+    checklist = get_checklist_for_user(db, checklist_id, current_user.id)
+    if checklist is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Checklist not found."
+        )
+
+    try:
+        attachments = await load_pdf_attachments_for_checklist(db, checklist_id, current_user.id)
+        reply = review_checklist_with_ai(checklist.checklist, pdf_files=attachments)
+    except RuntimeError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc)
+        ) from exc
+
+    return AiReviewResponse(reply=reply or "I could not produce a review for this checklist.")
 
 
 @router.post("/{checklist_id}/observe", response_model=AiResponse)
