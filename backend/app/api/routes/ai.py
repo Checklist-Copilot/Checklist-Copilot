@@ -1,5 +1,6 @@
 import base64
 import copy
+import logging
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -10,24 +11,33 @@ from app.db.session import get_db
 from app.schemas.ai import (
     AiCreateFromTextRequest,
     AiEditChecklistRequest,
+    AiGenerateRequest,
     AiObserveRequest,
     AiResponse,
     AiSkippedCall,
 )
-from app.schemas.checklist import ChecklistCreateRequest, ChecklistCreateResponse
+from app.schemas.checklist import ChecklistCreateRequest, ChecklistCreateResponse, ChecklistResponse
 from app.services.ai.service import (
     edit_checklist_with_ai,
     generate_checklist_from_text,
+    generate_checklist_with_context,
     observe_with_image,
 )
 from app.services.auth import get_current_user
+from app.services.checklist_update.exceptions import ChecklistOperationError
 from app.services.checklists import (
     apply_stats,
     create_checklist_for_user,
     get_checklist_for_user,
 )
-from app.services.files import build_file_url, fetch_file_bytes, get_file_for_user
+from app.services.files import (
+    build_file_url,
+    fetch_file_bytes,
+    get_file_for_user,
+    load_pdf_attachments_for_checklist,
+)
 
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/ai/checklists")
 
@@ -191,6 +201,60 @@ async def ai_observe(
         applied_calls=result.applied_calls,
         skipped=[AiSkippedCall(**s) for s in result.skipped_calls],
     )
+
+
+@router.post("/{checklist_id}/generate", response_model=ChecklistResponse)
+async def ai_generate_with_context(
+    checklist_id: uuid.UUID,
+    payload: AiGenerateRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> ChecklistResponse:
+    """
+    Generate checklist content for an existing empty checklist using the user's
+    prompt plus any uploaded PDFs as additional context.
+    """
+    checklist = get_checklist_for_user(db, checklist_id, current_user.id)
+    if checklist is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Checklist not found."
+        )
+
+    if checklist.checklist.get("children"):
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Checklist generation can only run for an empty checklist.",
+        )
+
+    try:
+        attachments = await load_pdf_attachments_for_checklist(db, checklist_id, current_user.id)
+        logger.info("Starting checklist generation for checklist=%s, %d PDF(s)", checklist_id, len(attachments))
+        result = generate_checklist_with_context(
+            payload.prompt,
+            title=checklist.title,
+            description=checklist.description,
+            pdf_files=attachments,
+        )
+    except (RuntimeError, ValueError, ChecklistOperationError) as exc:
+        logger.exception("Checklist generation failed for checklist=%s", checklist_id)
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc)
+        ) from exc
+
+    from sqlalchemy.orm.attributes import flag_modified
+    checklist.checklist_prev = copy.deepcopy(checklist.checklist)
+    checklist.checklist = result.checklist
+    flag_modified(checklist, "checklist")
+    apply_stats(checklist)
+    db.commit()
+    db.refresh(checklist)
+
+    logger.info(
+        "Saved generated checklist=%s with %d top-level children",
+        checklist_id,
+        len(result.checklist.get("children") or []),
+    )
+    return ChecklistResponse.model_validate(checklist)
 
 
 def _infer_title(checklist: dict, prompt: str) -> str:

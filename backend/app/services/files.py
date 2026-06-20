@@ -13,6 +13,8 @@ from app.db.models import File as FileModel
 
 _IMAGE_CONTENT_TYPES = {"image/png", "image/jpeg"}
 _PDF_CONTENT_TYPES = {"application/pdf"}
+_MAX_IMAGE_SIZE_BYTES = 2 * 1024 * 1024
+_MAX_PDF_SIZE_BYTES = 10 * 1024 * 1024
 
 
 def _extension_from_upload(file: UploadFile, default_ext: str) -> str:
@@ -222,6 +224,8 @@ async def upload_image_file(
         _validate_checklist_access(db, checklist_id, user_id)
 
     content = await file.read()
+    if len(content) > _MAX_IMAGE_SIZE_BYTES:
+        raise HTTPException(status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE, detail="Images must be 2 MB or smaller.")
     ext = _extension_from_upload(file, ".png")
     return await _upload_file_with_metadata_id(
         db,
@@ -247,6 +251,8 @@ async def upload_pdf_file(
         _validate_checklist_access(db, checklist_id, user_id)
 
     content = await file.read()
+    if len(content) > _MAX_PDF_SIZE_BYTES:
+        raise HTTPException(status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE, detail="PDF files must be 10 MB or smaller.")
     ext = _extension_from_upload(file, ".pdf")
     return await _upload_file_with_metadata_id(
         db,
@@ -263,6 +269,38 @@ async def upload_pdf_file(
 def get_file_for_user(db: Session, file_id: uuid.UUID, user_id: uuid.UUID) -> FileModel | None:
     stmt = select(FileModel).where(FileModel.id == file_id, FileModel.user_id == user_id)
     return db.scalar(stmt)
+
+
+def get_files_for_checklist(db: Session, checklist_id: uuid.UUID, user_id: uuid.UUID | None = None) -> list[FileModel]:
+    """Return files linked to a checklist, optionally scoped to the owning user."""
+    stmt = select(FileModel).where(FileModel.checklist_id == checklist_id)
+    if user_id is not None:
+        stmt = stmt.where(FileModel.user_id == user_id)
+    return list(db.scalars(stmt).all())
+
+
+def get_pdf_files_for_checklist(db: Session, checklist_id: uuid.UUID, user_id: uuid.UUID | None = None) -> list[FileModel]:
+    """Return PDF files linked to a checklist, optionally scoped to the owning user."""
+    stmt = select(FileModel).where(
+        FileModel.checklist_id == checklist_id,
+        FileModel.file_type == "pdf",
+    )
+    if user_id is not None:
+        stmt = stmt.where(FileModel.user_id == user_id)
+    return list(db.scalars(stmt).all())
+
+
+async def load_pdf_attachments_for_checklist(
+    db: Session,
+    checklist_id: uuid.UUID,
+    user_id: uuid.UUID,
+) -> list[tuple[str, bytes]]:
+    """Load checklist PDFs from storage as `(display_name, raw_bytes)` attachments for AI calls."""
+    attachments: list[tuple[str, bytes]] = []
+    for pdf_file in get_pdf_files_for_checklist(db, checklist_id, user_id):
+        raw_bytes, _ = await fetch_file_bytes(pdf_file)
+        attachments.append((pdf_file.title or pdf_file.file_name, raw_bytes))
+    return attachments
 
 
 async def delete_file_for_user(db: Session, file_row: FileModel) -> None:

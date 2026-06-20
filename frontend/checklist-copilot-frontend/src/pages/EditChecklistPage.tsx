@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { FiPlus } from 'react-icons/fi'
 import { HiOutlineSparkles } from 'react-icons/hi2'
 import styles from '../page-styles/UseChecklistPage.module.css'
@@ -28,6 +28,7 @@ const componentOptions = [
 
 function EditChecklistPage() {
   const navigate = useNavigate()
+  const location = useLocation()
   const { isCheckingAuth, isAuthorized } = useRequireAuth()
   const { checklist_id } = useParams<{ checklist_id: string }>()
 
@@ -50,6 +51,15 @@ function EditChecklistPage() {
     checklistId: checklist_id,
     onServerChecklist: acceptServerChecklist,
   })
+
+  useEffect(() => {
+    const warning = (location.state as { warning?: string } | null)?.warning
+    if (warning) {
+      showToast(warning)
+      navigate(location.pathname, { replace: true, state: null })
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   function handleLogout() {
     removeToken()

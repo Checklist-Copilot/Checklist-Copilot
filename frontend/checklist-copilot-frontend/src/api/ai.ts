@@ -40,3 +40,15 @@ export function createChecklistFromText(
     body: JSON.stringify(payload),
   })
 }
+
+// POST /api/ai/checklists/{id}/generate — generates content for an existing
+// empty checklist using the prompt plus any uploaded PDFs as context.
+export function generateChecklistWithContext(
+  checklistId: string,
+  prompt: string,
+): Promise<Checklist> {
+  return apiRequest<Checklist>(`/ai/checklists/${checklistId}/generate`, {
+    method: 'POST',
+    body: JSON.stringify({ prompt }),
+  })
+}

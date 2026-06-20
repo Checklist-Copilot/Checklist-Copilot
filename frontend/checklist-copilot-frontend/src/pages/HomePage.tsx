@@ -2,7 +2,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useState } from 'react'
 import { FaPlus } from 'react-icons/fa'
 import styles from '../page-styles/HomePage.module.css'
-import { getChecklistById } from '../api/checklist'
+import { deleteChecklist, getChecklistById } from '../api/checklist'
 import type { Checklist } from '../types/checklist'
 import { removeToken } from '../auth/tokenStorage'
 import { useRequireAuth } from '../hooks/useRequireAuth'
@@ -17,11 +17,22 @@ import { useHomeChecklists } from '../components/home/useHomeChecklists'
 function HomePage() {
   const navigate = useNavigate()
   const { isCheckingAuth, isAuthorized } = useRequireAuth()
-  const { checklists, ownerNames, isLoading, errorMessage, setErrorMessage } = useHomeChecklists(isAuthorized)
+  const { checklists, setChecklists, ownerNames, isLoading, errorMessage, setErrorMessage } = useHomeChecklists(isAuthorized)
   const [selectedChecklistId, setSelectedChecklistId] = useState('')
   const [activityMode, setActivityMode] = useState<ActivityMode>('created')
   const [pdfChecklist, setPdfChecklist] = useState<Checklist | null>(null)
   const [isPreparingPdf, setIsPreparingPdf] = useState(false)
+
+  async function handleDeleteChecklist(id: string) {
+    if (!window.confirm('Delete this checklist? This cannot be undone.')) return
+    try {
+      await deleteChecklist(id)
+      setChecklists((prev) => prev.filter((c) => c.id !== id))
+      if (selectedChecklistId === id) setSelectedChecklistId('')
+    } catch {
+      setErrorMessage('Could not delete checklist.')
+    }
+  }
 
   function handleLogout() {
     removeToken()
@@ -101,6 +112,7 @@ function HomePage() {
           isLoading={isLoading}
           errorMessage={errorMessage}
           onSelectChecklist={setSelectedChecklistId}
+          onDelete={handleDeleteChecklist}
         />
 
         <HomePrintReport pdfChecklist={pdfChecklist} selectedChecklist={selectedChecklist} />

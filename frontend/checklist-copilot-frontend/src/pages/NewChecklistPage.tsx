@@ -5,8 +5,11 @@ import TopBar from '../components/TopBar'
 import { removeToken } from '../auth/tokenStorage'
 import { useRequireAuth } from '../hooks/useRequireAuth'
 import { createChecklist } from '../api/checklist'
+import { generateChecklistWithContext } from '../api/ai'
 import { uploadChecklistPdf } from '../api/files'
 import styles from '../pages-styles/NewChecklistPage.module.css'
+
+const MAX_PDF_SIZE_BYTES = 10 * 1024 * 1024
 
 const emptyChecklistTree = {
   id: 'root',
@@ -47,12 +50,17 @@ function NewChecklistPage() {
   function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
     const incomingFiles = Array.from(event.target.files ?? [])
     const acceptedFiles = incomingFiles.filter(
-      (file) => file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf'),
+      (file) => (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) && file.size <= MAX_PDF_SIZE_BYTES,
     )
-    const rejectedCount = incomingFiles.length - acceptedFiles.length
+    const rejectedTypeCount = incomingFiles.filter(
+      (file) => file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf'),
+    ).length
+    const rejectedSizeCount = incomingFiles.filter(
+      (file) => (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) && file.size > MAX_PDF_SIZE_BYTES,
+    ).length
 
-    if (rejectedCount > 0) {
-      setErrorMessage('Only PDF files can be uploaded as checklist context.')
+    if (rejectedTypeCount > 0 || rejectedSizeCount > 0) {
+      setErrorMessage('Only PDF files up to 10 MB can be uploaded as checklist context.')
     } else {
       setErrorMessage(null)
     }
@@ -95,7 +103,15 @@ function NewChecklistPage() {
         await uploadChecklistPdf(createdChecklist.id, file)
       }
 
-      navigate(`/checklist/edit/${createdChecklist.id}`)
+      setProgressMessage('Generating checklist with AI...')
+      let generationWarning: string | null = null
+      try {
+        await generateChecklistWithContext(createdChecklist.id, trimmedDescription)
+      } catch (error) {
+        generationWarning = `AI generation failed: ${getErrorMessage(error)}. You can edit the checklist manually.`
+      }
+
+      navigate(`/checklist/edit/${createdChecklist.id}`, { state: generationWarning ? { warning: generationWarning } : undefined })
     } catch (error) {
       if (newChecklistId) {
         setErrorMessage(`Checklist was created, but PDF upload failed: ${getErrorMessage(error)}`)
@@ -177,7 +193,7 @@ function NewChecklistPage() {
               <label className={styles.uploadLabel} htmlFor="pdf-upload">
                 <FiUploadCloud />
                 <span>Upload PDF context</span>
-                <small>Choose one or more PDF files.</small>
+                <small>Choose one or more PDF files, up to 10 MB each.</small>
               </label>
               <input
                 id="pdf-upload"

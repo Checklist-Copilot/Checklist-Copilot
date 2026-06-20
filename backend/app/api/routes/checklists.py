@@ -34,6 +34,7 @@ from app.services.checklists import (
     list_checklist_file_counts_for_user,
     list_checklists_for_user,
 )
+from app.services.files import delete_file_for_user, get_files_for_checklist
 
 
 router = APIRouter(prefix="/checklists")
@@ -121,7 +122,7 @@ def patch_checklist_route(
 
 
 @router.delete("/delete/{checklist_id}", response_model=ChecklistDeleteResponse)
-def delete_checklist_route(
+async def delete_checklist_route(
     checklist_id: uuid.UUID,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
@@ -129,6 +130,21 @@ def delete_checklist_route(
     checklist = get_checklist_for_user(db, checklist_id, current_user.id)
     if checklist is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Checklist not found.")
+
+    linked_files = get_files_for_checklist(db, checklist_id, current_user.id)
+
+    deletion_errors: list[str] = []
+    for file_row in linked_files:
+        try:
+            await delete_file_for_user(db, file_row)
+        except Exception as exc:  # noqa: BLE001 - collect all cleanup failures before reporting.
+            deletion_errors.append(f"{file_row.id}: {exc}")
+
+    if deletion_errors:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="Checklist files could not be deleted from storage. Checklist was not deleted.",
+        )
 
     delete_checklist(db, checklist)
     return ChecklistDeleteResponse(message="Checklist deleted successfully.")

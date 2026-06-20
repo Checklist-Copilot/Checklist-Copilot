@@ -32,10 +32,17 @@ type PreviewState = {
 
 type FileTypeFilter = 'all' | 'pdf' | 'image'
 
+const MAX_IMAGE_SIZE_BYTES = 2 * 1024 * 1024
+const MAX_PDF_SIZE_BYTES = 10 * 1024 * 1024
+
 function getUploadFileType(file: File): 'pdf' | 'image' | null {
   if (file.type === 'application/pdf') return 'pdf'
   if (file.type === 'image/png' || file.type === 'image/jpeg') return 'image'
   return null
+}
+
+function getUploadSizeLimit(fileType: 'pdf' | 'image') {
+  return fileType === 'pdf' ? MAX_PDF_SIZE_BYTES : MAX_IMAGE_SIZE_BYTES
 }
 
 function resolveApiUrl(path: string) {
@@ -105,6 +112,9 @@ export function ChecklistContextFiles({ checklistId }: ChecklistContextFilesProp
       try {
         const fileType = getUploadFileType(file)
         if (!fileType) throw new Error('Only PDF, PNG, and JPEG files are allowed.')
+        if (file.size > getUploadSizeLimit(fileType)) {
+          throw new Error(fileType === 'pdf' ? 'PDF files must be 10 MB or smaller.' : 'Images must be 2 MB or smaller.')
+        }
 
         const uploaded = await uploadChecklistFileWithProgress(checklistId, file, fileType, (progress) => {
           setUploadState({ fileName: file.name, progress, status: 'uploading' })
