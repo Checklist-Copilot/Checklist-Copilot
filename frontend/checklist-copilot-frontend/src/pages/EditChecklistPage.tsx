@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { FiPlus } from 'react-icons/fi'
 import { HiOutlineSparkles } from 'react-icons/hi2'
 import styles from '../page-styles/UseChecklistPage.module.css'
+import editStyles from '../page-styles/EditChecklistPage.module.css'
 import { getChecklistById } from '../api/checklist'
 import { editChecklistWithAi, reviewChecklistWithAi } from '../api/ai'
 import type { Checklist } from '../types/checklist'
@@ -464,9 +465,9 @@ function EditChecklistPage() {
                 </div>
               </div>
 
-              <div className={styles.headerTools}>
+              <div className={editStyles.headerTools}>
                 <button
-                  className={styles.aiReviewButton}
+                  className={editStyles.aiReviewButton}
                   type="button"
                   onClick={() => setIsReviewModalOpen(true)}
                   disabled={isReviewingChecklist || isLoading || !checklist_id}

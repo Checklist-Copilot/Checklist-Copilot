@@ -109,48 +109,6 @@
   letter-spacing: -0.065em;
 }
 
-.headerTools {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-}
-
-.aiReviewButton {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 42px;
-  border: 1px solid rgba(103, 232, 249, 0.28);
-  border-radius: 999px;
-  padding: 0 15px;
-  background: linear-gradient(135deg, rgba(139, 92, 246, 0.26), rgba(34, 211, 238, 0.14));
-  color: #f8f5ff;
-  font: inherit;
-  font-size: 13px;
-  font-weight: 900;
-  cursor: pointer;
-  box-shadow: 0 14px 32px rgba(34, 211, 238, 0.12);
-  transition: transform 180ms cubic-bezier(.16, 1, .3, 1), border-color 180ms, background 180ms;
-}
-
-.aiReviewButton:hover:not(:disabled) {
-  transform: translateY(-2px);
-  border-color: rgba(103, 232, 249, 0.46);
-  background: linear-gradient(135deg, rgba(139, 92, 246, 0.34), rgba(34, 211, 238, 0.2));
-}
-
-.aiReviewButton:disabled {
-  cursor: not-allowed;
-  opacity: 0.55;
-}
-
-.aiReviewButton:focus-visible {
-  outline: 3px solid rgba(34, 211, 238, 0.55);
-  outline-offset: 3px;
-}
-
 .description {
   max-width: 620px;
   margin: 12px 0 0;
@@ -308,10 +266,6 @@
 
   .checklistHeader {
     grid-template-columns: 1fr;
-  }
-
-  .headerTools {
-    justify-content: flex-start;
   }
 
   .progressBox {
