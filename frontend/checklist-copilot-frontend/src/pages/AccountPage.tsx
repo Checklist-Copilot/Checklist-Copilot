@@ -16,7 +16,7 @@ import { deleteUser } from '../api/user'
 import { ApiError } from '../api/http'
 import { removeToken } from '../auth/tokenStorage'
 import TopBar from '../components/TopBar'
-import { ConfirmDeleteModal } from '../components/ConfirmDeleteModal'
+import { ConfirmationModal } from '../components/ConfirmationModal'
 import styles from '../page-styles/AccountPage.module.css'
 import type { User } from '../types/user'
 
@@ -295,7 +295,7 @@ function AccountPage() {
         </section>
       </main>
 
-      <ConfirmDeleteModal
+      <ConfirmationModal
         isOpen={isDeleteModalOpen}
         title="Delete your account?"
         message="This removes your profile, checklists, and associated data. You cannot undo this action."

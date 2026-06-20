@@ -1,29 +1,26 @@
 import { useEffect, useState } from 'react'
+import type { Dispatch, SetStateAction } from 'react'
 import checklyRobot from '../assets/checkly.png'
 import AIPromptInput from './AIPromptInput'
+import { MarkdownMessage } from './MarkdownMessage'
 import styles from '../components-styles/AIChatPopUp.module.css'
 
 type AIChatPopupProps = {
   isOpen: boolean
+  messages: ChatMessage[]
+  setMessages: Dispatch<SetStateAction<ChatMessage[]>>
   onClose: () => void
-  onSendMessage: (message: string) => Promise<string>
+  onSendMessage: (message: string, conversation: ChatMessage[]) => Promise<string>
 }
 
-type ChatMessage = {
+export type ChatMessage = {
   id: number
   sender: 'user' | 'checkly'
   text: string
 }
 
-function AIChatPopup({ isOpen, onClose, onSendMessage }: AIChatPopupProps) {
+function AIChatPopup({ isOpen, messages, setMessages, onClose, onSendMessage }: AIChatPopupProps) {
   const [message, setMessage] = useState('')
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    {
-      id: 1,
-      sender: 'checkly',
-      text: 'Hi, I am Checkly. How can I help you with this checklist?',
-    },
-  ])
   const [isSending, setIsSending] = useState(false)
   const [isClosing, setIsClosing] = useState(false)
   const [shouldRender, setShouldRender] = useState(isOpen)
@@ -63,15 +60,17 @@ function AIChatPopup({ isOpen, onClose, onSendMessage }: AIChatPopupProps) {
     const trimmedMessage = message.trim()
     if (!trimmedMessage || isSending) return
 
+    const conversationWithUserMessage = [
+      ...messages,
+      { id: Date.now(), sender: 'user' as const, text: trimmedMessage },
+    ]
+
     setMessage('')
-    setMessages((currentMessages) => [
-      ...currentMessages,
-      { id: Date.now(), sender: 'user', text: trimmedMessage },
-    ])
+    setMessages(conversationWithUserMessage)
     setIsSending(true)
 
     try {
-      const reply = await onSendMessage(trimmedMessage)
+      const reply = await onSendMessage(trimmedMessage, conversationWithUserMessage)
       setMessages((currentMessages) => [
         ...currentMessages,
         { id: Date.now() + 1, sender: 'checkly', text: reply || 'Done.' },
@@ -125,7 +124,7 @@ function AIChatPopup({ isOpen, onClose, onSendMessage }: AIChatPopupProps) {
             <span className={styles.messageLabel}>
               {chatMessage.sender === 'user' ? 'You' : 'Checkly'}
             </span>
-            <p>{chatMessage.text}</p>
+            <MarkdownMessage text={chatMessage.text} />
           </div>
         ))}
       </div>

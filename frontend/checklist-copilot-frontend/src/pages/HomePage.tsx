@@ -7,7 +7,7 @@ import type { Checklist } from '../types/checklist'
 import { removeToken } from '../auth/tokenStorage'
 import { useRequireAuth } from '../hooks/useRequireAuth'
 import TopBar from '../components/TopBar'
-import { ConfirmDeleteModal } from '../components/ConfirmDeleteModal'
+import { ConfirmationModal } from '../components/ConfirmationModal'
 import { ChecklistList } from '../components/home/ChecklistList'
 import { HomePrintReport } from '../components/home/HomePrintReport'
 import { RecentActivityPanel } from '../components/home/RecentActivityPanel'
@@ -133,7 +133,7 @@ function HomePage() {
         <HomePrintReport pdfChecklist={pdfChecklist} selectedChecklist={selectedChecklist} />
       </main>
 
-      <ConfirmDeleteModal
+      <ConfirmationModal
         isOpen={deleteTarget !== null}
         title={`Delete “${deleteTarget?.title ?? 'this checklist'}”?`}
         message="This removes the checklist and its linked context files. You cannot undo this action."

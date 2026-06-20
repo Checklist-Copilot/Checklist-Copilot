@@ -4,7 +4,7 @@ import { FiPlus } from 'react-icons/fi'
 import { HiOutlineSparkles } from 'react-icons/hi2'
 import styles from '../page-styles/UseChecklistPage.module.css'
 import { getChecklistById } from '../api/checklist'
-import { editChecklistWithAi } from '../api/ai'
+import { editChecklistWithAi, reviewChecklistWithAi } from '../api/ai'
 import type { Checklist } from '../types/checklist'
 import { removeToken } from '../auth/tokenStorage'
 import { useRequireAuth } from '../hooks/useRequireAuth'
@@ -14,6 +14,8 @@ import type { ChecklistComponent, ChecklistRoot } from '../checklist-components'
 import { addComponentToRoot, deleteComponentFromRoot, updateComponentInRoot } from '../checklist-components/treeUtils'
 import TopBar from '../components/TopBar'
 import AIChatPopup from '../components/AIChatPopup'
+import type { ChatMessage } from '../components/AIChatPopup'
+import { ConfirmationModal } from '../components/ConfirmationModal'
 import { ChecklistContextFiles } from '../components/ChecklistContextFiles'
 
 const componentOptions = [
@@ -37,6 +39,15 @@ function EditChecklistPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [isAIChatOpen, setIsAIChatOpen] = useState(false)
+  const [isReviewModalOpen, setIsReviewModalOpen] = useState(false)
+  const [isReviewingChecklist, setIsReviewingChecklist] = useState(false)
+  const [aiMessages, setAiMessages] = useState<ChatMessage[]>([
+    {
+      id: 1,
+      sender: 'checkly',
+      text: 'Hi, I am Checkly. How can I help you with this checklist?',
+    },
+  ])
   const [focusedComponentId, setFocusedComponentId] = useState<string>('root')
   const [toastMessage, setToastMessage] = useState<string | null>(null)
 
@@ -300,12 +311,14 @@ function EditChecklistPage() {
   enqueueOperation({ operation: 'updateComponent', targetId: componentId, patch })
 }
 
-  async function handleAiMessage(message: string) {
+  // Sends chat instructions to the AI edit endpoint, including prior chat context so follow-up
+  // requests like "apply your suggestions" can refer to an earlier AI review in the same session.
+  async function handleAiMessage(message: string, conversation: ChatMessage[]) {
     if (!checklist_id) {
       throw new Error('Checklist ID is missing.')
     }
 
-    const response = await editChecklistWithAi(checklist_id, message)
+    const response = await editChecklistWithAi(checklist_id, buildAiInstruction(message, conversation))
 
     setChecklist((currentChecklist) => {
       if (!currentChecklist) return currentChecklist
@@ -325,6 +338,41 @@ function EditChecklistPage() {
     clearQueue()
 
     return response.reply
+  }
+
+  // Opens the chat with a temporary review message, then swaps it for the backend review response.
+  async function handleAiReview() {
+    if (!checklist_id || isReviewingChecklist) return
+
+    const reviewMessageId = Date.now()
+    setIsReviewModalOpen(false)
+    setIsAIChatOpen(true)
+    setIsReviewingChecklist(true)
+    setAiMessages((currentMessages) => [
+      ...currentMessages,
+      { id: reviewMessageId, sender: 'checkly', text: 'Generating review...' },
+    ])
+
+    try {
+      const response = await reviewChecklistWithAi(checklist_id)
+      setAiMessages((currentMessages) =>
+        currentMessages.map((chatMessage) =>
+          chatMessage.id === reviewMessageId
+            ? { ...chatMessage, text: response.reply || 'I could not produce a review for this checklist.' }
+            : chatMessage,
+        ),
+      )
+    } catch {
+      setAiMessages((currentMessages) =>
+        currentMessages.map((chatMessage) =>
+          chatMessage.id === reviewMessageId
+            ? { ...chatMessage, text: 'I could not review this checklist. Please try again.' }
+            : chatMessage,
+        ),
+      )
+    } finally {
+      setIsReviewingChecklist(false)
+    }
   }
 
   useEffect(() => {
@@ -416,7 +464,18 @@ function EditChecklistPage() {
                 </div>
               </div>
 
-              <SaveStatus isSaving={isSaving} pendingCount={pendingCount} />
+              <div className={styles.headerTools}>
+                <button
+                  className={styles.aiReviewButton}
+                  type="button"
+                  onClick={() => setIsReviewModalOpen(true)}
+                  disabled={isReviewingChecklist || isLoading || !checklist_id}
+                >
+                  <HiOutlineSparkles />
+                  AI review
+                </button>
+                <SaveStatus isSaving={isSaving} pendingCount={pendingCount} />
+              </div>
             </header>
 
             {isLoading ? <p className={styles.message}>Loading checklist...</p> : null}
@@ -462,8 +521,23 @@ function EditChecklistPage() {
 
         <AIChatPopup
           isOpen={isAIChatOpen}
+          messages={aiMessages}
+          setMessages={setAiMessages}
           onClose={() => setIsAIChatOpen(false)}
           onSendMessage={handleAiMessage}
+        />
+
+        <ConfirmationModal
+          isOpen={isReviewModalOpen}
+          title="Review checklist with AI?"
+          message="Do you want to have this checklist reviewed by AI using its general knowledge about the topic, but also the related PDFs?"
+          confirmLabel="Continue"
+          workingLabel="Generating review..."
+          kicker="AI review"
+          tone="ai"
+          isConfirming={isReviewingChecklist}
+          onConfirm={handleAiReview}
+          onClose={() => setIsReviewModalOpen(false)}
         />
       </main>
     </>
@@ -494,6 +568,17 @@ function formatDate(value: string) {
     month: 'short',
     day: 'numeric',
   }).format(new Date(value))
+}
+
+function buildAiInstruction(message: string, conversation: ChatMessage[]) {
+  const priorMessages = conversation
+    .slice(1, -1)
+    .map((chatMessage) => `${chatMessage.sender === 'user' ? 'User' : 'Checkly'}: ${chatMessage.text}`)
+    .join('\n\n')
+
+  if (!priorMessages) return message
+
+  return `Conversation so far:\n\n${priorMessages}\n\nCurrent user instruction:\n${message}`
 }
 
 export default EditChecklistPage
