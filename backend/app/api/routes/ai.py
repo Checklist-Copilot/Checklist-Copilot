@@ -19,8 +19,8 @@ from app.schemas.ai import (
 from app.schemas.checklist import ChecklistCreateRequest, ChecklistCreateResponse, ChecklistResponse
 from app.services.ai.service import (
     edit_checklist_with_ai,
-    generate_checklist_from_pdf,
     generate_checklist_from_text,
+    generate_checklist_with_context,
     observe_with_image,
 )
 from app.services.auth import get_current_user
@@ -34,7 +34,7 @@ from app.services.files import (
     build_file_url,
     fetch_file_bytes,
     get_file_for_user,
-    get_pdf_files_for_checklist,
+    load_pdf_attachments_for_checklist,
 )
 
 logger = logging.getLogger(__name__)
@@ -204,16 +204,15 @@ async def ai_observe(
 
 
 @router.post("/{checklist_id}/generate", response_model=ChecklistResponse)
-async def ai_generate_from_pdfs(
+async def ai_generate_with_context(
     checklist_id: uuid.UUID,
     payload: AiGenerateRequest,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> ChecklistResponse:
     """
-    Generate checklist content for an existing (empty) checklist using the
-    description as a prompt and any uploaded PDFs as context. Called right
-    after checklist creation + PDF upload from the New Checklist page.
+    Generate checklist content for an existing empty checklist using the user's
+    prompt plus any uploaded PDFs as additional context.
     """
     checklist = get_checklist_for_user(db, checklist_id, current_user.id)
     if checklist is None:
@@ -221,37 +220,29 @@ async def ai_generate_from_pdfs(
             status_code=status.HTTP_404_NOT_FOUND, detail="Checklist not found."
         )
 
-    pdf_files = get_pdf_files_for_checklist(db, checklist_id)
-    logger.info("Starting PDF checklist generation for checklist=%s, %d PDF(s)", checklist_id, len(pdf_files))
-
-    attachments: list[tuple[str, bytes]] = []
-    for pdf_file in pdf_files:
-        try:
-            raw_bytes, _ = await fetch_file_bytes(pdf_file)
-            attachments.append((pdf_file.file_name, raw_bytes))
-        except Exception:
-            logger.exception("Failed to fetch PDF bytes for file_id=%s", pdf_file.id)
-
-    # Only run AI generation when at least one PDF was successfully fetched.
-    # If no PDFs were uploaded (or all failed to fetch), leave the checklist empty.
-    if not attachments:
-        logger.info("No PDF attachments available — skipping generation")
-        return ChecklistResponse.model_validate(checklist)
+    if checklist.checklist.get("children"):
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Checklist generation can only run for an empty checklist.",
+        )
 
     try:
-        result = generate_checklist_from_pdf(
-            attachments,
+        attachments = await load_pdf_attachments_for_checklist(db, checklist_id, current_user.id)
+        logger.info("Starting checklist generation for checklist=%s, %d PDF(s)", checklist_id, len(attachments))
+        result = generate_checklist_with_context(
+            payload.prompt,
             title=checklist.title,
             description=checklist.description,
-            prompt=payload.prompt,
+            pdf_files=attachments,
         )
     except (RuntimeError, ValueError, ChecklistOperationError) as exc:
-        logger.exception("PDF checklist generation failed for checklist=%s", checklist_id)
+        logger.exception("Checklist generation failed for checklist=%s", checklist_id)
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc)
         ) from exc
 
     from sqlalchemy.orm.attributes import flag_modified
+    checklist.checklist_prev = copy.deepcopy(checklist.checklist)
     checklist.checklist = result.checklist
     flag_modified(checklist, "checklist")
     apply_stats(checklist)

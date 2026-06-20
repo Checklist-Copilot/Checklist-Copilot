@@ -276,31 +276,26 @@ def generate_checklist_from_text(
 
     system_prompt = build_create_system_prompt(root_id)
 
-    pdf_rules = (
-        "STRICT RULES — you MUST follow these:\n"
-        "1. ONLY create checklist items, sections, and fields that are EXPLICITLY "
-        "mentioned in the PDF document(s). Do NOT add anything from general knowledge "
-        "or common practice that is not stated in the document(s).\n"
-        "2. Every checkbox item must correspond to a specific requirement or step "
-        "listed in the document(s) — use the document's exact wording as the label.\n"
-        "3. Every section must correspond to a heading or logical group FROM the document(s).\n"
-        "4. Where the document(s) specify concrete values (names, codes, units, thresholds, "
-        "dates), use those exact values as field labels, placeholders, or defaults.\n"
-        "5. Do NOT invent fields, items, or sections that are not in the document(s).\n"
-        "6. If the document(s) say to collect a piece of data (e.g. 'record inspector name'), "
-        "create the appropriate input field for it.\n"
-        "7. If the document(s) mention uploading a photo, create an imageBlock.\n\n"
+    pdf_context_rules = (
+        "PDF CONTEXT GUIDANCE:\n"
+        "- Treat the attached PDF document(s) as high-priority context for the user's goal.\n"
+        "- Use their terminology, rules, requirements, headings, thresholds, and concrete "
+        "values when they are relevant to the checklist.\n"
+        "- The PDFs are guidance, not the only source of truth: you may also use the user's "
+        "prompt and reasonable domain knowledge to make the checklist complete and usable.\n"
+        "- Do not contradict the PDFs. If a PDF states a concrete requirement, represent it "
+        "clearly as a checklist item, field, table column, or section.\n\n"
     )
     context_prefix = (
         f"The following text was extracted from a reference PDF document.\n\n"
-        f"{pdf_rules}"
+        f"{pdf_context_rules}"
         f"PDF CONTENT:\n{pdf_context}\n\n---\n\n"
         if pdf_context
         else ""
     )
     user_prompt = (
         f"{context_prefix}"
-        f"{'One or more PDF documents are attached to this message. ' + pdf_rules if pdf_files else ''}"
+        f"{'One or more PDF documents are attached to this message. ' + pdf_context_rules if pdf_files else ''}"
         f"Build a checklist for:\n\n{prompt}\n\n"
         f"The root container id is `{root_id}`. Use it as `targetContainerId` "
         f"for the top-level sections, then fill every section with the "
@@ -330,22 +325,20 @@ def generate_checklist_from_text(
     return result
 
 
-def generate_checklist_from_pdf(
-    pdf_files: list[tuple[str, bytes]],
+def generate_checklist_with_context(
+    prompt: str,
     *,
     title: str | None = None,
     description: str | None = None,
-    prompt: str | None = None,
+    pdf_files: list[tuple[str, bytes]] | None = None,
 ) -> AIRunResult:
     """
-    Generate a checklist from one or more PDF attachments. Thin wrapper
-    around `generate_checklist_from_text` — the PDFs are sent directly to the
-    model (see `OpenAIClient.chat_with_tools_and_files`) instead of being
-    text-extracted first.
+    Generate a checklist from the user's prompt and optional PDF context files.
+    The normal create prompt and tool loop are reused so PDFs only add context.
     """
-    logger.info("Generating checklist from %d PDF attachment(s)", len(pdf_files))
+    logger.info("Generating checklist with %d PDF attachment(s)", len(pdf_files or []))
     return generate_checklist_from_text(
-        prompt or description or title or "checklist",
+        prompt,
         title=title,
         description=description,
         pdf_files=pdf_files,

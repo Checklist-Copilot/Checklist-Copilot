@@ -131,25 +131,20 @@ async def delete_checklist_route(
     if checklist is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Checklist not found.")
 
-    from sqlalchemy import update as sa_update
-    from app.db.models import File as FileModel
+    linked_files = get_files_for_checklist(db, checklist_id, current_user.id)
 
-    linked_files = get_files_for_checklist(db, checklist_id)
-
-    # Null out checklist_id so the FK constraint is released even if Supabase
-    # deletion fails later.
-    db.execute(
-        sa_update(FileModel)
-        .where(FileModel.checklist_id == checklist_id)
-        .values(checklist_id=None)
-    )
-    db.commit()
-
+    deletion_errors: list[str] = []
     for file_row in linked_files:
         try:
             await delete_file_for_user(db, file_row)
-        except Exception:
-            pass
+        except Exception as exc:  # noqa: BLE001 - collect all cleanup failures before reporting.
+            deletion_errors.append(f"{file_row.id}: {exc}")
+
+    if deletion_errors:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="Checklist files could not be deleted from storage. Checklist was not deleted.",
+        )
 
     delete_checklist(db, checklist)
     return ChecklistDeleteResponse(message="Checklist deleted successfully.")
