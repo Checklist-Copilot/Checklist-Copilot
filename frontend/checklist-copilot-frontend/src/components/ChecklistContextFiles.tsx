@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { ChangeEvent } from 'react'
 import { createPortal } from 'react-dom'
 import { FiEye, FiFileText, FiImage, FiRefreshCw, FiTrash2, FiUpload, FiX } from 'react-icons/fi'
@@ -84,7 +84,7 @@ export function ChecklistContextFiles({ checklistId }: ChecklistContextFilesProp
     return files.filter((file) => file.file_type === activeFilter)
   }, [activeFilter, files])
 
-  async function refreshFiles() {
+  const refreshFiles = useCallback(async () => {
     if (!checklistId) return
 
     setIsLoading(true)
@@ -98,7 +98,7 @@ export function ChecklistContextFiles({ checklistId }: ChecklistContextFilesProp
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [checklistId])
 
   async function handleFilesSelected(event: ChangeEvent<HTMLInputElement>) {
     const selectedFiles = Array.from(event.target.files ?? [])
@@ -202,7 +202,7 @@ export function ChecklistContextFiles({ checklistId }: ChecklistContextFilesProp
 
   useEffect(() => {
     void refreshFiles()
-  }, [checklistId])
+  }, [refreshFiles])
 
   useEffect(() => {
     return () => {

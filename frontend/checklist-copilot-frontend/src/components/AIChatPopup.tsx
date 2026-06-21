@@ -26,15 +26,19 @@ function AIChatPopup({ isOpen, messages, setMessages, onClose, onSendMessage }: 
   const [shouldRender, setShouldRender] = useState(isOpen)
 
   useEffect(() => {
-    if (isOpen) {
-      setShouldRender(true)
-      setIsClosing(false)
-      return
-    }
+    const animationFrame = window.requestAnimationFrame(() => {
+      if (isOpen) {
+        setShouldRender(true)
+        setIsClosing(false)
+        return
+      }
 
-    if (shouldRender) {
-      setIsClosing(true)
-    }
+      if (shouldRender) {
+        setIsClosing(true)
+      }
+    })
+
+    return () => window.cancelAnimationFrame(animationFrame)
   }, [isOpen, shouldRender])
 
   if (!shouldRender) {

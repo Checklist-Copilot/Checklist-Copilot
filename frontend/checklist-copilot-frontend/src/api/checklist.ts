@@ -81,12 +81,22 @@ function toApiOperation(operation: ChecklistOperation): ChecklistOperation {
   const type = String(operation.component.type)
   const rawLabel = operation.component.label
   const label = typeof rawLabel === 'string' && rawLabel.trim() ? rawLabel : defaultComponentLabel(type)
+  const component: AddComponentPayload = { type, label }
+
+  if (type === 'imageBlock') {
+    const images = operation.component.images
+    const allowUpload = operation.component.allowUpload
+
+    if (Array.isArray(images)) component.images = images
+    if (typeof allowUpload === 'boolean') component.allowUpload = allowUpload
+  }
 
   // The backend owns generated ids/default structure for new components, but
-  // add handlers require a real label.
+  // add handlers require a real label. Preserve imageBlock upload settings so
+  // the server response does not turn off uploads after the optimistic render.
   return {
     ...operation,
-    component: { type, label },
+    component,
   }
 }
 

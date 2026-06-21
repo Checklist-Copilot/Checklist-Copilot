@@ -10,6 +10,7 @@ import type { ChecklistComponent } from './types'
 type ComponentRendererProps = {
   component: ChecklistComponent
   index?: number
+  checklistId?: string
   isEditMode?: boolean
   onComponentUpdate?: (componentId: string, patch: Record<string, unknown>) => void
   onDeleteComponent?: (componentId: string) => void
@@ -20,6 +21,7 @@ type ComponentRendererProps = {
 export function ComponentRenderer({
   component,
   index,
+  checklistId,
   isEditMode = false,
   onComponentUpdate,
   onDeleteComponent,
@@ -32,6 +34,7 @@ export function ComponentRenderer({
         <SectionRenderer
           section={component}
           index={index}
+          checklistId={checklistId}
           isEditMode={isEditMode}
           onComponentUpdate={onComponentUpdate}
           onDeleteComponent={onDeleteComponent}
@@ -52,7 +55,14 @@ export function ComponentRenderer({
       return <NumberFieldRenderer component={component} isEditMode={isEditMode} onComponentUpdate={onComponentUpdate} />
     case 'imageBlock':
     case 'imagesSection':
-      return <ImageBlockRenderer component={component} isEditMode={isEditMode} onComponentUpdate={onComponentUpdate} />
+      return (
+        <ImageBlockRenderer
+          component={component}
+          checklistId={checklistId}
+          isEditMode={isEditMode}
+          onComponentUpdate={onComponentUpdate}
+        />
+      )
     case 'table':
       return <TableRenderer component={component} isEditMode={isEditMode} onComponentUpdate={onComponentUpdate} />
     default:

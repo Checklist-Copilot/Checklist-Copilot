@@ -38,5 +38,34 @@
   padding: 10px 14px;
   font: inherit;
   font-weight: 900;
+  cursor: pointer;
+}
+
+.uploadButton:disabled {
+  opacity: 0.58;
   cursor: not-allowed;
+}
+
+.uploadControls {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.fileInput {
+  display: none;
+}
+
+.uploadStatus,
+.uploadHint {
+  color: #b9b0ce;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.uploadError {
+  color: #fca5a5;
+  font-size: 13px;
+  font-weight: 800;
 }

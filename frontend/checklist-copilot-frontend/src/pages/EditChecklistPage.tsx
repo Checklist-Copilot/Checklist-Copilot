@@ -490,6 +490,7 @@ function EditChecklistPage() {
               <div className={styles.checklistShell}>
                 <ChecklistRenderer
                   checklist={editableChecklist}
+                  checklistId={checklist_id}
                   isEditMode
                   focusedComponentId={focusedComponentId}
                   onFocusComponent={setFocusedComponentId}

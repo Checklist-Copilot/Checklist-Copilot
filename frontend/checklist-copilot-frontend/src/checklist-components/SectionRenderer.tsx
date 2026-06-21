@@ -7,6 +7,7 @@ import { componentTitle, defaultLabelForType } from './utils'
 type SectionRendererProps = {
   section: SectionComponent
   index?: number
+  checklistId?: string
   isEditMode?: boolean
   onComponentUpdate?: (componentId: string, patch: Record<string, unknown>) => void
   onDeleteComponent?: (componentId: string) => void
@@ -17,6 +18,7 @@ type SectionRendererProps = {
 export function SectionRenderer({
   section,
   index,
+  checklistId,
   isEditMode = false,
   onComponentUpdate,
   onDeleteComponent,
@@ -74,6 +76,7 @@ export function SectionRenderer({
 
               <ComponentRenderer
                 component={component}
+                checklistId={checklistId}
                 isEditMode={isEditMode}
                 onComponentUpdate={onComponentUpdate}
                 onDeleteComponent={onDeleteComponent}

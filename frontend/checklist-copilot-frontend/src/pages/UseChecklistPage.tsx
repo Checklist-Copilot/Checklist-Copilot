@@ -183,7 +183,11 @@ function UseChecklistPage() {
 
           {!isLoading && !missingChecklistId && !errorMessage ? (
             <div className={styles.checklistShell}>
-              <ChecklistRenderer checklist={renderedChecklist} onComponentUpdate={handleComponentUpdate} />
+              <ChecklistRenderer
+                checklist={renderedChecklist}
+                checklistId={checklist_id}
+                onComponentUpdate={handleComponentUpdate}
+              />
             </div>
           ) : null}
 
