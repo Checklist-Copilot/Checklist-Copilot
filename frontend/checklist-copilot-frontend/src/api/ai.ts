@@ -17,6 +17,17 @@ export type AiReviewResponse = {
   reply: string
 }
 
+export type AiObserveMessage = {
+  role: 'user' | 'assistant'
+  content: string
+}
+
+export type AiObserveRequest = {
+  instruction: string
+  image_ids: string[]
+  prior_messages?: AiObserveMessage[]
+}
+
 export type AiCreateFromTextRequest = {
   prompt: string
   title?: string | null
@@ -49,6 +60,18 @@ export function createChecklistFromText(
 export function reviewChecklistWithAi(checklistId: string): Promise<AiReviewResponse> {
   return apiRequest<AiReviewResponse>(`/ai/checklists/${checklistId}/review`, {
     method: 'POST',
+  })
+}
+
+// Sends uploaded image ids to the vision endpoint so the backend can inspect
+// each image and optionally attach it to the best matching image block.
+export function observeChecklistImages(
+  checklistId: string,
+  payload: AiObserveRequest,
+): Promise<AiEditChecklistResponse> {
+  return apiRequest<AiEditChecklistResponse>(`/ai/checklists/${checklistId}/observe`, {
+    method: 'POST',
+    body: JSON.stringify(payload),
   })
 }
 
