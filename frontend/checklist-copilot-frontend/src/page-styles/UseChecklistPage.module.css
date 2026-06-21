@@ -264,6 +264,12 @@
     padding-top: 24px;
   }
 
+  .checklistShell {
+    padding: 10px;
+    border-radius: 22px;
+    overflow-x: auto;
+  }
+
   .checklistHeader {
     grid-template-columns: 1fr;
   }

@@ -134,6 +134,14 @@
   background: rgba(124, 58, 237, 0.22);
 }
 
+.typingBubble {
+  min-width: 86px;
+}
+
+.typingDots {
+  color: #ddd6fe;
+}
+
 .messageLabel {
   display: block;
   margin-bottom: 5px;

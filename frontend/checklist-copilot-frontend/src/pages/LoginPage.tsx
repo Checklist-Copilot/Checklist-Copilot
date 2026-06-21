@@ -50,7 +50,8 @@ function LoginPage() {
           </Link>
 
           <Link to="/register" className={styles.getStartedButton}>
-            Get Started
+            <span className={styles.getStartedFull}>Get Started</span>
+            <span className={styles.getStartedShort}>Start</span>
           </Link>
         </div>
       </header>

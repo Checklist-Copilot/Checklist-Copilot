@@ -1,9 +1,10 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { Dispatch, SetStateAction } from 'react'
 import checklyRobot from '../assets/checkly.png'
 import AIPromptInput from './AIPromptInput'
 import { CameraCaptureModal } from './CameraCaptureModal'
 import { MarkdownMessage } from './MarkdownMessage'
+import { TypingDots } from './TypingDots'
 import styles from '../components-styles/AIChatPopUp.module.css'
 
 type AIChatPopupProps = {
@@ -27,6 +28,7 @@ function AIChatPopup({ isOpen, messages, setMessages, onClose, onSendMessage }: 
   const [isCameraOpen, setIsCameraOpen] = useState(false)
   const [isClosing, setIsClosing] = useState(false)
   const [shouldRender, setShouldRender] = useState(isOpen)
+  const messagesEndRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
     const animationFrame = window.requestAnimationFrame(() => {
@@ -43,6 +45,12 @@ function AIChatPopup({ isOpen, messages, setMessages, onClose, onSendMessage }: 
 
     return () => window.cancelAnimationFrame(animationFrame)
   }, [isOpen, shouldRender])
+
+  useEffect(() => {
+    if (!shouldRender) return
+
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
+  }, [messages, isSending, shouldRender])
 
   if (!shouldRender) {
     return null
@@ -139,6 +147,14 @@ function AIChatPopup({ isOpen, messages, setMessages, onClose, onSendMessage }: 
             <MarkdownMessage text={chatMessage.text} />
           </div>
         ))}
+
+        {isSending ? (
+          <div className={`${styles.messageBubble} ${styles.typingBubble}`}>
+            <span className={styles.messageLabel}>Checkly</span>
+            <TypingDots label="Checkly is typing" className={styles.typingDots} />
+          </div>
+        ) : null}
+        <div ref={messagesEndRef} aria-hidden="true" />
       </div>
 
       {/* Same OpenAI-style input as the edit page, plus camera capture so a

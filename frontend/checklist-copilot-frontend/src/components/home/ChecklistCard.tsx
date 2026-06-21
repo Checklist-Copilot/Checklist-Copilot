@@ -27,7 +27,7 @@ export function ChecklistCard({ checklist, isSelected, ownerName, onViewStats, o
     <article className={`${styles.card} ${isSelected ? styles.selectedCard : ''}`}>
       <div className={styles.cardHeader}>
         <h3>{checklist.title}</h3>
-        <span className={badgeClassName}>{status}</span>
+        <span className={badgeClassName}>{status.replace(' ', '\u00A0')}</span>
       </div>
 
       <p className={styles.description}>{checklist.description ?? 'No description.'}</p>
