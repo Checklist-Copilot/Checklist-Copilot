@@ -5,7 +5,7 @@ import { HiOutlineSparkles } from 'react-icons/hi2'
 import styles from '../page-styles/UseChecklistPage.module.css'
 import editStyles from '../page-styles/EditChecklistPage.module.css'
 import { getChecklistById } from '../api/checklist'
-import { editChecklistWithAi, reviewChecklistWithAi } from '../api/ai'
+import { editChecklistWithAi, observeChecklistImages, reviewChecklistWithAi } from '../api/ai'
 import type { Checklist } from '../types/checklist'
 import { removeToken } from '../auth/tokenStorage'
 import { useRequireAuth } from '../hooks/useRequireAuth'
@@ -18,6 +18,7 @@ import AIChatPopup from '../components/AIChatPopup'
 import type { ChatMessage } from '../components/AIChatPopup'
 import { ConfirmationModal } from '../components/ConfirmationModal'
 import { ChecklistContextFiles } from '../components/ChecklistContextFiles'
+import { uploadChecklistImage } from '../api/files'
 
 const componentOptions = [
   { label: 'Section', type: 'section' },
@@ -314,12 +315,18 @@ function EditChecklistPage() {
 
   // Sends chat instructions to the AI edit endpoint, including prior chat context so follow-up
   // requests like "apply your suggestions" can refer to an earlier AI review in the same session.
-  async function handleAiMessage(message: string, conversation: ChatMessage[]) {
+  async function handleAiMessage(message: string, conversation: ChatMessage[], images: File[] = []) {
     if (!checklist_id) {
       throw new Error('Checklist ID is missing.')
     }
 
-    const response = await editChecklistWithAi(checklist_id, buildAiInstruction(message, conversation))
+    const response = images.length > 0
+      ? await observeChecklistImages(checklist_id, {
+          instruction: message,
+          image_ids: (await Promise.all(images.map((image) => uploadChecklistImage(checklist_id, image)))).map((file) => file.id),
+          prior_messages: buildAiPriorMessages(conversation),
+        })
+      : await editChecklistWithAi(checklist_id, buildAiInstruction(message, conversation))
 
     setChecklist((currentChecklist) => {
       if (!currentChecklist) return currentChecklist
@@ -570,6 +577,13 @@ function formatDate(value: string) {
     month: 'short',
     day: 'numeric',
   }).format(new Date(value))
+}
+
+function buildAiPriorMessages(conversation: ChatMessage[]) {
+  return conversation.slice(1, -1).map((chatMessage) => ({
+    role: chatMessage.sender === 'user' ? 'user' as const : 'assistant' as const,
+    content: chatMessage.text,
+  }))
 }
 
 function buildAiInstruction(message: string, conversation: ChatMessage[]) {

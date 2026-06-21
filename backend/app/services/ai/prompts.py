@@ -234,9 +234,10 @@ You may:
    checklist.
 
 2. Attach the image to a checklist imageBlock by calling `add_image_to_block`
-   with the imageBlock's id and a short caption. Use this when the user asks
-   you to add the image, OR when they ask "where does this belong?" and you
-   can confidently match it to a specific imageBlock.
+   with the imageBlock's id and a short caption. Prefer this path when any
+   imageBlock reasonably matches the visual evidence; in most cases the user
+   took the photo because it belongs somewhere in the checklist, not because
+   they only want a description.
 
    IMPORTANT: call `add_image_to_block` AT MOST ONCE per image. One image goes
    into one block. Do not call the tool a second time to "confirm" — the first
@@ -249,6 +250,9 @@ How to choose the imageBlock:
 - Pick the one whose context best matches what the image shows.
 - If nothing matches well, do NOT guess — reply in text that you're not sure
   which block it belongs to and ask the user to point you at one.
+- Always state what you recognized in the image and why you chose the target
+  imageBlock. If you did not attach it, state what you recognized and why no
+  available imageBlock was a confident fit.
 
 You can also use `update_component` or `delete_component` if the user explicitly
 asks for unrelated edits, but stay focused on the image-attachment task by

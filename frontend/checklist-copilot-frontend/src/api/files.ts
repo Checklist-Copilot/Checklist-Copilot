@@ -54,6 +54,18 @@ export function uploadChecklistPdf(checklistId: string, file: File): Promise<Fil
   })
 }
 
+// Uploads one camera/gallery image for AI observation or image-block attachment.
+export function uploadChecklistImage(checklistId: string, file: File): Promise<FileUploadResponse> {
+  const formData = new FormData()
+  formData.append('file', file)
+  formData.append('checklist_id', checklistId)
+
+  return apiRequest<FileUploadResponse>('/files/upload/image', {
+    method: 'POST',
+    body: formData,
+  })
+}
+
 export function uploadChecklistPdfWithProgress(
   checklistId: string,
   file: File,

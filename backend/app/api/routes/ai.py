@@ -168,44 +168,66 @@ async def ai_observe(
             status_code=status.HTTP_404_NOT_FOUND, detail="Checklist not found."
         )
 
-    # Resolve the uploaded image; enforces ownership via user_id.
-    try:
-        image_uuid = uuid.UUID(str(payload.image_id))
-    except (ValueError, TypeError) as exc:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="image_id must be a UUID."
-        ) from exc
-
-    file_row = get_file_for_user(db, image_uuid, current_user.id)
-    if file_row is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Image not found."
-        )
-    if not (file_row.file_type or "").startswith("image"):
+    image_ids = list(payload.image_ids or [])
+    if payload.image_id is not None:
+        image_ids.insert(0, payload.image_id)
+    if not image_ids:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Referenced file is not an image.",
+            detail="At least one image_id is required.",
         )
-
-    # Fetch bytes from Supabase and re-encode as a data URL for the OpenAI vision call.
-    raw_bytes, content_type = await fetch_file_bytes(file_row)
-    image_data_url = f"data:{content_type};base64,{base64.b64encode(raw_bytes).decode('ascii')}"
-    image_url = build_file_url(file_row.id)
 
     prior = [m.model_dump() for m in (payload.prior_messages or [])]
-
     original_checklist = copy.deepcopy(checklist.checklist)
     working_checklist = copy.deepcopy(checklist.checklist)
+    replies: list[str] = []
+    applied_calls = 0
+    skipped_calls: list[dict] = []
 
     try:
-        result = observe_with_image(
-            working_checklist,
-            payload.instruction,
-            image_id=str(file_row.id),
-            image_url=image_url,
-            image_data_url=image_data_url,
-            prior_messages=prior,
-        )
+        for index, raw_image_id in enumerate(image_ids, start=1):
+            try:
+                image_uuid = uuid.UUID(str(raw_image_id))
+            except (ValueError, TypeError) as exc:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"image_ids[{index - 1}] must be a UUID.",
+                ) from exc
+
+            file_row = get_file_for_user(db, image_uuid, current_user.id)
+            if file_row is None:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND, detail="Image not found."
+                )
+            if not (file_row.file_type or "").startswith("image"):
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Referenced file is not an image.",
+                )
+
+            # Fetch bytes from Supabase and re-encode as a data URL for the OpenAI vision call.
+            raw_bytes, content_type = await fetch_file_bytes(file_row)
+            image_data_url = f"data:{content_type};base64,{base64.b64encode(raw_bytes).decode('ascii')}"
+            image_url = build_file_url(file_row.id)
+            per_image_instruction = (
+                f"Image {index} of {len(image_ids)}. {payload.instruction}"
+                if len(image_ids) > 1
+                else payload.instruction
+            )
+
+            result = observe_with_image(
+                working_checklist,
+                per_image_instruction,
+                image_id=str(file_row.id),
+                image_url=image_url,
+                image_data_url=image_data_url,
+                prior_messages=prior,
+            )
+            working_checklist = result.checklist
+            applied_calls += result.applied_calls
+            skipped_calls.extend(result.skipped_calls)
+            if result.reply:
+                replies.append(f"Image {index}: {result.reply}" if len(image_ids) > 1 else result.reply)
     except RuntimeError as exc:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc)
@@ -213,18 +235,18 @@ async def ai_observe(
 
     # Persist only if the model actually changed the checklist.
     # Pure text replies don't mutate the checklist, so no need to snapshot.
-    if result.checklist != original_checklist:
+    if working_checklist != original_checklist:
         checklist.checklist_prev = original_checklist
-        checklist.checklist = result.checklist
+        checklist.checklist = working_checklist
         apply_stats(checklist)
         db.commit()
         db.refresh(checklist)
 
     return AiResponse(
-        checklist=result.checklist,
-        reply=result.reply,
-        applied_calls=result.applied_calls,
-        skipped=[AiSkippedCall(**s) for s in result.skipped_calls],
+        checklist=working_checklist,
+        reply="\n\n".join(replies) or "Processed the uploaded image.",
+        applied_calls=applied_calls,
+        skipped=[AiSkippedCall(**s) for s in skipped_calls],
     )
 
 

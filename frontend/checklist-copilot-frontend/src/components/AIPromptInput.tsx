@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import type { ChangeEvent, KeyboardEvent } from 'react'
-import { FiPaperclip, FiMic, FiMicOff, FiSend, FiX } from 'react-icons/fi'
+import { FiCamera, FiImage, FiPaperclip, FiMic, FiMicOff, FiSend, FiX } from 'react-icons/fi'
 import styles from '../components-styles/AIPromptInput.module.css'
 
 // Browser-native speech-to-text. Lives on `window.SpeechRecognition` (spec)
@@ -114,6 +114,8 @@ export type AIPromptInputProps = {
   onRemoveFile?: (index: number) => void
   // Restrict the file picker's accept attribute. Defaults to everything.
   accept?: string
+  enableCamera?: boolean
+  onOpenCamera?: () => boolean | void
   disabled?: boolean
   placeholder?: string
   // Visual label for the "submit/send" tooltip — e.g. "Generate" on the new
@@ -129,12 +131,16 @@ function AIPromptInput({
   onAttachFiles,
   onRemoveFile,
   accept,
+  enableCamera = false,
+  onOpenCamera,
   disabled = false,
   placeholder = 'Describe what you want to do…',
   submitLabel = 'Send',
 }: AIPromptInputProps) {
   // Speech setup.
   const SpeechRecognitionCtor = getSpeechRecognitionCtor()
+  const cameraInputRef = useRef<HTMLInputElement | null>(null)
+  const galleryInputRef = useRef<HTMLInputElement | null>(null)
   const speechSupported = SpeechRecognitionCtor !== null
   const recognitionRef = useRef<SpeechRecognition | null>(null)
   const [isListening, setIsListening] = useState(false)
@@ -244,18 +250,44 @@ function AIPromptInput({
     event.target.value = ''
   }
 
+  function openCameraPicker() {
+    if (onOpenCamera) {
+      const handled = onOpenCamera()
+      if (handled !== false) return
+    }
+
+    cameraInputRef.current?.click()
+  }
+
+  function openGalleryPicker() {
+    galleryInputRef.current?.click()
+  }
+
   function handleKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
     // Enter sends; Shift+Enter inserts a newline (familiar OpenAI behaviour).
     if (event.key === 'Enter' && !event.shiftKey) {
       event.preventDefault()
-      if (!disabled && value.trim()) onSubmit()
+      if (!disabled && (value.trim() || attachedFiles.length > 0)) onSubmit()
     }
   }
 
-  const canSubmit = !disabled && value.trim().length > 0
+  const canSubmit = !disabled && (value.trim().length > 0 || attachedFiles.length > 0)
 
   return (
     <div className={styles.wrapper} data-disabled={disabled || undefined}>
+      {attachedFiles.length > 0 ? (
+        <ul className={styles.fileChips}>
+          {attachedFiles.map((file, index) => (
+            <AttachmentPreview
+              key={`${file.name}-${file.lastModified}-${index}`}
+              file={file}
+              index={index}
+              onRemoveFile={onRemoveFile}
+            />
+          ))}
+        </ul>
+      ) : null}
+
       <textarea
         ref={textareaRef}
         className={styles.textarea}
@@ -267,37 +299,45 @@ function AIPromptInput({
         disabled={disabled}
       />
 
-      {attachedFiles.length > 0 ? (
-        <ul className={styles.fileChips}>
-          {attachedFiles.map((file, index) => (
-            <li key={`${file.name}-${index}`} className={styles.fileChip}>
-              <FiPaperclip className={styles.chipIcon} />
-              <span className={styles.chipName}>{file.name}</span>
-              {onRemoveFile ? (
-                <button
-                  type="button"
-                  className={styles.chipRemove}
-                  onClick={() => onRemoveFile(index)}
-                  aria-label={`Remove ${file.name}`}
-                >
-                  <FiX />
-                </button>
-              ) : null}
-            </li>
-          ))}
-        </ul>
-      ) : null}
-
       <div className={styles.toolbar}>
         <div className={styles.leftTools}>
-          {onAttachFiles ? (
-            <label
-              className={styles.iconButton}
-              title="Attach files"
-              aria-label="Attach files"
-            >
-              <FiPaperclip />
+          {enableCamera && onAttachFiles ? (
+            <>
+              <button
+                type="button"
+                className={styles.iconButton}
+                title="Take a photo"
+                aria-label="Take a photo"
+                onClick={openCameraPicker}
+                disabled={disabled}
+              >
+                <FiCamera />
+              </button>
               <input
+                ref={cameraInputRef}
+                type="file"
+                accept="image/*"
+                capture="environment"
+                onChange={handleFilesSelected}
+                className={styles.hiddenFileInput}
+                disabled={disabled}
+              />
+            </>
+          ) : null}
+          {onAttachFiles ? (
+            <>
+              <button
+                type="button"
+                className={styles.iconButton}
+                title="Add image from gallery"
+                aria-label="Add image from gallery"
+                onClick={openGalleryPicker}
+                disabled={disabled}
+              >
+                <FiImage />
+              </button>
+              <input
+                ref={galleryInputRef}
                 type="file"
                 multiple
                 accept={accept}
@@ -305,7 +345,7 @@ function AIPromptInput({
                 className={styles.hiddenFileInput}
                 disabled={disabled}
               />
-            </label>
+            </>
           ) : null}
           <button
             type="button"
@@ -342,6 +382,51 @@ function AIPromptInput({
         </p>
       ) : null}
     </div>
+  )
+}
+
+// Renders one attached file preview. Image object URLs live in an effect so
+// mobile browsers do not repeatedly allocate previews during re-renders.
+function AttachmentPreview({
+  file,
+  index,
+  onRemoveFile,
+}: {
+  file: File
+  index: number
+  onRemoveFile?: (index: number) => void
+}) {
+  const isImage = file.type.startsWith('image/')
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!isImage) return
+
+    const objectUrl = URL.createObjectURL(file)
+    setPreviewUrl(objectUrl)
+
+    return () => URL.revokeObjectURL(objectUrl)
+  }, [file, isImage])
+
+  return (
+    <li className={isImage ? styles.imagePreviewChip : styles.fileChip}>
+      {previewUrl ? (
+        <img className={styles.imagePreview} src={previewUrl} alt={file.name} />
+      ) : (
+        <FiPaperclip className={styles.chipIcon} />
+      )}
+      {!isImage ? <span className={styles.chipName}>{file.name}</span> : null}
+      {onRemoveFile ? (
+        <button
+          type="button"
+          className={isImage ? styles.imageRemove : styles.chipRemove}
+          onClick={() => onRemoveFile(index)}
+          aria-label={`Remove ${file.name}`}
+        >
+          <FiX />
+        </button>
+      ) : null}
+    </li>
   )
 }
 

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import type { Dispatch, SetStateAction } from 'react'
 import checklyRobot from '../assets/checkly.png'
 import AIPromptInput from './AIPromptInput'
+import { CameraCaptureModal } from './CameraCaptureModal'
 import { MarkdownMessage } from './MarkdownMessage'
 import styles from '../components-styles/AIChatPopUp.module.css'
 
@@ -10,7 +11,7 @@ type AIChatPopupProps = {
   messages: ChatMessage[]
   setMessages: Dispatch<SetStateAction<ChatMessage[]>>
   onClose: () => void
-  onSendMessage: (message: string, conversation: ChatMessage[]) => Promise<string>
+  onSendMessage: (message: string, conversation: ChatMessage[], images?: File[]) => Promise<string>
 }
 
 export type ChatMessage = {
@@ -22,6 +23,8 @@ export type ChatMessage = {
 function AIChatPopup({ isOpen, messages, setMessages, onClose, onSendMessage }: AIChatPopupProps) {
   const [message, setMessage] = useState('')
   const [isSending, setIsSending] = useState(false)
+  const [attachedImages, setAttachedImages] = useState<File[]>([])
+  const [isCameraOpen, setIsCameraOpen] = useState(false)
   const [isClosing, setIsClosing] = useState(false)
   const [shouldRender, setShouldRender] = useState(isOpen)
 
@@ -62,19 +65,24 @@ function AIChatPopup({ isOpen, messages, setMessages, onClose, onSendMessage }: 
   // including after dictating via the mic).
   async function handleSend() {
     const trimmedMessage = message.trim()
-    if (!trimmedMessage || isSending) return
+    if ((!trimmedMessage && attachedImages.length === 0) || isSending) return
 
+    const imagesForSend = attachedImages
+    const uploadNotice = imagesForSend.length > 0 ? `**Uploaded ${imagesForSend.length} ${imagesForSend.length === 1 ? 'image' : 'images'}.**` : ''
+    const displayText = [uploadNotice, trimmedMessage].filter(Boolean).join('\n\n')
+    const instruction = trimmedMessage || 'Please observe the uploaded image.'
     const conversationWithUserMessage = [
       ...messages,
-      { id: Date.now(), sender: 'user' as const, text: trimmedMessage },
+      { id: Date.now(), sender: 'user' as const, text: displayText },
     ]
 
     setMessage('')
+    setAttachedImages([])
     setMessages(conversationWithUserMessage)
     setIsSending(true)
 
     try {
-      const reply = await onSendMessage(trimmedMessage, conversationWithUserMessage)
+      const reply = await onSendMessage(instruction, conversationWithUserMessage, imagesForSend)
       setMessages((currentMessages) => [
         ...currentMessages,
         { id: Date.now() + 1, sender: 'checkly', text: reply || 'Done.' },
@@ -133,15 +141,26 @@ function AIChatPopup({ isOpen, messages, setMessages, onClose, onSendMessage }: 
         ))}
       </div>
 
-      {/* Same OpenAI-style input as the edit page — gives this popup the
-          microphone button (browser-native Web Speech API) so a worker
-          filling out the checklist can dictate hands-free. Files button
-          intentionally omitted (vision/observe is wired separately). */}
+      {/* Same OpenAI-style input as the edit page, plus camera capture so a
+          worker can attach photos to the AI prompt before sending. */}
       <div className={styles.inputWrapper}>
         <AIPromptInput
           value={message}
           onChange={setMessage}
           onSubmit={handleSend}
+          attachedFiles={attachedImages}
+          onAttachFiles={(files) => setAttachedImages((current) => [...current, ...files.filter((file) => file.type.startsWith('image/'))])}
+          onRemoveFile={(index) => setAttachedImages((current) => current.filter((_, itemIndex) => itemIndex !== index))}
+          accept="image/*"
+          enableCamera
+          onOpenCamera={() => {
+            if (window.isSecureContext && typeof navigator.mediaDevices?.getUserMedia === 'function') {
+              setIsCameraOpen(true)
+              return true
+            }
+
+            return false
+          }}
           disabled={isSending}
           placeholder={
             isSending ? 'Updating checklist…' : 'Ask Checkly… or tap the mic.'
@@ -149,6 +168,12 @@ function AIChatPopup({ isOpen, messages, setMessages, onClose, onSendMessage }: 
           submitLabel="Send"
         />
       </div>
+
+      <CameraCaptureModal
+        isOpen={isCameraOpen}
+        onCapture={(file) => setAttachedImages((current) => [...current, file])}
+        onClose={() => setIsCameraOpen(false)}
+      />
     </aside>
   )
 }
