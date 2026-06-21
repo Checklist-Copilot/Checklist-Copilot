@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { FiMenu, FiX, FiGrid, FiPlus, FiLogOut } from 'react-icons/fi'
 import { FaUserCircle } from "react-icons/fa";
+import checklyLogo from '../assets/logo_cropped.png'
 import styles from '../components-styles/TopBar.module.css'
 
 type TopBarProps = {
@@ -30,7 +31,7 @@ function TopBar({ userName = 'User', userEmail = '', onLogout }: TopBarProps) {
           {isMenuOpen ? <FiX /> : <FiMenu />}
         </button>
 
-        <img src="/src/assets/logo_cropped.png" alt="Checkly logo" className={styles.logo} />
+        <img src={checklyLogo} alt="Checkly logo" className={styles.logo} />
       </div>
 
       <button className={styles.logoutButton} type="button" onClick={onLogout} aria-label="Log out">

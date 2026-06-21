@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import checklyLogo from '../assets/logo_cropped.png'
 import styles from '../page-styles/RegisterPage.module.css'
 import { registerUser } from '../api/user'
 import { ApiError } from '../api/http'
@@ -51,7 +52,7 @@ function RegisterPage() {
             <FiMenu />
           </button>
 
-          <img src="/src/assets/logo_cropped.png" alt='Checkly logo' className={styles.logo} />
+          <img src={checklyLogo} alt='Checkly logo' className={styles.logo} />
         </div>
 
         <div className={styles.topbarActions}>

@@ -7,6 +7,7 @@ import {
   FiList,
 } from 'react-icons/fi'
 import { HiOutlineSparkles } from 'react-icons/hi2'
+import checklyLogo from '../assets/logo_cropped.png'
 import styles from '../page-styles/LandingPage.module.css'
 
 function LandingPage() {
@@ -42,7 +43,7 @@ function LandingPage() {
             <FiMenu />
           </button>
 
-          <img src="/src/assets/logo_cropped.png" alt="Checkly logo" className={styles.logo} />
+          <img src={checklyLogo} alt="Checkly logo" className={styles.logo} />
         </div>
 
         <div className={styles.topbarActions}>
