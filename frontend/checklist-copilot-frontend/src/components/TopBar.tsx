@@ -33,8 +33,9 @@ function TopBar({ userName = 'User', userEmail = '', onLogout }: TopBarProps) {
         <img src="/src/assets/logo_cropped.png" alt="Checkly logo" className={styles.logo} />
       </div>
 
-      <button className={styles.logoutButton} type="button" onClick={onLogout}>
-        Log Out
+      <button className={styles.logoutButton} type="button" onClick={onLogout} aria-label="Log out">
+        <FiLogOut />
+        <span>Log Out</span>
       </button>
 
       {isMenuOpen ? (

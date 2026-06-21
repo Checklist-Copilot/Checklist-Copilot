@@ -105,6 +105,11 @@ export function ChecklistList({
 
             <CustomDropdown label="Sort checklists" value={sortMode} options={sortOptions} onChange={setSortMode} />
           </div>
+
+          <button type="button" className={`${styles.newButton} ${styles.mobileNewButton}`} onClick={() => navigate('/checklist/new')}>
+            <FaPlus />
+            New Checklist
+          </button>
         </div>
       </div>
 

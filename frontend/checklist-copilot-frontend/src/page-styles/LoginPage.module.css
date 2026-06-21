@@ -57,7 +57,7 @@
 
 .menuButton:hover { transform: translateY(-2px) rotate(-4deg); background: rgba(255,255,255,.11); }
 .logo { height: 34px; width: auto; object-fit: contain; filter: drop-shadow(0 0 18px rgba(139,92,246,.22)); }
-.topbarActions { display: flex; align-items: center; gap: 12px; }
+.topbarActions { display: flex; align-items: center; gap: 12px; min-width: 0; }
 
 .loginButton,
 .getStartedButton {
@@ -80,6 +80,8 @@
   padding: 11px 16px;
   box-shadow: 0 12px 34px rgba(139, 92, 246, 0.34);
 }
+
+.getStartedShort { display: none; }
 
 .loginButton:hover,
 .getStartedButton:hover { transform: translateY(-3px); }
@@ -196,11 +198,51 @@
 @keyframes gridDrift { from { background-position: 0 0; } to { background-position: 58px 58px; } }
 
 @media (max-width: 700px) {
+  .topbar {
+    width: min(calc(100% - 20px), 1180px);
+    min-height: 64px;
+    height: auto;
+    padding: 10px;
+    border-radius: 20px;
+    gap: 8px;
+  }
+
+  .left { gap: 8px; min-width: 0; }
+
+  .menuButton {
+    width: 36px;
+    height: 36px;
+    border-radius: 12px;
+    font-size: 20px;
+  }
+
+  .logo { max-width: 112px; }
+
+  .topbarActions {
+    flex: 0 0 auto;
+    gap: 6px;
+  }
+
+  .loginButton,
+  .getStartedButton {
+    padding: 8px 10px;
+    border-radius: 12px;
+    font-size: 12px;
+    white-space: nowrap;
+  }
+
+  .getStartedFull { display: none; }
+  .getStartedShort { display: inline; }
+
   .authSection { padding: 58px 18px 36px; }
   .authCard { padding: 24px; }
-  .topbarActions { gap: 8px; }
-  .loginButton { display: none; }
   .input { height: 62px; font-size: 18px; }
+}
+
+@media (max-width: 360px) {
+  .logo { max-width: 92px; }
+  .loginButton,
+  .getStartedButton { padding-inline: 8px; }
 }
 
 @media (prefers-reduced-motion: reduce) {

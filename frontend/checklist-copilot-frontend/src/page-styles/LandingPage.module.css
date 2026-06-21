@@ -119,6 +119,7 @@
   display: flex;
   align-items: center;
   gap: 12px;
+  min-width: 0;
 }
 
 .loginButton,
@@ -148,6 +149,10 @@
 .getStartedButton {
   padding: 11px 16px;
   border-radius: 15px;
+}
+
+.getStartedShort {
+  display: none;
 }
 
 .loginButton:hover,
@@ -396,17 +401,67 @@
 
 @media (max-width: 760px) {
   .topbar {
+    width: min(calc(100% - 20px), 1180px);
+    min-height: 64px;
     height: auto;
-    padding: 14px;
+    padding: 10px;
     border-radius: 20px;
+    gap: 8px;
   }
 
-  .topbarActions { gap: 8px; }
-  .loginButton { display: none; }
+  .left {
+    gap: 8px;
+    min-width: 0;
+  }
+
+  .menuButton {
+    width: 36px;
+    height: 36px;
+    border-radius: 12px;
+    font-size: 20px;
+  }
+
+  .logo {
+    height: 34px;
+    max-width: 112px;
+  }
+
+  .topbarActions {
+    flex: 0 0 auto;
+    gap: 6px;
+  }
+
+  .loginButton,
+  .getStartedButton {
+    padding: 8px 10px;
+    border-radius: 12px;
+    font-size: 12px;
+    white-space: nowrap;
+  }
+
+  .getStartedFull {
+    display: none;
+  }
+
+  .getStartedShort {
+    display: inline;
+  }
+
   .hero { justify-content: flex-start; padding-top: 70px; }
   .actions { flex-direction: column; width: 100%; }
   .primaryButton, .secondaryButton { width: min(100%, 340px); }
   .featureGrid { grid-template-columns: 1fr; width: min(100%, 360px); }
+}
+
+@media (max-width: 360px) {
+  .logo {
+    max-width: 92px;
+  }
+
+  .loginButton,
+  .getStartedButton {
+    padding-inline: 8px;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

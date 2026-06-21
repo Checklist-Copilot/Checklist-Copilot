@@ -74,6 +74,10 @@
   box-shadow: 0 16px 42px rgba(139, 92, 246, 0.34);
 }
 
+.mobileNewButton {
+  display: none;
+}
+
 .newButton:hover,
 .openButton:hover,
 .iconButton:hover {
@@ -530,24 +534,31 @@
 
 .cardHeader {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 10px;
   justify-content: space-between;
 }
 
 .cardHeader h3 {
+  min-width: 0;
   margin: 0;
   font-size: 23px;
   letter-spacing: -0.03em;
+  overflow-wrap: anywhere;
 }
 
 .progressBadge,
 .notStartedBadge,
 .completedBadge {
+  flex: 0 0 max-content;
+  min-width: max-content;
   border-radius: 999px;
   padding: 5px 10px;
   font-size: 12px;
   font-weight: 800;
+  line-height: 1.2;
+  white-space: nowrap;
+  word-break: keep-all;
 }
 
 .progressBadge {
@@ -646,6 +657,10 @@
   justify-content: center;
   gap: 8px;
   padding: 10px;
+}
+
+.newButton.mobileNewButton {
+  display: none;
 }
 
 .openButton {
@@ -758,6 +773,16 @@
   .header {
     flex-direction: column;
     gap: 18px;
+  }
+
+  .headerActions {
+    display: none;
+  }
+
+  .newButton.mobileNewButton {
+    display: inline-flex;
+    width: 100%;
+    margin-top: 2px;
   }
 
   .page { padding: 24px; }

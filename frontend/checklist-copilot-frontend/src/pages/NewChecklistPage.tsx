@@ -2,6 +2,7 @@ import { type ChangeEvent, type FormEvent, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { FiArrowLeft, FiFileText, FiUploadCloud, FiX } from 'react-icons/fi'
 import TopBar from '../components/TopBar'
+import { TypingDots } from '../components/TypingDots'
 import { removeToken } from '../auth/tokenStorage'
 import { useRequireAuth } from '../hooks/useRequireAuth'
 import { createChecklist } from '../api/checklist'
@@ -246,7 +247,14 @@ function NewChecklistPage() {
                 Cancel
               </button>
               <button type="submit" className={styles.primaryButton} disabled={isSubmitting}>
-                {isSubmitting ? 'Creating...' : 'Create checklist'}
+                {isSubmitting ? (
+                  <span className={styles.creatingLabel}>
+                    Creating
+                    <TypingDots label="Creating checklist" className={styles.creatingDots} />
+                  </span>
+                ) : (
+                  'Create checklist'
+                )}
               </button>
             </div>
           </form>

@@ -402,6 +402,17 @@
   background: rgba(255, 255, 255, 0.06);
 }
 
+.creatingLabel {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.creatingDots {
+  color: #ffffff;
+}
+
 .primaryButton:disabled,
 .secondaryButton:disabled,
 .fileRow button:disabled {
