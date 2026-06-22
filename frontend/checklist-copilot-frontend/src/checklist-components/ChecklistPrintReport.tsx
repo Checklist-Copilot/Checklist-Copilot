@@ -1,5 +1,5 @@
 import type { CSSProperties } from 'react'
-import checklyLogo from '../assets/logo_cropped.png'
+import checklyLogo from '../assets/logo.svg'
 import styles from './ChecklistPrintReport.module.css'
 import type { ChecklistComponent, ChecklistRoot } from './types'
 import { componentTitle } from './utils'

@@ -7,7 +7,7 @@ import {
   FiList,
 } from 'react-icons/fi'
 import { HiOutlineSparkles } from 'react-icons/hi2'
-import checklyLogo from '../assets/logo_cropped.png'
+import checklyLogo from '../assets/logo.svg'
 import styles from '../page-styles/LandingPage.module.css'
 
 function LandingPage() {
