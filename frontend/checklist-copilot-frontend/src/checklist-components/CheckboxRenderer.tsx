@@ -34,7 +34,7 @@ export function CheckboxRenderer({ component, isEditMode = false, onComponentUpd
 
   if (isEditMode) {
     return (
-      <div className={styles.item} data-component-id={component.id}>
+      <div className={`${styles.item} ${styles.editMode}`} data-component-id={component.id}>
         {content}
       </div>
     )

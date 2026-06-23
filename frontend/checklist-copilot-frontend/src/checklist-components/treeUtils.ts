@@ -1,4 +1,9 @@
-import type { ChecklistComponent, ChecklistRoot } from './types'
+import type { ChecklistComponent, ChecklistImage, ChecklistRoot } from './types'
+
+export type ImageReferenceRemoval = {
+  componentId: string
+  images: ChecklistImage[]
+}
 
 export function updateComponentInRoot(
   root: ChecklistRoot,
@@ -83,26 +88,65 @@ function addComponentToContainer(
 }
 
 export function deleteComponentFromRoot(root: ChecklistRoot, componentId: string): ChecklistRoot {
+  function removeFromComponent(component: ChecklistComponent): ChecklistComponent {
+    if (component.type === 'section') {
+      return {
+        ...component,
+        children: component.children
+          .filter((child) => child.id !== componentId)
+          .map(removeFromComponent),
+      }
+    }
+
+    if (component.type === 'checkboxGroup' || component.type === 'checkboxContainer') {
+      return {
+        ...component,
+        items: component.items.filter((item) => item.id !== componentId),
+      }
+    }
+
+    return component
+  }
+
   return {
     ...root,
     children: root.children
       .filter((component) => component.id !== componentId)
-      .map((component) => {
-        if (component.type === 'section') {
-          return {
-            ...component,
-            children: component.children.filter((child) => child.id !== componentId),
-          }
-        }
+      .map(removeFromComponent),
+  }
+}
 
-        if (component.type === 'checkboxGroup' || component.type === 'checkboxContainer') {
-          return {
-            ...component,
-            items: component.items.filter((item) => item.id !== componentId),
-          }
-        }
+export function removeImageFileReferencesFromRoot(
+  root: ChecklistRoot,
+  fileId: string,
+): { root: ChecklistRoot; removals: ImageReferenceRemoval[] } {
+  const removals: ImageReferenceRemoval[] = []
 
-        return component
-      }),
+  function removeFromComponent(component: ChecklistComponent): ChecklistComponent {
+    if (component.type === 'imageBlock' || component.type === 'imagesSection') {
+      const images = component.images.filter((image) => image.imageId !== fileId && image.id !== fileId)
+
+      if (images.length !== component.images.length) {
+        removals.push({ componentId: component.id, images })
+        return { ...component, images }
+      }
+    }
+
+    if (component.type === 'section') {
+      return {
+        ...component,
+        children: component.children.map(removeFromComponent),
+      }
+    }
+
+    return component
+  }
+
+  return {
+    root: {
+      ...root,
+      children: root.children.map(removeFromComponent),
+    },
+    removals,
   }
 }

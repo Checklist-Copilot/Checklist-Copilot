@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type ChangeEvent } from 'react'
+import { FiX } from 'react-icons/fi'
 import { API_BASE_URL } from '../api/http'
-import { uploadChecklistImageWithProgress } from '../api/files'
+import { deleteChecklistFile, notifyChecklistFilesChanged, uploadChecklistImageWithProgress } from '../api/files'
 import { getToken } from '../auth/tokenStorage'
 import { EditableLabel } from './EditableLabel'
 import styles from './ImageBlockRenderer.module.css'
@@ -27,6 +28,7 @@ export function ImageBlockRenderer({
 
   const isSavingNewComponent = isEditMode && isTemporaryComponentId(component.id)
   const canUpload = Boolean(component.allowUpload && checklistId && onComponentUpdate && !isSavingNewComponent)
+  const canDeleteImages = Boolean(onComponentUpdate)
 
   async function handleFilesSelected(event: ChangeEvent<HTMLInputElement>) {
     const files = Array.from(event.target.files ?? [])
@@ -54,12 +56,29 @@ export function ImageBlockRenderer({
       onComponentUpdate(component.id, {
         images: [...component.images, ...uploadedImages],
       })
+      notifyChecklistFilesChanged(checklistId)
     } catch (error) {
       setUploadError(error instanceof Error ? error.message : 'Upload failed.')
     } finally {
       setIsUploading(false)
       setUploadProgress(null)
     }
+  }
+
+  function handleDeleteImage(image: ChecklistImage) {
+    const imageFileId = getImageFileId(image)
+    const nextImages = component.images.filter((item) => getImageKey(item) !== getImageKey(image))
+
+    setUploadError(null)
+    onComponentUpdate?.(component.id, { images: nextImages })
+
+    if (!imageFileId) return
+
+    void deleteChecklistFile(imageFileId)
+      .then(() => notifyChecklistFilesChanged(checklistId))
+      .catch((error) => {
+        setUploadError(error instanceof Error ? error.message : 'Could not delete image file.')
+      })
   }
 
   return (
@@ -87,7 +106,21 @@ export function ImageBlockRenderer({
             const imageLabel = image.caption ?? image.label ?? componentTitle(component)
 
             return (
-              <figure className={styles.card} key={image.imageId ?? image.id ?? image.path}>
+              <figure className={styles.card} key={getImageKey(image)}>
+                {canDeleteImages ? (
+                  <button
+                    className={styles.deleteImageButton}
+                    type="button"
+                    aria-label={`Delete ${imageLabel}`}
+                    title="Delete image"
+                    onClick={(event) => {
+                      event.stopPropagation()
+                      handleDeleteImage(image)
+                    }}
+                  >
+                    <FiX />
+                  </button>
+                ) : null}
                 {imageUrl ? (
                   <AuthenticatedImage src={imageUrl} alt={imageLabel} />
                 ) : (
@@ -183,7 +216,7 @@ function FetchedImage({ src, alt }: { src: string; alt: string }) {
     }
   }, [src])
 
-  if (hasError) return <div className={styles.placeholder}>Image unavailable</div>
+  if (hasError) return null
   if (!objectUrl) return <div className={styles.placeholder}>Loading image</div>
 
   return <img src={objectUrl} alt={alt} />
@@ -201,4 +234,12 @@ function resolveImageUrl(src: string) {
 
 function isTemporaryComponentId(componentId: string) {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(componentId)
+}
+
+function getImageFileId(image: ChecklistImage) {
+  return image.imageId ?? image.id ?? null
+}
+
+function getImageKey(image: ChecklistImage) {
+  return getImageFileId(image) ?? image.url ?? image.path ?? image.caption ?? 'image'
 }
