@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { FiPlus } from 'react-icons/fi'
 import { HiOutlineSparkles } from 'react-icons/hi2'
@@ -19,6 +19,7 @@ import type { ChatMessage } from '../components/AIChatPopup'
 import { ConfirmationModal } from '../components/ConfirmationModal'
 import { ChecklistContextFiles } from '../components/ChecklistContextFiles'
 import { uploadChecklistImage } from '../api/files'
+import { UndoRedo, type UndoRedoHandle } from '../components/UndoRedo'
 
 const componentOptions = [
   { label: 'Section', type: 'section' },
@@ -33,6 +34,7 @@ const componentOptions = [
 function EditChecklistPage() {
   const navigate = useNavigate()
   const location = useLocation()
+  const routeState = location.state as { warning?: string; openAiReview?: boolean } | null
   const { isCheckingAuth, isAuthorized } = useRequireAuth()
   const { checklist_id } = useParams<{ checklist_id: string }>()
 
@@ -41,7 +43,7 @@ function EditChecklistPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [isAIChatOpen, setIsAIChatOpen] = useState(false)
-  const [isReviewModalOpen, setIsReviewModalOpen] = useState(false)
+  const [isReviewModalOpen, setIsReviewModalOpen] = useState(() => Boolean(routeState?.openAiReview))
   const [isReviewingChecklist, setIsReviewingChecklist] = useState(false)
   const [aiMessages, setAiMessages] = useState<ChatMessage[]>([
     {
@@ -51,7 +53,8 @@ function EditChecklistPage() {
     },
   ])
   const [focusedComponentId, setFocusedComponentId] = useState<string>('root')
-  const [toastMessage, setToastMessage] = useState<string | null>(null)
+  const [toastMessage, setToastMessage] = useState<string | null>(() => routeState?.warning ?? null)
+  const undoRedoRef = useRef<UndoRedoHandle>(null)
 
   const missingChecklistId = isAuthorized && !checklist_id
 
@@ -66,13 +69,21 @@ function EditChecklistPage() {
   })
 
   useEffect(() => {
-    const warning = (location.state as { warning?: string } | null)?.warning
-    if (warning) {
-      showToast(warning)
+    if (routeState?.warning || routeState?.openAiReview) {
       navigate(location.pathname, { replace: true, state: null })
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  useEffect(() => {
+    if (!toastMessage) return
+
+    const timeoutId = window.setTimeout(() => {
+      setToastMessage(null)
+    }, 3200)
+
+    return () => window.clearTimeout(timeoutId)
+  }, [toastMessage])
 
   function handleLogout() {
     removeToken()
@@ -84,12 +95,8 @@ function EditChecklistPage() {
   }
 
   function showToast(message: string) {
-  setToastMessage(message)
-
-  window.setTimeout(() => {
-    setToastMessage(null)
-  }, 3200)
-}
+    setToastMessage(message)
+  }
 
   function createComponent(type: ChecklistComponent['type']): ChecklistComponent {
     const id = createId()
@@ -291,7 +298,9 @@ function EditChecklistPage() {
       ? createComponent('checkbox')
       : createComponent(type)
 
-  setEditableChecklist((current) => addComponentToRoot(current, targetContainerId, newComponent))
+  const nextChecklist = addComponentToRoot(editableChecklist, targetContainerId, newComponent)
+  setEditableChecklist(nextChecklist)
+  undoRedoRef.current?.recordSessionState(nextChecklist)
 
   enqueueOperation({
     operation: 'addComponent',
@@ -304,12 +313,16 @@ function EditChecklistPage() {
 }
 
   function handleDeleteComponent(componentId: string) {
-  setEditableChecklist((current) => deleteComponentFromRoot(current, componentId))
+  const nextChecklist = deleteComponentFromRoot(editableChecklist, componentId)
+  setEditableChecklist(nextChecklist)
+  undoRedoRef.current?.recordSessionState(nextChecklist)
   enqueueOperation({ operation: 'deleteComponent', targetId: componentId })
 }
 
   function handleComponentUpdate(componentId: string, patch: Record<string, unknown>) {
-  setEditableChecklist((current) => updateComponentInRoot(current, componentId, patch))
+  const nextChecklist = updateComponentInRoot(editableChecklist, componentId, patch)
+  setEditableChecklist(nextChecklist)
+  undoRedoRef.current?.recordInputSequenceState(nextChecklist)
   enqueueOperation({ operation: 'updateComponent', targetId: componentId, patch })
 }
 
@@ -341,6 +354,8 @@ function EditChecklistPage() {
 
     if (isChecklistRoot(response.checklist)) {
       setEditableChecklist(response.checklist)
+      undoRedoRef.current?.cancelPendingInputHistory()
+      undoRedoRef.current?.recordSessionState(response.checklist)
     }
 
     clearQueue()
@@ -397,7 +412,9 @@ function EditChecklistPage() {
 
         if (isMounted) {
           setChecklist(response)
-          setEditableChecklist(isChecklistRoot(response.checklist) ? response.checklist : mockChecklist)
+          const loadedChecklist = isChecklistRoot(response.checklist) ? response.checklist : mockChecklist
+          setEditableChecklist(loadedChecklist)
+          undoRedoRef.current?.resetSessionHistory(loadedChecklist)
         }
       } catch {
         if (isMounted) {
@@ -452,6 +469,18 @@ function EditChecklistPage() {
                 </button>
               ))}
             </div>
+
+            <UndoRedo
+              ref={undoRedoRef}
+              checklistId={checklist_id}
+              isSaving={isSaving}
+              pendingCount={pendingCount}
+              clearQueue={clearQueue}
+              onServerChecklist={acceptServerChecklist}
+              setEditableChecklist={setEditableChecklist}
+              setErrorMessage={setErrorMessage}
+              showToast={showToast}
+            />
           </aside>
 
           <section className={`${styles.content} ${styles.editContent}`}>
@@ -548,6 +577,7 @@ function EditChecklistPage() {
           onConfirm={handleAiReview}
           onClose={() => setIsReviewModalOpen(false)}
         />
+
       </main>
     </>
   )

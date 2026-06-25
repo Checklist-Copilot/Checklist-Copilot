@@ -21,6 +21,10 @@ class ChecklistUpdateRequest(BaseModel):
     checklist: dict[str, Any]
 
 
+class ChecklistJsonRestoreRequest(BaseModel):
+    checklist: dict[str, Any]
+
+
 class ChecklistResponse(ChecklistBase):
     id: uuid.UUID
     user_id: uuid.UUID

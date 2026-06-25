@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { FiAlertTriangle, FiX } from 'react-icons/fi'
 import { HiOutlineSparkles } from 'react-icons/hi2'
 import styles from './ConfirmationModal.module.css'
@@ -45,7 +46,7 @@ export function ConfirmationModal({
 
   if (!isOpen) return null
 
-  return (
+  return createPortal(
     <div className={styles.backdrop} role="presentation" onMouseDown={isConfirming ? undefined : onClose}>
       <section
         className={styles.modal}
@@ -84,6 +85,7 @@ export function ConfirmationModal({
           </button>
         </div>
       </section>
-    </div>
+    </div>,
+    document.body,
   )
 }
