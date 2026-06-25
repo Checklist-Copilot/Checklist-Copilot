@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import checklyLogo from '../assets/logo_cropped.png'
+import checklyLogo from '../assets/logo.svg'
 import styles from '../page-styles/RegisterPage.module.css'
 import { registerUser } from '../api/user'
 import { ApiError } from '../api/http'

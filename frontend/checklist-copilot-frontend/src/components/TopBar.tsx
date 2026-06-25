@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { FiMenu, FiX, FiGrid, FiPlus, FiLogOut } from 'react-icons/fi'
 import { FaUserCircle } from "react-icons/fa";
-import checklyLogo from '../assets/logo_cropped.png'
+import checklyLogo from '../assets/logo.svg'
 import styles from '../components-styles/TopBar.module.css'
 
 type TopBarProps = {
