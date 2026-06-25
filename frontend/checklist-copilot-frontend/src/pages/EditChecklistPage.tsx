@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
-import { FiArrowLeft, FiArrowRight, FiPlus, FiTrash2 } from 'react-icons/fi'
+import { FiPlus } from 'react-icons/fi'
 import { HiOutlineSparkles } from 'react-icons/hi2'
 import styles from '../page-styles/UseChecklistPage.module.css'
 import editStyles from '../page-styles/EditChecklistPage.module.css'
-import { getChecklistById, restoreChecklistJson } from '../api/checklist'
+import { getChecklistById } from '../api/checklist'
 import { editChecklistWithAi, observeChecklistImages, reviewChecklistWithAi } from '../api/ai'
 import type { Checklist } from '../types/checklist'
 import { removeToken } from '../auth/tokenStorage'
@@ -19,6 +19,7 @@ import type { ChatMessage } from '../components/AIChatPopup'
 import { ConfirmationModal } from '../components/ConfirmationModal'
 import { ChecklistContextFiles } from '../components/ChecklistContextFiles'
 import { uploadChecklistImage } from '../api/files'
+import { UndoRedo, type UndoRedoHandle } from '../components/UndoRedo'
 
 const componentOptions = [
   { label: 'Section', type: 'section' },
@@ -29,8 +30,6 @@ const componentOptions = [
   { label: 'Image Block', type: 'imageBlock' },
   { label: 'Table', type: 'table' },
 ] as const
-
-const INPUT_HISTORY_COMMIT_DELAY_MS = 900
 
 function EditChecklistPage() {
   const navigate = useNavigate()
@@ -45,11 +44,7 @@ function EditChecklistPage() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [isAIChatOpen, setIsAIChatOpen] = useState(false)
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(() => Boolean(routeState?.openAiReview))
-  const [isResetSessionModalOpen, setIsResetSessionModalOpen] = useState(false)
   const [isReviewingChecklist, setIsReviewingChecklist] = useState(false)
-  const [isApplyingSessionState, setIsApplyingSessionState] = useState(false)
-  const [sessionHistory, setSessionHistory] = useState<ChecklistRoot[]>([])
-  const [sessionIndex, setSessionIndex] = useState(0)
   const [aiMessages, setAiMessages] = useState<ChatMessage[]>([
     {
       id: 1,
@@ -59,10 +54,7 @@ function EditChecklistPage() {
   ])
   const [focusedComponentId, setFocusedComponentId] = useState<string>('root')
   const [toastMessage, setToastMessage] = useState<string | null>(() => routeState?.warning ?? null)
-  const sessionHistoryRef = useRef<ChecklistRoot[]>([])
-  const sessionIndexRef = useRef(0)
-  const inputHistoryTimerRef = useRef<number | null>(null)
-  const inputHistoryBaseIndexRef = useRef<number | null>(null)
+  const undoRedoRef = useRef<UndoRedoHandle>(null)
 
   const missingChecklistId = isAuthorized && !checklist_id
 
@@ -75,9 +67,6 @@ function EditChecklistPage() {
     checklistId: checklist_id,
     onServerChecklist: acceptServerChecklist,
   })
-
-  const canDiscardSession = sessionHistory.length > 1 || sessionIndex > 0
-  const isSessionActionDisabled = isApplyingSessionState || isSaving || pendingCount > 0
 
   useEffect(() => {
     if (routeState?.warning || routeState?.openAiReview) {
@@ -96,22 +85,6 @@ function EditChecklistPage() {
     return () => window.clearTimeout(timeoutId)
   }, [toastMessage])
 
-  useEffect(() => {
-    sessionHistoryRef.current = sessionHistory
-  }, [sessionHistory])
-
-  useEffect(() => {
-    sessionIndexRef.current = sessionIndex
-  }, [sessionIndex])
-
-  useEffect(() => {
-    return () => {
-      if (inputHistoryTimerRef.current !== null) {
-        window.clearTimeout(inputHistoryTimerRef.current)
-      }
-    }
-  }, [])
-
   function handleLogout() {
     removeToken()
     navigate('/')
@@ -123,63 +96,6 @@ function EditChecklistPage() {
 
   function showToast(message: string) {
     setToastMessage(message)
-  }
-
-  function cloneChecklistRoot(root: ChecklistRoot) {
-    return JSON.parse(JSON.stringify(root)) as ChecklistRoot
-  }
-
-  function resetSessionHistory(root: ChecklistRoot) {
-    const snapshot = cloneChecklistRoot(root)
-    sessionHistoryRef.current = [snapshot]
-    sessionIndexRef.current = 0
-    setSessionHistory([snapshot])
-    setSessionIndex(0)
-  }
-
-  function cancelPendingInputHistory() {
-    if (inputHistoryTimerRef.current !== null) {
-      window.clearTimeout(inputHistoryTimerRef.current)
-      inputHistoryTimerRef.current = null
-    }
-    inputHistoryBaseIndexRef.current = null
-  }
-
-  function recordSessionState(root: ChecklistRoot) {
-    cancelPendingInputHistory()
-    const snapshot = cloneChecklistRoot(root)
-    const nextHistory = [...sessionHistoryRef.current.slice(0, sessionIndexRef.current + 1), snapshot]
-    const nextIndex = nextHistory.length - 1
-    sessionHistoryRef.current = nextHistory
-    sessionIndexRef.current = nextIndex
-    setSessionHistory(nextHistory)
-    setSessionIndex(nextIndex)
-  }
-
-  function recordInputSequenceState(root: ChecklistRoot) {
-    const snapshot = cloneChecklistRoot(root)
-
-    if (inputHistoryBaseIndexRef.current === null) {
-      inputHistoryBaseIndexRef.current = sessionIndexRef.current
-    }
-
-    if (inputHistoryTimerRef.current !== null) {
-      window.clearTimeout(inputHistoryTimerRef.current)
-    }
-
-    inputHistoryTimerRef.current = window.setTimeout(() => {
-      const baseIndex = inputHistoryBaseIndexRef.current ?? sessionIndexRef.current
-      const nextHistory = [...sessionHistoryRef.current.slice(0, baseIndex + 1), snapshot]
-      const nextIndex = nextHistory.length - 1
-
-      sessionHistoryRef.current = nextHistory
-      sessionIndexRef.current = nextIndex
-      setSessionHistory(nextHistory)
-      setSessionIndex(nextIndex)
-
-      inputHistoryTimerRef.current = null
-      inputHistoryBaseIndexRef.current = null
-    }, INPUT_HISTORY_COMMIT_DELAY_MS)
   }
 
   function createComponent(type: ChecklistComponent['type']): ChecklistComponent {
@@ -384,7 +300,7 @@ function EditChecklistPage() {
 
   const nextChecklist = addComponentToRoot(editableChecklist, targetContainerId, newComponent)
   setEditableChecklist(nextChecklist)
-  recordSessionState(nextChecklist)
+  undoRedoRef.current?.recordSessionState(nextChecklist)
 
   enqueueOperation({
     operation: 'addComponent',
@@ -399,67 +315,16 @@ function EditChecklistPage() {
   function handleDeleteComponent(componentId: string) {
   const nextChecklist = deleteComponentFromRoot(editableChecklist, componentId)
   setEditableChecklist(nextChecklist)
-  recordSessionState(nextChecklist)
+  undoRedoRef.current?.recordSessionState(nextChecklist)
   enqueueOperation({ operation: 'deleteComponent', targetId: componentId })
 }
 
   function handleComponentUpdate(componentId: string, patch: Record<string, unknown>) {
   const nextChecklist = updateComponentInRoot(editableChecklist, componentId, patch)
   setEditableChecklist(nextChecklist)
-  recordInputSequenceState(nextChecklist)
+  undoRedoRef.current?.recordInputSequenceState(nextChecklist)
   enqueueOperation({ operation: 'updateComponent', targetId: componentId, patch })
 }
-
-  async function applySessionState(root: ChecklistRoot) {
-    if (!checklist_id || isSessionActionDisabled) return
-
-    const snapshot = cloneChecklistRoot(root)
-    setIsApplyingSessionState(true)
-    setErrorMessage(null)
-    cancelPendingInputHistory()
-    clearQueue()
-    setEditableChecklist(snapshot)
-
-    try {
-      const response = await restoreChecklistJson(checklist_id, snapshot as unknown as Record<string, unknown>)
-      acceptServerChecklist(response)
-    } catch {
-      setErrorMessage('Could not restore that checklist version.')
-    } finally {
-      setIsApplyingSessionState(false)
-    }
-  }
-
-  function handleStepSessionHistory(direction: -1 | 1) {
-    const nextIndex = sessionIndex + direction
-    const snapshot = sessionHistory[nextIndex]
-    if (!snapshot) {
-      showToast(direction < 0 ? 'No earlier change in this edit session.' : 'No later change in this edit session.')
-      return
-    }
-
-    setSessionIndex(nextIndex)
-    void applySessionState(snapshot)
-  }
-
-  function handleRequestResetSession() {
-    if (!canDiscardSession) {
-      showToast('No session changes to reset.')
-      return
-    }
-
-    setIsResetSessionModalOpen(true)
-  }
-
-  function handleDiscardSessionChanges() {
-    const initialSnapshot = sessionHistory[0]
-    if (!initialSnapshot) return
-
-    setIsResetSessionModalOpen(false)
-    cancelPendingInputHistory()
-    resetSessionHistory(initialSnapshot)
-    void applySessionState(initialSnapshot)
-  }
 
   // Sends chat instructions to the AI edit endpoint, including prior chat context so follow-up
   // requests like "apply your suggestions" can refer to an earlier AI review in the same session.
@@ -489,8 +354,8 @@ function EditChecklistPage() {
 
     if (isChecklistRoot(response.checklist)) {
       setEditableChecklist(response.checklist)
-      cancelPendingInputHistory()
-      recordSessionState(response.checklist)
+      undoRedoRef.current?.cancelPendingInputHistory()
+      undoRedoRef.current?.recordSessionState(response.checklist)
     }
 
     clearQueue()
@@ -549,7 +414,7 @@ function EditChecklistPage() {
           setChecklist(response)
           const loadedChecklist = isChecklistRoot(response.checklist) ? response.checklist : mockChecklist
           setEditableChecklist(loadedChecklist)
-          resetSessionHistory(loadedChecklist)
+          undoRedoRef.current?.resetSessionHistory(loadedChecklist)
         }
       } catch {
         if (isMounted) {
@@ -605,43 +470,17 @@ function EditChecklistPage() {
               ))}
             </div>
 
-            <div className={editStyles.historySection}>
-              <div className={editStyles.historyHeader}>
-                <p className={styles.sidebarTitle}>Edit Session</p>
-                <p className={styles.sidebarHint}>Step through changes from this session.</p>
-              </div>
-
-              <div className={editStyles.historyButtons}>
-                <button
-                  className={editStyles.historyButton}
-                  type="button"
-                  aria-label="Previous edit state"
-                  onClick={() => handleStepSessionHistory(-1)}
-                  disabled={isSessionActionDisabled}
-                >
-                  <FiArrowLeft />
-                </button>
-                <button
-                  className={editStyles.historyButton}
-                  type="button"
-                  aria-label="Next edit state"
-                  onClick={() => handleStepSessionHistory(1)}
-                  disabled={isSessionActionDisabled}
-                >
-                  <FiArrowRight />
-                </button>
-              </div>
-
-              <button
-                className={editStyles.discardSessionButton}
-                type="button"
-                onClick={handleRequestResetSession}
-                disabled={isSessionActionDisabled}
-              >
-                <FiTrash2 />
-                Reset
-              </button>
-            </div>
+            <UndoRedo
+              ref={undoRedoRef}
+              checklistId={checklist_id}
+              isSaving={isSaving}
+              pendingCount={pendingCount}
+              clearQueue={clearQueue}
+              onServerChecklist={acceptServerChecklist}
+              setEditableChecklist={setEditableChecklist}
+              setErrorMessage={setErrorMessage}
+              showToast={showToast}
+            />
           </aside>
 
           <section className={`${styles.content} ${styles.editContent}`}>
@@ -739,18 +578,6 @@ function EditChecklistPage() {
           onClose={() => setIsReviewModalOpen(false)}
         />
 
-        <ConfirmationModal
-          isOpen={isResetSessionModalOpen}
-          title="Reset this edit session?"
-          message="This restores the checklist to the version from when you opened this edit page. Changes from this edit session will be permanently removed."
-          confirmLabel="Reset"
-          workingLabel="Resetting..."
-          kicker="Edit session"
-          tone="danger"
-          isConfirming={isApplyingSessionState}
-          onConfirm={handleDiscardSessionChanges}
-          onClose={() => setIsResetSessionModalOpen(false)}
-        />
       </main>
     </>
   )
