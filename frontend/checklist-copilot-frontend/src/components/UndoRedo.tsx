@@ -4,7 +4,7 @@ import { restoreChecklistJson } from '../api/checklist'
 import type { Checklist } from '../types/checklist'
 import type { ChecklistRoot } from '../checklist-components'
 import styles from '../page-styles/UseChecklistPage.module.css'
-import editStyles from '../page-styles/EditChecklistPage.module.css'
+import undoRedoStyles from './UndoRedo.module.css'
 import { ConfirmationModal } from './ConfirmationModal'
 
 const INPUT_HISTORY_COMMIT_DELAY_MS = 900
@@ -187,15 +187,15 @@ export const UndoRedo = forwardRef<UndoRedoHandle, UndoRedoProps>(function UndoR
   }
 
   return (
-    <div className={editStyles.historySection}>
-      <div className={editStyles.historyHeader}>
+    <div className={undoRedoStyles.historySection}>
+      <div className={undoRedoStyles.historyHeader}>
         <p className={styles.sidebarTitle}>Edit Session</p>
         <p className={styles.sidebarHint}>Step through changes from this session.</p>
       </div>
 
-      <div className={editStyles.historyButtons}>
+      <div className={undoRedoStyles.historyButtons}>
         <button
-          className={editStyles.historyButton}
+          className={undoRedoStyles.historyButton}
           type="button"
           aria-label="Previous edit state"
           onClick={() => handleStepSessionHistory(-1)}
@@ -204,7 +204,7 @@ export const UndoRedo = forwardRef<UndoRedoHandle, UndoRedoProps>(function UndoR
           <FiArrowLeft />
         </button>
         <button
-          className={editStyles.historyButton}
+          className={undoRedoStyles.historyButton}
           type="button"
           aria-label="Next edit state"
           onClick={() => handleStepSessionHistory(1)}
@@ -215,7 +215,7 @@ export const UndoRedo = forwardRef<UndoRedoHandle, UndoRedoProps>(function UndoR
       </div>
 
       <button
-        className={editStyles.discardSessionButton}
+        className={undoRedoStyles.discardSessionButton}
         type="button"
         onClick={handleRequestResetSession}
         disabled={isSessionActionDisabled}
