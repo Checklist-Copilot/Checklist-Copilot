@@ -177,27 +177,22 @@ function EditChecklistPage() {
         }
 
       case 'table': {
-        const firstColumnId = createId()
-        const secondColumnId = createId()
+        const columns = Array.from({ length: 3 }, (_, index) => ({
+          id: createId(),
+          label: `Column ${index + 1}`,
+          type: 'text' as const,
+        }))
 
         return {
           id,
           humanReadableId: `table_${id}`,
           type: 'table',
           label: 'New Table',
-          columns: [
-            { id: firstColumnId, label: 'Column 1', type: 'text' },
-            { id: secondColumnId, label: 'Column 2', type: 'text' },
-          ],
-          rows: [
-            {
-              id: createId(),
-              cells: {
-                [firstColumnId]: '',
-                [secondColumnId]: '',
-              },
-            },
-          ],
+          columns,
+          rows: Array.from({ length: 3 }, () => ({
+            id: createId(),
+            cells: Object.fromEntries(columns.map((column) => [column.id, ''])),
+          })),
         }
       }
 

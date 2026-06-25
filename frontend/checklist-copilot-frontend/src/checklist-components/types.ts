@@ -80,14 +80,15 @@ export interface ImageBlockComponent extends ChecklistBaseComponent {
   allowUpload?: boolean
 }
 
-export type TableColumnType = 'text' | 'number' | 'checkbox' | 'date'
-export type TableCellValue = string | number | boolean | null
+export type TableColumnType = 'text' | 'number'
+export type TableCellValue = string | number | null
 
 export interface TableColumn {
   id: string
   label: string
   type?: TableColumnType
   valueType?: TableColumnType
+  unit?: string | null
 }
 
 export interface TableRow {

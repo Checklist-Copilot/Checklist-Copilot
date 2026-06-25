@@ -13,7 +13,7 @@ from app.services.checklist_update.tree_utils import (
 _ALLOWED_PATCH_FIELDS = frozenset(
     {"label", "humanReadableId", "columns", "rows"}
 )
-_ALLOWED_COLUMN_TYPES = frozenset({"text", "number", "checkbox"})
+_ALLOWED_COLUMN_TYPES = frozenset({"text", "number"})
 
 
 def _validate_column(column: object, index: int) -> dict:
@@ -22,6 +22,7 @@ def _validate_column(column: object, index: int) -> dict:
     col_id = column.get("id")
     label = column.get("label")
     col_type = column.get("type")
+    unit = column.get("unit")
     if not isinstance(col_id, str) or not col_id:
         raise InvalidComponentPayloadError(
             f"table.columns[{index}]: 'id' must be a non-empty string"
@@ -34,7 +35,15 @@ def _validate_column(column: object, index: int) -> dict:
         raise InvalidComponentPayloadError(
             f"table.columns[{index}]: 'type' must be one of {sorted(_ALLOWED_COLUMN_TYPES)}"
         )
-    return {"id": col_id, "label": label, "type": col_type}
+    if unit is not None and not isinstance(unit, str):
+        raise InvalidComponentPayloadError(
+            f"table.columns[{index}]: 'unit' must be a string or null"
+        )
+
+    validated = {"id": col_id, "label": label, "type": col_type}
+    if col_type == "number":
+        validated["unit"] = unit.strip() if isinstance(unit, str) and unit.strip() else None
+    return validated
 
 
 def _validate_cell_value(value: object, col_type: str, col_id: str, row_index: int) -> object:
@@ -47,11 +56,6 @@ def _validate_cell_value(value: object, col_type: str, col_id: str, row_index: i
         if value is not None and (isinstance(value, bool) or not isinstance(value, (int, float))):
             raise InvalidComponentPayloadError(
                 f"table.rows[{row_index}].cells['{col_id}']: expected number or null"
-            )
-    elif col_type == "checkbox":
-        if not isinstance(value, bool):
-            raise InvalidComponentPayloadError(
-                f"table.rows[{row_index}].cells['{col_id}']: expected boolean"
             )
     return value
 

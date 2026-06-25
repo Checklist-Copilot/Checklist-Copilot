@@ -35,7 +35,7 @@ Component types and their key fields:
 - textField { label, value?: str, placeholder?: str, required?: bool, multiline?: bool }
 - numberField { label, value?: number|null, unit?: str, min?: number, max?: number, required?: bool }
 - imageBlock { label, allowUpload?: bool, images?: [{imageId, url, caption?}] }
-- table { label, columns: [{id, label, type: text|number|checkbox}], rows: [{id, cells: {<colId>: value}}] }
+- table { label, columns: [{id, label, type: text|number, unit?: str}], rows: [{id, cells: {<colId>: value}}] }
 
 GENERAL RULES
 - Every component must have a `label`.

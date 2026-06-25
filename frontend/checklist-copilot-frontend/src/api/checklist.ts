@@ -91,9 +91,22 @@ function toApiOperation(operation: ChecklistOperation): ChecklistOperation {
     if (typeof allowUpload === 'boolean') component.allowUpload = allowUpload
   }
 
+  if (type === 'checkboxGroup') {
+    const items = operation.component.items
+    if (Array.isArray(items)) component.items = items
+  }
+
+  if (type === 'table') {
+    const columns = operation.component.columns
+    const rows = operation.component.rows
+
+    if (Array.isArray(columns)) component.columns = columns
+    if (Array.isArray(rows)) component.rows = rows
+  }
+
   // The backend owns generated ids/default structure for new components, but
-  // add handlers require a real label. Preserve imageBlock upload settings so
-  // the server response does not turn off uploads after the optimistic render.
+  // add handlers require a real label. Preserve nested/default fields so the
+  // server response matches the optimistic render.
   return {
     ...operation,
     component,

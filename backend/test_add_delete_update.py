@@ -255,13 +255,13 @@ def _():
                 "label": "Equipment log",
                 "columns": [
                     {"id": "col-name", "label": "Equipment", "type": "text"},
-                    {"id": "col-days", "label": "Days since service", "type": "number"},
-                    {"id": "col-ok", "label": "OK", "type": "checkbox"},
+                    {"id": "col-days", "label": "Days since service", "type": "number", "unit": "days"},
+                    {"id": "col-result", "label": "Result", "type": "text"},
                 ],
                 "rows": [
                     {
                         "id": "row-1",
-                        "cells": {"col-name": "Extinguisher", "col-days": 42, "col-ok": True},
+                        "cells": {"col-name": "Extinguisher", "col-days": 42, "col-result": "Passed"},
                     }
                 ],
             },
@@ -270,6 +270,7 @@ def _():
     table = checklist["children"][0]["children"][3]
     assert_eq(table["type"], "table", "table type")
     assert_eq(len(table["columns"]), 3, "table column count")
+    assert_eq(table["columns"][1]["unit"], "days", "table number unit")
     assert_eq(table["rows"][0]["cells"]["col-name"], "Extinguisher", "table cell text")
 
 
@@ -397,11 +398,11 @@ def _():
                 "rows": [
                     {
                         "id": "row-1",
-                        "cells": {"col-name": "Extinguisher A", "col-days": 10, "col-ok": True},
+                        "cells": {"col-name": "Extinguisher A", "col-days": 10, "col-result": "Passed"},
                     },
                     {
                         "id": "row-2",
-                        "cells": {"col-name": "First Aid Kit", "col-days": 4, "col-ok": False},
+                        "cells": {"col-name": "First Aid Kit", "col-days": 4, "col-result": "Passed"},
                     },
                 ]
             },
@@ -553,6 +554,24 @@ expect_error(
                         "id": "row-bad",
                         "cells": {"col-days": "not-a-number"},
                     }
+                ]
+            },
+        },
+    ),
+)
+
+expect_error(
+    "checkbox table columns are rejected",
+    InvalidComponentPayloadError,
+    lambda: apply(
+        checklist,
+        {
+            "operation": "updateComponent",
+            "targetId": TABLE_ID,
+            "patch": {
+                "columns": [
+                    {"id": "col-name", "label": "Equipment", "type": "text"},
+                    {"id": "col-ok", "label": "OK", "type": "checkbox"},
                 ]
             },
         },
