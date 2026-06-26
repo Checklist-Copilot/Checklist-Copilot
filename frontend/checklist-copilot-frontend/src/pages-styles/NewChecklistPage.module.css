@@ -1,27 +1,13 @@
 .page {
   min-height: 100vh;
   padding: 32px;
-  color: #f8f5ff;
+  color: #d6c9ef;
   background:
     radial-gradient(circle at 74% 8%, rgba(236, 72, 153, 0.26), transparent 31rem),
     radial-gradient(circle at 10% 28%, rgba(34, 211, 238, 0.16), transparent 26rem),
-    linear-gradient(145deg, #0d0c18, #171322 58%, #0a0a12);
+    linear-gradient(145deg, #08070f, #0f0c18 58%, #050309);
   position: relative;
   overflow: hidden;
-}
-
-.page::before {
-  content: '';
-  position: fixed;
-  inset: 62px 0 auto;
-  height: 52vh;
-  pointer-events: none;
-  background-image:
-    linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
-  background-size: 56px 56px;
-  mask-image: linear-gradient(transparent, black 20%, transparent);
-  animation: gridDrift 18s linear infinite;
 }
 
 .backButton {
@@ -59,9 +45,9 @@
 
 .introPanel,
 .formPanel {
-  border: 1px solid rgba(255, 255, 255, 0.13);
+  border: 1px solid rgba(255, 255, 255, 0.09);
   border-radius: 30px;
-  background: rgba(255, 255, 255, 0.075);
+  background: rgba(6, 5, 13, 0.55);
   backdrop-filter: blur(18px);
   box-shadow: 0 22px 70px rgba(0, 0, 0, 0.24);
 }
@@ -327,7 +313,7 @@
   border: 1px solid rgba(255, 255, 255, 0.13);
   border-radius: 12px;
   background: rgba(255, 255, 255, 0.06);
-  color: #f8f5ff;
+  color: #d6c9ef;
   cursor: pointer;
 }
 
@@ -428,11 +414,6 @@
 .secondaryButton:focus-visible {
   outline: 3px solid rgba(34, 211, 238, 0.55);
   outline-offset: 3px;
-}
-
-@keyframes gridDrift {
-  from { transform: translateY(0); }
-  to { transform: translateY(56px); }
 }
 
 @keyframes slowSpin {

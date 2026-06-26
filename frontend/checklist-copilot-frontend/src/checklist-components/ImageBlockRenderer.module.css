@@ -9,7 +9,7 @@
 }
 
 .header { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
-.title { margin: 0; color: #f8f5ff; font-weight: 900; letter-spacing: -0.035em; }
+.title { margin: 0; color: #d6c9ef; font-weight: 900; letter-spacing: -0.035em; }
 .description, .emptyText { margin: 0; color: #b9b0ce; font-size: 14px; }
 
 .uploadBadge {

@@ -3,25 +3,11 @@
   background:
     radial-gradient(circle at 78% 0%, rgba(139, 92, 246, 0.24), transparent 32rem),
     radial-gradient(circle at 10% 48%, rgba(34, 211, 238, 0.12), transparent 28rem),
-    linear-gradient(145deg, #0d0c18, #171322 56%, #0a0a12);
-  color: #f8f5ff;
+    linear-gradient(145deg, #08070f, #0f0c18 56%, #050309);
+  color: #d6c9ef;
   padding: 32px;
   position: relative;
   overflow-x: hidden;
-}
-
-.page::before {
-  content: '';
-  position: fixed;
-  inset: 60px 0 auto;
-  height: 46vh;
-  pointer-events: none;
-  background-image:
-    linear-gradient(rgba(255,255,255,0.045) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255,255,255,0.045) 1px, transparent 1px);
-  background-size: 56px 56px;
-  mask-image: linear-gradient(transparent, black 20%, transparent);
-  animation: gridDrift 18s linear infinite;
 }
 
 .header,
@@ -57,8 +43,8 @@
 }
 
 .panel {
-  background: rgba(255, 255, 255, 0.075);
-  border: 1px solid rgba(255, 255, 255, 0.13);
+  background: rgba(6, 5, 13, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.09);
   border-radius: 28px;
   padding: 26px 24px;
   backdrop-filter: blur(18px);
@@ -135,7 +121,7 @@
   border: 1px solid rgba(255, 255, 255, 0.13);
   border-radius: 14px;
   background: rgba(10, 10, 18, 0.68);
-  color: #f8f5ff;
+  color: #d6c9ef;
   font: inherit;
   font-weight: 700;
   outline: none;
@@ -293,11 +279,6 @@
 @keyframes cardRise {
   from { opacity: 0; transform: translateY(30px) scale(.98); }
   to { opacity: 1; transform: translateY(0) scale(1); }
-}
-
-@keyframes gridDrift {
-  from { background-position: 0 0; }
-  to { background-position: 56px 56px; }
 }
 
 @media (max-width: 760px) {

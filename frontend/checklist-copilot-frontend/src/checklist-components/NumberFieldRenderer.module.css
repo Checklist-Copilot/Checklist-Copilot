@@ -67,7 +67,7 @@
   min-width: 0;
   border: 0;
   background: transparent;
-  color: #f8f5ff;
+  color: #d6c9ef;
   font: inherit;
   font-weight: 750;
   padding: 0 14px;
@@ -105,7 +105,7 @@
 
 .stepButton:hover:not(:disabled),
 .stepButton:focus-visible:not(:disabled) {
-  color: #f8f5ff;
+  color: #d6c9ef;
   background: rgba(139, 92, 246, 0.28);
   outline: none;
 }
@@ -145,7 +145,7 @@
   border: 1px solid rgba(248, 245, 255, 0.12);
   border-radius: 12px;
   background: rgba(248, 245, 255, 0.055);
-  color: #f8f5ff;
+  color: #d6c9ef;
   font: inherit;
   font-size: 14px;
   font-weight: 750;

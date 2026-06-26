@@ -19,7 +19,7 @@
     radial-gradient(circle at 20% 0%, rgba(192, 132, 252, 0.2), transparent 12rem),
     #120c1e;
   box-shadow: 0 24px 70px rgba(0, 0, 0, 0.46);
-  color: #f8f5ff;
+  color: #d6c9ef;
 }
 
 .header {
@@ -39,7 +39,7 @@
   border: 1px solid rgba(248, 245, 255, 0.14);
   border-radius: 50%;
   background: rgba(248, 245, 255, 0.06);
-  color: #f8f5ff;
+  color: #d6c9ef;
   cursor: pointer;
 }
 

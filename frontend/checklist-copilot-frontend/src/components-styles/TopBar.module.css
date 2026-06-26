@@ -40,7 +40,7 @@
   justify-content: center;
   gap: 8px;
   text-decoration: none;
-  color: #f8f5ff;
+  color: #d6c9ef;
   border: 1px solid rgba(255, 255, 255, 0.14);
   border-radius: 999px;
   padding: 0 13px;
@@ -93,7 +93,7 @@
   box-shadow: 0 14px 34px rgba(139, 92, 246, 0.28);
 }
 
-.userName { margin: 0; font-size: 18px; font-weight: 800; color: #f8f5ff; }
+.userName { margin: 0; font-size: 18px; font-weight: 800; color: #d6c9ef; }
 .userEmail { margin: 2px 0 0; color: #b9b0ce; font-size: 14px; }
 .nav { display: flex; flex-direction: column; padding-top: 6px; }
 

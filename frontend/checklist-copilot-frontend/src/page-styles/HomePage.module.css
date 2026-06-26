@@ -3,25 +3,11 @@
   background:
     radial-gradient(circle at 80% 0%, rgba(139, 92, 246, 0.22), transparent 32rem),
     radial-gradient(circle at 8% 44%, rgba(34, 211, 238, 0.12), transparent 28rem),
-    linear-gradient(145deg, #0d0c18, #171322 56%, #0a0a12);
-  color: #f8f5ff;
+    linear-gradient(145deg, #08070f, #0f0c18 56%, #050309);
+  color: #d6c9ef;
   padding: 32px;
   position: relative;
   overflow-x: hidden;
-}
-
-.page::before {
-  content: '';
-  position: fixed;
-  inset: 60px 0 auto;
-  height: 46vh;
-  pointer-events: none;
-  background-image:
-    linear-gradient(rgba(255,255,255,0.045) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255,255,255,0.045) 1px, transparent 1px);
-  background-size: 56px 56px;
-  mask-image: linear-gradient(transparent, black 20%, transparent);
-  animation: gridDrift 18s linear infinite;
 }
 
 .header {
@@ -95,8 +81,8 @@
 .panel,
 .card,
 .emptyState {
-  background: rgba(255, 255, 255, 0.075);
-  border: 1px solid rgba(255, 255, 255, 0.13);
+  background: rgba(6, 5, 13, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.09);
   border-radius: 28px;
   backdrop-filter: blur(18px);
   box-shadow: 0 22px 70px rgba(0, 0, 0, 0.22);
@@ -154,7 +140,7 @@
   border-radius: 12px;
   border: 1px solid rgba(255, 255, 255, 0.16);
   background: rgba(255, 255, 255, 0.07);
-  color: #f8f5ff;
+  color: #d6c9ef;
   padding: 0 12px;
   font: inherit;
 }
@@ -196,7 +182,7 @@
 }
 
 .segmentedControl button:hover {
-  color: #f8f5ff;
+  color: #d6c9ef;
 }
 
 .segmentedControl .segmentActive {
@@ -234,7 +220,7 @@
   content: '';
   position: absolute;
   inset: 19px;
-  background: #171322;
+  background: #0f0c18;
   border-radius: 50%;
 }
 
@@ -312,7 +298,7 @@
 
 .metricGrid strong {
   margin-top: 6px;
-  color: #f8f5ff;
+  color: #d6c9ef;
   font-size: 20px;
   overflow-wrap: anywhere;
 }
@@ -474,7 +460,7 @@
   min-height: 40px;
   border: 0;
   background: transparent;
-  color: #f8f5ff;
+  color: #d6c9ef;
   font: inherit;
 }
 
@@ -528,8 +514,8 @@
 
 .card:hover {
   transform: translateY(-8px) rotateX(2deg);
-  background: rgba(255, 255, 255, 0.105);
-  border-color: rgba(255, 255, 255, 0.24);
+  background: rgba(10, 8, 20, 0.72);
+  border-color: rgba(255, 255, 255, 0.16);
 }
 
 .cardHeader {
@@ -588,7 +574,7 @@
 .meta {
   display: grid;
   gap: 8px;
-  color: #f8f5ff;
+  color: #d6c9ef;
   font-size: 13px;
 }
 
@@ -736,7 +722,7 @@
 .editButton {
   background: rgba(255,255,255,0.06);
   border: 1px solid rgba(255,255,255,0.16);
-  color: #f8f5ff;
+  color: #d6c9ef;
 }
 
 .message { color: #b9b0ce; }
@@ -755,11 +741,6 @@
 @keyframes growBar {
   from { transform: scaleY(.05); opacity: .3; }
   to { transform: scaleY(1); opacity: 1; }
-}
-
-@keyframes gridDrift {
-  from { background-position: 0 0; }
-  to { background-position: 56px 56px; }
 }
 
 @keyframes slowSpin { to { transform: rotate(360deg); } }

@@ -40,7 +40,6 @@ function LandingPage() {
       <div className={styles.ambient} aria-hidden="true">
         <span className={styles.orbOne} />
         <span className={styles.orbTwo} />
-        <span className={styles.gridGlow} />
       </div>
 
       <header className={styles.topbar}>

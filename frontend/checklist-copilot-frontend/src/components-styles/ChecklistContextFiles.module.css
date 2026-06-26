@@ -24,7 +24,7 @@
 
 .title {
   margin: 0;
-  color: #f8f5ff;
+  color: #d6c9ef;
   font-size: 20px;
   line-height: 1.2;
 }
@@ -47,7 +47,7 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
-  color: #f8f5ff;
+  color: #d6c9ef;
   background: rgba(248, 245, 255, 0.075);
   font-weight: 850;
   cursor: pointer;
@@ -125,7 +125,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: #f8f5ff;
+  color: #d6c9ef;
   background: rgba(248, 245, 255, 0.1);
   font-size: 11px;
 }
@@ -133,7 +133,7 @@
 .filterButton:hover,
 .activeFilterButton {
   border-color: rgba(103, 232, 249, 0.32);
-  color: #f8f5ff;
+  color: #d6c9ef;
   background: rgba(34, 211, 238, 0.14);
 }
 
@@ -229,7 +229,7 @@
 
 .fileName {
   overflow: hidden;
-  color: #f8f5ff;
+  color: #d6c9ef;
   font-weight: 850;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -283,7 +283,7 @@
 
 .previewTitle {
   overflow: hidden;
-  color: #f8f5ff;
+  color: #d6c9ef;
   font-weight: 900;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -303,7 +303,7 @@
   border-radius: 12px;
   display: grid;
   place-items: center;
-  color: #f8f5ff;
+  color: #d6c9ef;
   background: rgba(248, 245, 255, 0.075);
   cursor: pointer;
 }
@@ -317,7 +317,7 @@
   display: grid;
   place-items: center;
   overflow: hidden;
-  background: #0d0c18;
+  background: #08070f;
 }
 
 .previewImageBody {

@@ -9,7 +9,7 @@
   max-height: calc(100vh - 128px);
   border: 1px solid rgba(248, 245, 255, 0.14);
   border-radius: 24px;
-  color: #f8f5ff;
+  color: #d6c9ef;
   background:
     radial-gradient(circle at 82% 8%, rgba(192, 132, 252, 0.22), transparent 13rem),
     radial-gradient(circle at 14% 88%, rgba(34, 211, 238, 0.12), transparent 12rem),
@@ -97,7 +97,7 @@
   place-items: center;
   flex: 0 0 auto;
   background: rgba(248, 245, 255, 0.055);
-  color: #f8f5ff;
+  color: #d6c9ef;
   cursor: pointer;
   font-size: 21px;
   line-height: 1;
