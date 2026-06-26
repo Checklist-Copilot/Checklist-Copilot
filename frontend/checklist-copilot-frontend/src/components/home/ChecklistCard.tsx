@@ -11,9 +11,10 @@ type ChecklistCardProps = {
   isSelected: boolean
   ownerName: string
   onViewStats: (id: string) => void
+  onDelete: (id: string) => void
 }
 
-export function ChecklistCard({ checklist, isSelected, ownerName, onViewStats }: ChecklistCardProps) {
+export function ChecklistCard({ checklist, isSelected, ownerName, onViewStats, onDelete }: ChecklistCardProps) {
   const status = getChecklistStatus(checklist)
   const badgeClassName =
     status === 'Completed'
@@ -26,7 +27,7 @@ export function ChecklistCard({ checklist, isSelected, ownerName, onViewStats }:
     <article className={`${styles.card} ${isSelected ? styles.selectedCard : ''}`}>
       <div className={styles.cardHeader}>
         <h3>{checklist.title}</h3>
-        <span className={badgeClassName}>{status}</span>
+        <span className={badgeClassName}>{status.replace(' ', '\u00A0')}</span>
       </div>
 
       <p className={styles.description}>{checklist.description ?? 'No description.'}</p>
@@ -67,7 +68,7 @@ export function ChecklistCard({ checklist, isSelected, ownerName, onViewStats }:
           Edit Checklist
         </Link>
 
-        <button className={styles.iconButton} type="button" aria-label={`Delete ${checklist.title}`}>
+        <button className={styles.iconButton} type="button" aria-label={`Delete ${checklist.title}`} onClick={() => onDelete(checklist.id)}>
           <ImBin />
         </button>
       </div>

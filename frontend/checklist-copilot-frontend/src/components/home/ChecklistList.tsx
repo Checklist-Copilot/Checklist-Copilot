@@ -15,6 +15,7 @@ type ChecklistListProps = {
   isLoading: boolean
   errorMessage: string | null
   onSelectChecklist: (id: string) => void
+  onDelete: (id: string) => void
 }
 
 const statusFilterOptions = [
@@ -38,6 +39,7 @@ export function ChecklistList({
   isLoading,
   errorMessage,
   onSelectChecklist,
+  onDelete,
 }: ChecklistListProps) {
   const navigate = useNavigate()
   const [statusFilter, setStatusFilter] = useState<ChecklistStatus | 'all'>('all')
@@ -103,6 +105,11 @@ export function ChecklistList({
 
             <CustomDropdown label="Sort checklists" value={sortMode} options={sortOptions} onChange={setSortMode} />
           </div>
+
+          <button type="button" className={`${styles.newButton} ${styles.mobileNewButton}`} onClick={() => navigate('/checklist/new')}>
+            <FaPlus />
+            New Checklist
+          </button>
         </div>
       </div>
 
@@ -136,6 +143,7 @@ export function ChecklistList({
               isSelected={selectedChecklistId === checklist.id}
               ownerName={getOwnerName(ownerNames, checklist.user_id)}
               onViewStats={onSelectChecklist}
+              onDelete={onDelete}
             />
           ))}
         </div>

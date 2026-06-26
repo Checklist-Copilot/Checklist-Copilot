@@ -1,11 +1,13 @@
-import { useCallback, useEffect, useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
-import { FiCheckCircle, FiPlus } from 'react-icons/fi'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
+import { FiPlus } from 'react-icons/fi'
 import { HiOutlineSparkles } from 'react-icons/hi2'
 import styles from '../page-styles/UseChecklistPage.module.css'
+import editStyles from '../page-styles/EditChecklistPage.module.css'
 import { getChecklistById } from '../api/checklist'
 import { editChecklistWithAi } from '../api/ai'
 import { CHECKLIST_FILES_CHANGED_EVENT, deleteChecklistFile, notifyChecklistFilesChanged } from '../api/files'
+import { editChecklistWithAi, observeChecklistImages, reviewChecklistWithAi } from '../api/ai'
 import type { Checklist } from '../types/checklist'
 import { removeToken } from '../auth/tokenStorage'
 import { useRequireAuth } from '../hooks/useRequireAuth'
@@ -20,7 +22,11 @@ import {
 } from '../checklist-components/treeUtils'
 import TopBar from '../components/TopBar'
 import AIChatPopup from '../components/AIChatPopup'
+import type { ChatMessage } from '../components/AIChatPopup'
+import { ConfirmationModal } from '../components/ConfirmationModal'
 import { ChecklistContextFiles } from '../components/ChecklistContextFiles'
+import { uploadChecklistImage } from '../api/files'
+import { UndoRedo, type UndoRedoHandle } from '../components/UndoRedo'
 
 const componentOptions = [
   { label: 'Section', type: 'section' },
@@ -34,6 +40,8 @@ const componentOptions = [
 
 function EditChecklistPage() {
   const navigate = useNavigate()
+  const location = useLocation()
+  const routeState = location.state as { warning?: string; openAiReview?: boolean } | null
   const { isCheckingAuth, isAuthorized } = useRequireAuth()
   const { checklist_id } = useParams<{ checklist_id: string }>()
 
@@ -42,9 +50,20 @@ function EditChecklistPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [isAIChatOpen, setIsAIChatOpen] = useState(false)
+  const [isReviewModalOpen, setIsReviewModalOpen] = useState(() => Boolean(routeState?.openAiReview))
+  const [isReviewingChecklist, setIsReviewingChecklist] = useState(false)
+  const [aiMessages, setAiMessages] = useState<ChatMessage[]>([
+    {
+      id: 1,
+      sender: 'checkly',
+      text: 'Hi, I am Checkly. How can I help you with this checklist?',
+    },
+  ])
   const [focusedComponentId, setFocusedComponentId] = useState<string>('root')
   const [scrollTargetComponentId, setScrollTargetComponentId] = useState<string | null>(null)
-  const [toastMessage, setToastMessage] = useState<string | null>(null)
+  // const [toastMessage, setToastMessage] = useState<string | null>(null)
+  const [toastMessage, setToastMessage] = useState<string | null>(() => routeState?.warning ?? null)
+  const undoRedoRef = useRef<UndoRedoHandle>(null)
 
   const missingChecklistId = isAuthorized && !checklist_id
 
@@ -58,6 +77,23 @@ function EditChecklistPage() {
     onServerChecklist: acceptServerChecklist,
   })
 
+  useEffect(() => {
+    if (routeState?.warning || routeState?.openAiReview) {
+      navigate(location.pathname, { replace: true, state: null })
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  useEffect(() => {
+    if (!toastMessage) return
+
+    const timeoutId = window.setTimeout(() => {
+      setToastMessage(null)
+    }, 3200)
+
+    return () => window.clearTimeout(timeoutId)
+  }, [toastMessage])
+
   function handleLogout() {
     removeToken()
     navigate('/')
@@ -68,12 +104,8 @@ function EditChecklistPage() {
   }
 
   function showToast(message: string) {
-  setToastMessage(message)
-
-  window.setTimeout(() => {
-    setToastMessage(null)
-  }, 3200)
-}
+    setToastMessage(message)
+  }
 
   function createComponent(type: ChecklistComponent['type']): ChecklistComponent {
     const id = createId()
@@ -283,7 +315,9 @@ function EditChecklistPage() {
       ? createComponent('checkbox')
       : createComponent(type)
 
-  setEditableChecklist((current) => addComponentToRoot(current, targetContainerId, newComponent))
+  const nextChecklist = addComponentToRoot(editableChecklist, targetContainerId, newComponent)
+  setEditableChecklist(nextChecklist)
+  undoRedoRef.current?.recordSessionState(nextChecklist)
 
   enqueueOperation({
     operation: 'addComponent',
@@ -300,7 +334,9 @@ function EditChecklistPage() {
   const targetComponent = findComponentById(editableChecklist, componentId)
   const imageFileIds = targetComponent ? collectImageFileIds(targetComponent) : []
 
-  setEditableChecklist((current) => deleteComponentFromRoot(current, componentId))
+  const nextChecklist = deleteComponentFromRoot(editableChecklist, componentId)
+  setEditableChecklist(nextChecklist)
+  undoRedoRef.current?.recordSessionState(nextChecklist)
   enqueueOperation({ operation: 'deleteComponent', targetId: componentId })
 
   if (imageFileIds.length > 0) {
@@ -309,9 +345,12 @@ function EditChecklistPage() {
 }
 
   function handleComponentUpdate(componentId: string, patch: Record<string, unknown>) {
-  setEditableChecklist((current) => updateComponentInRoot(current, componentId, patch))
+  const nextChecklist = updateComponentInRoot(editableChecklist, componentId, patch)
+  setEditableChecklist(nextChecklist)
+  undoRedoRef.current?.recordInputSequenceState(nextChecklist)
   enqueueOperation({ operation: 'updateComponent', targetId: componentId, patch })
 }
+
 
   function handleToggleRequired() {
     const focusedComponent = findComponentById(editableChecklist, focusedComponentId)
@@ -320,12 +359,21 @@ function EditChecklistPage() {
     handleComponentUpdate(focusedComponent.id, { required: !focusedComponent.required })
   }
 
-  async function handleAiMessage(message: string) {
+  // Sends chat instructions to the AI edit endpoint, including prior chat context so follow-up
+  // requests like "apply your suggestions" can refer to an earlier AI review in the same session.
+  async function handleAiMessage(message: string, conversation: ChatMessage[], images: File[] = []) {
+
     if (!checklist_id) {
       throw new Error('Checklist ID is missing.')
     }
 
-    const response = await editChecklistWithAi(checklist_id, message)
+    const response = images.length > 0
+      ? await observeChecklistImages(checklist_id, {
+          instruction: message,
+          image_ids: (await Promise.all(images.map((image) => uploadChecklistImage(checklist_id, image)))).map((file) => file.id),
+          prior_messages: buildAiPriorMessages(conversation),
+        })
+      : await editChecklistWithAi(checklist_id, buildAiInstruction(message, conversation))
 
     setChecklist((currentChecklist) => {
       if (!currentChecklist) return currentChecklist
@@ -340,11 +388,48 @@ function EditChecklistPage() {
 
     if (isChecklistRoot(response.checklist)) {
       setEditableChecklist(response.checklist)
+      undoRedoRef.current?.cancelPendingInputHistory()
+      undoRedoRef.current?.recordSessionState(response.checklist)
     }
 
     clearQueue()
 
     return response.reply
+  }
+
+  // Opens the chat with a temporary review message, then swaps it for the backend review response.
+  async function handleAiReview() {
+    if (!checklist_id || isReviewingChecklist) return
+
+    const reviewMessageId = Date.now()
+    setIsReviewModalOpen(false)
+    setIsAIChatOpen(true)
+    setIsReviewingChecklist(true)
+    setAiMessages((currentMessages) => [
+      ...currentMessages,
+      { id: reviewMessageId, sender: 'checkly', text: 'Generating review...' },
+    ])
+
+    try {
+      const response = await reviewChecklistWithAi(checklist_id)
+      setAiMessages((currentMessages) =>
+        currentMessages.map((chatMessage) =>
+          chatMessage.id === reviewMessageId
+            ? { ...chatMessage, text: response.reply || 'I could not produce a review for this checklist.' }
+            : chatMessage,
+        ),
+      )
+    } catch {
+      setAiMessages((currentMessages) =>
+        currentMessages.map((chatMessage) =>
+          chatMessage.id === reviewMessageId
+            ? { ...chatMessage, text: 'I could not review this checklist. Please try again.' }
+            : chatMessage,
+        ),
+      )
+    } finally {
+      setIsReviewingChecklist(false)
+    }
   }
 
   useEffect(() => {
@@ -361,7 +446,9 @@ function EditChecklistPage() {
 
         if (isMounted) {
           setChecklist(response)
-          setEditableChecklist(isChecklistRoot(response.checklist) ? response.checklist : mockChecklist)
+          const loadedChecklist = isChecklistRoot(response.checklist) ? response.checklist : mockChecklist
+          setEditableChecklist(loadedChecklist)
+          undoRedoRef.current?.resetSessionHistory(loadedChecklist)
         }
       } catch {
         if (isMounted) {
@@ -458,6 +545,18 @@ function EditChecklistPage() {
                 </button>
               ))}
             </div>
+
+            <UndoRedo
+              ref={undoRedoRef}
+              checklistId={checklist_id}
+              isSaving={isSaving}
+              pendingCount={pendingCount}
+              clearQueue={clearQueue}
+              onServerChecklist={acceptServerChecklist}
+              setEditableChecklist={setEditableChecklist}
+              setErrorMessage={setErrorMessage}
+              showToast={showToast}
+            />
           </aside>
 
           <section className={`${styles.content} ${styles.editContent}`}>
@@ -478,7 +577,18 @@ function EditChecklistPage() {
                 </div>
               </div>
 
-              <SaveStatus isSaving={isSaving} pendingCount={pendingCount} />
+              <div className={editStyles.headerTools}>
+                <button
+                  className={editStyles.aiReviewButton}
+                  type="button"
+                  onClick={() => setIsReviewModalOpen(true)}
+                  disabled={isReviewingChecklist || isLoading || !checklist_id}
+                >
+                  <HiOutlineSparkles />
+                  AI review
+                </button>
+                <SaveStatus isSaving={isSaving} pendingCount={pendingCount} />
+              </div>
             </header>
 
             {isLoading ? <p className={styles.message}>Loading checklist...</p> : null}
@@ -525,9 +635,25 @@ function EditChecklistPage() {
 
         <AIChatPopup
           isOpen={isAIChatOpen}
+          messages={aiMessages}
+          setMessages={setAiMessages}
           onClose={() => setIsAIChatOpen(false)}
           onSendMessage={handleAiMessage}
         />
+
+        <ConfirmationModal
+          isOpen={isReviewModalOpen}
+          title="Review checklist with AI?"
+          message="Do you want to have this checklist reviewed by AI using its general knowledge about the topic, but also the related PDFs?"
+          confirmLabel="Continue"
+          workingLabel="Generating review..."
+          kicker="AI review"
+          tone="ai"
+          isConfirming={isReviewingChecklist}
+          onConfirm={handleAiReview}
+          onClose={() => setIsReviewModalOpen(false)}
+        />
+
       </main>
     </>
   )
@@ -611,6 +737,24 @@ function formatDate(value: string) {
     month: 'short',
     day: 'numeric',
   }).format(new Date(value))
+}
+
+function buildAiPriorMessages(conversation: ChatMessage[]) {
+  return conversation.slice(1, -1).map((chatMessage) => ({
+    role: chatMessage.sender === 'user' ? 'user' as const : 'assistant' as const,
+    content: chatMessage.text,
+  }))
+}
+
+function buildAiInstruction(message: string, conversation: ChatMessage[]) {
+  const priorMessages = conversation
+    .slice(1, -1)
+    .map((chatMessage) => `${chatMessage.sender === 'user' ? 'User' : 'Checkly'}: ${chatMessage.text}`)
+    .join('\n\n')
+
+  if (!priorMessages) return message
+
+  return `Conversation so far:\n\n${priorMessages}\n\nCurrent user instruction:\n${message}`
 }
 
 export default EditChecklistPage

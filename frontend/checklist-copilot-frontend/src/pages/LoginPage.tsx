@@ -2,9 +2,11 @@ import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { FiMenu, FiMail, FiEye, FiEyeOff } from 'react-icons/fi'
+import checklyLogo from '../assets/logo.svg'
 import styles from '../page-styles/LoginPage.module.css'
 import { login } from '../api/auth'
 import { ApiError } from '../api/http'
+import { getToken } from '../auth/tokenStorage'
 
 function LoginPage() {
   const navigate = useNavigate()
@@ -13,6 +15,10 @@ function LoginPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [showPassword, setShowPassword] = useState(false)
+
+  function handleLogoClick() {
+    navigate(getToken() ? '/home' : '/')
+  }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -41,7 +47,17 @@ function LoginPage() {
             <FiMenu />
           </button>
 
-          <img src="/src/assets/logo_cropped.png" alt="Checkly logo" className={styles.logo} />
+          <img
+            src={checklyLogo}
+            alt="Checkly logo"
+            className={styles.logo}
+            role="button"
+            tabIndex={0}
+            onClick={handleLogoClick}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter' || event.key === ' ') handleLogoClick()
+            }}
+          />
         </div>
 
         <div className={styles.topbarActions}>
@@ -50,7 +66,8 @@ function LoginPage() {
           </Link>
 
           <Link to="/register" className={styles.getStartedButton}>
-            Get Started
+            <span className={styles.getStartedFull}>Get Started</span>
+            <span className={styles.getStartedShort}>Start</span>
           </Link>
         </div>
       </header>

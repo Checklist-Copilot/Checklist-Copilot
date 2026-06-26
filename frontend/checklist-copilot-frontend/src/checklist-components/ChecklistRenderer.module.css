@@ -1,10 +1,12 @@
 .root {
   display: grid;
+  min-width: 0;
   gap: 20px;
 }
 
 .componentWrapper {
   position: relative;
+  min-width: 0;
 }
 
 .deleteButton {

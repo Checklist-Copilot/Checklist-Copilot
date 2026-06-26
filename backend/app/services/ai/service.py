@@ -21,9 +21,11 @@ payload would be.
 from __future__ import annotations
 
 import json
-import uuid
+import logging
 from dataclasses import dataclass, field
 from typing import Any
+
+logger = logging.getLogger(__name__)
 
 from app.schemas.checklist_operations import (
     AddComponentOperation,
@@ -128,6 +130,27 @@ def _build_hint_for_failure(call: ToolCall, checklist: dict, exc: Exception) -> 
     return None
 
 
+def _find_existing_checkbox_group(checklist: dict, container_id: str, label: str) -> dict | None:
+    """
+    Look for a `checkboxGroup` with a matching (trimmed, case-insensitive)
+    label already inside `container_id`. Used to stop the model from creating
+    duplicate groups in the same section across tool-call rounds.
+    """
+    container = find_component_by_id(checklist, container_id)
+    if container is None:
+        return None
+    target_label = label.strip().lower()
+    for key in ("children", "items"):
+        for child in container.get(key, []) or []:
+            if (
+                isinstance(child, dict)
+                and child.get("type") == "checkboxGroup"
+                and (child.get("label") or "").strip().lower() == target_label
+            ):
+                return child
+    return None
+
+
 def _build_callback(result: AIRunResult):
     """
     Build the `on_tool_call` callback the OpenAI client invokes for each tool
@@ -143,6 +166,28 @@ def _build_callback(result: AIRunResult):
         try:
             if call.name == "add_component":
                 target = _resolve_target_container_id(result.checklist, args["targetContainerId"])
+                component = args.get("component", {})
+
+                # Idempotency: the model sometimes re-creates a checkboxGroup it
+                # already added earlier in the same section (e.g. across rounds).
+                # Reuse the existing one instead of creating a duplicate.
+                if component.get("type") == "checkboxGroup":
+                    existing_group = _find_existing_checkbox_group(
+                        result.checklist, target, component.get("label", "")
+                    )
+                    if existing_group is not None:
+                        return {
+                            "ok": True,
+                            "id": existing_group["id"],
+                            "humanReadableId": component.get("humanReadableId"),
+                            "already_exists": True,
+                            "message": (
+                                "A checkboxGroup with this label already exists in this "
+                                "section — reusing it. Do not create another one; add "
+                                "checkboxes to this existing group instead."
+                            ),
+                        }
+
                 op = AddComponentOperation.model_construct(
                     operation="addComponent",
                     targetContainerId=target,
@@ -204,18 +249,23 @@ def generate_checklist_from_text(
     *,
     title: str | None = None,
     description: str | None = None,
+    pdf_context: str | None = None,
+    pdf_files: list[tuple[str, bytes]] | None = None,
     max_rounds: int = 5,
 ) -> AIRunResult:
     """
     Build a brand-new checklist tree from a natural-language description.
 
+    `pdf_files` (filename, raw_bytes) attachments are sent directly to the
+    model when provided, instead of the text-extraction `pdf_context` path.
+
     Returns an AIRunResult whose `.checklist` field is the final JSON tree,
     ready to persist via the regular `create_checklist_for_user` service.
     """
-    root_id = f"root_{uuid.uuid4().hex[:12]}"
+    root_id = "root"
     checklist: dict[str, Any] = {
         "id": root_id,
-        "type": "checklist",
+        "type": "root",
         "title": title,
         "description": description,
         "children": [],
@@ -225,7 +275,27 @@ def generate_checklist_from_text(
     on_tool_call = _build_callback(result)
 
     system_prompt = build_create_system_prompt(root_id)
+
+    pdf_context_rules = (
+        "PDF CONTEXT GUIDANCE:\n"
+        "- Treat the attached PDF document(s) as high-priority context for the user's goal.\n"
+        "- Use their terminology, rules, requirements, headings, thresholds, and concrete "
+        "values when they are relevant to the checklist.\n"
+        "- The PDFs are guidance, not the only source of truth: you may also use the user's "
+        "prompt and reasonable domain knowledge to make the checklist complete and usable.\n"
+        "- Do not contradict the PDFs. If a PDF states a concrete requirement, represent it "
+        "clearly as a checklist item, field, table column, or section.\n\n"
+    )
+    context_prefix = (
+        f"The following text was extracted from a reference PDF document.\n\n"
+        f"{pdf_context_rules}"
+        f"PDF CONTENT:\n{pdf_context}\n\n---\n\n"
+        if pdf_context
+        else ""
+    )
     user_prompt = (
+        f"{context_prefix}"
+        f"{'One or more PDF documents are attached to this message. ' + pdf_context_rules if pdf_files else ''}"
         f"Build a checklist for:\n\n{prompt}\n\n"
         f"The root container id is `{root_id}`. Use it as `targetContainerId` "
         f"for the top-level sections, then fill every section with the "
@@ -233,16 +303,76 @@ def generate_checklist_from_text(
     )
 
     client = OpenAIClient()
-    chat_result = client.chat_with_tools(
-        system_prompt,
-        user_prompt,
-        CREATE_TOOLS,
-        on_tool_call,
-        max_rounds=max_rounds,
-    )
+    if pdf_files:
+        chat_result = client.chat_with_tools_and_files(
+            system_prompt,
+            user_prompt,
+            pdf_files,
+            CREATE_TOOLS,
+            on_tool_call,
+            max_rounds=max_rounds,
+        )
+    else:
+        chat_result = client.chat_with_tools(
+            system_prompt,
+            user_prompt,
+            CREATE_TOOLS,
+            on_tool_call,
+            max_rounds=max_rounds,
+        )
     result.reply = chat_result.reply
 
     return result
+
+
+def generate_checklist_with_context(
+    prompt: str,
+    *,
+    title: str | None = None,
+    description: str | None = None,
+    pdf_files: list[tuple[str, bytes]] | None = None,
+) -> AIRunResult:
+    """
+    Generate a checklist from the user's prompt and optional PDF context files.
+    The normal create prompt and tool loop are reused so PDFs only add context.
+    """
+    logger.info("Generating checklist with %d PDF attachment(s)", len(pdf_files or []))
+    return generate_checklist_from_text(
+        prompt,
+        title=title,
+        description=description,
+        pdf_files=pdf_files,
+    )
+
+
+def review_checklist_with_ai(
+    checklist: dict,
+    *,
+    pdf_files: list[tuple[str, bytes]] | None = None,
+) -> str:
+    """Review checklist quality using general knowledge and optional PDF context."""
+    system_prompt = (
+        "You are a senior checklist reviewer for a checklist-building app. Review "
+        "the checklist for missing steps, unclear wording, weak validation points, "
+        "and mismatches with any provided PDF context. Use the PDFs as high-priority "
+        "context, but also use general domain knowledge. Do not modify the checklist.\n\n"
+        "APP CAPABILITIES AND LIMITS:\n"
+        "- The app can show sections, checkbox groups, checkboxes, text fields, number fields, image blocks, and tables.\n"
+        "- Fields can be marked required and number fields can define min, max, unit, and value.\n"
+        "- Tables can have text, number, and checkbox columns.\n"
+        "- The app cannot do conditional logic, branching, formulas, dynamic visibility, automatic date validation, cross-field validation, workflows, approvals, reminders, or permissions.\n"
+        "- If a best-practice idea needs unsupported behavior, translate it into something representable, such as an explicit checklist item, required field, section, table column, or instruction in a label.\n"
+        "- Do not recommend features the app cannot implement unless you clearly phrase them as manual checklist wording.\n\n"
+        "Return concise, actionable recommendations in markdown. Prioritize changes that can be applied with the available checklist components."
+    )
+    user_prompt = (
+        "Review this checklist and suggest practical improvements. If PDFs are "
+        "attached, compare the checklist against them and call out important gaps.\n\n"
+        f"Checklist JSON:\n```json\n{json.dumps(checklist, indent=2)}\n```"
+    )
+
+    client = OpenAIClient()
+    return client.complete_text(system_prompt, user_prompt, files=pdf_files)
 
 
 def edit_checklist_with_ai(
@@ -426,4 +556,5 @@ __all__ = [
     "find_component_by_id",
     "generate_checklist_from_text",
     "observe_with_image",
+    "review_checklist_with_ai",
 ]

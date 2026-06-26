@@ -1,4 +1,5 @@
-import { Link } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 import {
   FiMenu,
   FiPlay,
@@ -6,9 +7,34 @@ import {
   FiList,
 } from 'react-icons/fi'
 import { HiOutlineSparkles } from 'react-icons/hi2'
+import checklyLogo from '../assets/logo.svg'
 import styles from '../page-styles/LandingPage.module.css'
+import { getToken } from '../auth/tokenStorage'
 
 function LandingPage() {
+  const navigate = useNavigate()
+  const [isDemoOpen, setIsDemoOpen] = useState(false)
+
+  function handleLogoClick() {
+    navigate(getToken() ? '/home' : '/')
+  }
+
+  useEffect(() => {
+    if (!isDemoOpen) return
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') setIsDemoOpen(false)
+    }
+
+    document.body.style.overflow = 'hidden'
+    window.addEventListener('keydown', handleKeyDown)
+
+    return () => {
+      document.body.style.overflow = ''
+      window.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [isDemoOpen])
+
   return (
     <main className={styles.page}>
       <div className={styles.ambient} aria-hidden="true">
@@ -23,7 +49,17 @@ function LandingPage() {
             <FiMenu />
           </button>
 
-          <img src="/src/assets/logo_cropped.png" alt="Checkly logo" className={styles.logo} />
+          <img
+            src={checklyLogo}
+            alt="Checkly logo"
+            className={styles.logo}
+            role="button"
+            tabIndex={0}
+            onClick={handleLogoClick}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter' || event.key === ' ') handleLogoClick()
+            }}
+          />
         </div>
 
         <div className={styles.topbarActions}>
@@ -32,7 +68,8 @@ function LandingPage() {
           </Link>
 
           <Link to="/register" className={styles.getStartedButton}>
-            Get Started
+            <span className={styles.getStartedFull}>Get Started</span>
+            <span className={styles.getStartedShort}>Start</span>
           </Link>
         </div>
       </header>
@@ -54,10 +91,14 @@ function LandingPage() {
             → Start for Free
           </Link>
 
-          <Link to="/login" className={styles.secondaryButton}>
+          <button
+            type="button"
+            className={styles.secondaryButton}
+            onClick={() => setIsDemoOpen(true)}
+          >
             <FiPlay />
             Watch Demo
-          </Link>
+          </button>
         </div>
 
         <div className={styles.featureGrid}>
@@ -86,6 +127,29 @@ function LandingPage() {
           </div>
         </div>
       </section>
+
+      {isDemoOpen && (
+        <div
+          className={styles.demoOverlay}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Product demo video"
+          onClick={() => setIsDemoOpen(false)}
+        >
+          <div className={styles.demoModal} onClick={(event) => event.stopPropagation()}>
+            <button
+              type="button"
+              className={styles.demoCloseButton}
+              aria-label="Close demo video"
+              onClick={() => setIsDemoOpen(false)}
+            >
+              ×
+            </button>
+
+            <video className={styles.demoVideo} src="/demo.mp4" controls autoPlay />
+          </div>
+        </div>
+      )}
     </main>
   )
 }

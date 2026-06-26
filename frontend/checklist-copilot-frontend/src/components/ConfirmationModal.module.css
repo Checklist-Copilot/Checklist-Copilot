@@ -1,0 +1,204 @@
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background:
+    radial-gradient(circle at 50% 38%, oklch(0.62 0.18 310 / 0.2), transparent 24rem),
+    oklch(0.08 0.025 285 / 0.74);
+  animation: backdropIn 180ms cubic-bezier(.16, 1, .3, 1) both;
+}
+
+.modal {
+  width: min(460px, 100%);
+  position: relative;
+  overflow: hidden;
+  border: 1px solid oklch(0.86 0.06 285 / 0.18);
+  border-radius: 28px;
+  background:
+    linear-gradient(150deg, oklch(0.22 0.055 285 / 0.98), oklch(0.15 0.04 285 / 0.98)),
+    oklch(0.16 0.04 285);
+  box-shadow: 0 30px 90px oklch(0.04 0.02 285 / 0.56);
+  color: oklch(0.97 0.012 285);
+  padding: 28px;
+  animation: modalIn 210ms cubic-bezier(.16, 1, .3, 1) both;
+}
+
+.modal::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(oklch(0.96 0.01 285 / 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, oklch(0.96 0.01 285 / 0.045) 1px, transparent 1px);
+  background-size: 38px 38px;
+  mask-image: linear-gradient(oklch(0 0 0 / 0.65), transparent 70%);
+}
+
+.closeButton {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid oklch(0.92 0.02 285 / 0.12);
+  border-radius: 12px;
+  background: oklch(0.96 0.01 285 / 0.06);
+  color: oklch(0.84 0.03 285);
+  cursor: pointer;
+  transition: background 180ms, color 180ms, transform 180ms;
+}
+
+.closeButton:hover:not(:disabled) {
+  transform: translateY(-1px);
+  background: oklch(0.96 0.01 285 / 0.11);
+  color: oklch(0.98 0.01 285);
+}
+
+.closeButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.closeButton:focus-visible,
+.cancelButton:focus-visible,
+.confirmButton:focus-visible {
+  outline: 3px solid oklch(0.78 0.14 220 / 0.62);
+  outline-offset: 3px;
+}
+
+.iconWrap {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 58px;
+  height: 58px;
+  border-radius: 20px;
+  background: linear-gradient(135deg, oklch(0.64 0.22 25 / 0.22), oklch(0.66 0.2 345 / 0.2));
+  border: 1px solid oklch(0.72 0.2 25 / 0.25);
+  color: oklch(0.76 0.18 45);
+  box-shadow: 0 0 42px oklch(0.66 0.2 25 / 0.14);
+  font-size: 26px;
+}
+
+.aiIconWrap {
+  background: linear-gradient(135deg, oklch(0.62 0.2 285 / 0.24), oklch(0.72 0.14 220 / 0.2));
+  border-color: oklch(0.74 0.14 235 / 0.28);
+  color: oklch(0.82 0.13 225);
+  box-shadow: 0 0 42px oklch(0.68 0.16 235 / 0.16);
+}
+
+.copy {
+  position: relative;
+  z-index: 1;
+  margin-top: 20px;
+}
+
+.kicker {
+  margin: 0 0 8px;
+  color: oklch(0.78 0.12 225);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.copy h2 {
+  margin: 0;
+  color: oklch(0.98 0.01 285);
+  font-size: 27px;
+  line-height: 1.08;
+  letter-spacing: -0.04em;
+}
+
+.copy p:last-child {
+  max-width: 58ch;
+  margin: 12px 0 0;
+  color: oklch(0.82 0.025 285);
+  line-height: 1.55;
+}
+
+.actions {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 28px;
+}
+
+.cancelButton,
+.confirmButton {
+  min-height: 44px;
+  border-radius: 14px;
+  padding: 0 18px;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+  transition: transform 180ms cubic-bezier(.16, 1, .3, 1), background 180ms, border-color 180ms, box-shadow 180ms;
+}
+
+.cancelButton {
+  border: 1px solid oklch(0.92 0.02 285 / 0.14);
+  background: oklch(0.96 0.01 285 / 0.07);
+  color: oklch(0.9 0.02 285);
+}
+
+.confirmButton {
+  border: 1px solid oklch(0.68 0.2 25 / 0.42);
+  background: linear-gradient(135deg, oklch(0.58 0.2 25), oklch(0.56 0.22 345));
+  color: oklch(0.98 0.01 20);
+  box-shadow: 0 16px 36px oklch(0.54 0.22 25 / 0.26);
+}
+
+.aiConfirmButton {
+  border-color: oklch(0.72 0.14 230 / 0.42);
+  background: linear-gradient(135deg, oklch(0.58 0.2 285), oklch(0.64 0.16 225));
+  color: oklch(0.98 0.01 250);
+  box-shadow: 0 16px 36px oklch(0.56 0.18 260 / 0.26);
+}
+
+.cancelButton:hover:not(:disabled),
+.confirmButton:hover:not(:disabled) {
+  transform: translateY(-2px);
+}
+
+.cancelButton:disabled,
+.confirmButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.62;
+  transform: none;
+}
+
+@media (max-width: 560px) {
+  .modal {
+    padding: 24px;
+    border-radius: 24px;
+  }
+
+  .actions {
+    flex-direction: column-reverse;
+  }
+
+  .cancelButton,
+  .confirmButton {
+    width: 100%;
+  }
+}
+
+@keyframes backdropIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes modalIn {
+  from { opacity: 0; transform: translateY(12px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}

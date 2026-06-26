@@ -1,0 +1,207 @@
+%PDF-1.4
+%‚„œ”
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [5 0 R 7 0 R] /Count 2 >>
+endobj
+3 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+4 0 obj
+<< /Length 2696 >>
+stream
+BT
+/F1 18 Tf
+72 760 Td
+(Marketing Campaign Launch Governance Guidelines) Tj
+0 -16 Td
+/F1 11 Tf
+(Internal requirements for Q3 product launch campaigns) Tj
+0 -16 Td
+/F1 10 Tf
+(Document purpose: provide realistic checklist context for AI-assisted checklist generation.) Tj
+0 -16 Td
+0 -16 Td
+/F1 13 Tf
+(1. Campaign Intake and Approval) Tj
+0 -16 Td
+/F1 10 Tf
+(- Every campaign must have a named Campaign Owner, Product Marketing Lead, Legal Reviewer, and) Tj
+0 -16 Td
+(  Analytics Contact before creative work begins.) Tj
+0 -16 Td
+0 -16 Td
+(- The Campaign Owner must define the target segment, primary business objective, launch) Tj
+0 -16 Td
+(  region, planned launch date, and campaign budget.) Tj
+0 -16 Td
+0 -16 Td
+(- Campaigns with budget above EUR 25,000 require written approval from the Marketing Director) Tj
+0 -16 Td
+(  before media booking.) Tj
+0 -16 Td
+0 -16 Td
+(- Campaigns targeting healthcare, financial services, minors, or regulated industries require) Tj
+0 -16 Td
+(  Legal review before any external copy is shared.) Tj
+0 -16 Td
+0 -16 Td
+0 -16 Td
+/F1 13 Tf
+(2. Messaging and Claims Requirements) Tj
+0 -16 Td
+/F1 10 Tf
+(- All public claims must be traceable to an approved source such as customer research, product) Tj
+0 -16 Td
+(  documentation, benchmark results, or signed customer quotes.) Tj
+0 -16 Td
+0 -16 Td
+(- Performance claims must include the measurement basis, tested product version, sample size,) Tj
+0 -16 Td
+(  and date of measurement.) Tj
+0 -16 Td
+0 -16 Td
+(- Do not use absolute language such as 'best', 'guaranteed', 'risk-free', or 'industry-) Tj
+0 -16 Td
+(  leading' unless Legal has approved the exact wording.) Tj
+0 -16 Td
+0 -16 Td
+(- The final message house must include one primary value proposition, three supporting proof) Tj
+0 -16 Td
+(  points, and one approved call to action.) Tj
+0 -16 Td
+0 -16 Td
+0 -16 Td
+/F1 13 Tf
+(3. Creative Asset Checklist) Tj
+0 -16 Td
+/F1 10 Tf
+(- Each launch must produce a landing page, email announcement, paid social ad set, organic) Tj
+0 -16 Td
+(  social post, sales enablement one-pager, and short product explainer script.) Tj
+0 -16 Td
+0 -16 Td
+(- Every asset must include the approved campaign name, product name, campaign UTM code,) Tj
+0 -16 Td
+(  regional disclaimer, and approved call to action.) Tj
+0 -16 Td
+0 -16 Td
+(- Images and videos must have documented usage rights. Stock assets must include license) Tj
+0 -16 Td
+(  source, license type, purchase date, and allowed regions.) Tj
+0 -16 Td
+0 -16 Td
+(- Any customer logo, testimonial, or case-study quote must have written permission stored in) Tj
+0 -16 Td
+(  the campaign folder.) Tj
+0 -16 Td
+0 -16 Td
+0 -16 Td
+/F1 13 Tf
+(4. Data, Tracking, and Experimentation) Tj
+ET
+endstream
+endobj
+5 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R >> >> /Contents 4 0 R >>
+endobj
+6 0 obj
+<< /Length 2221 >>
+stream
+BT
+/F1 18 Tf
+72 760 Td
+/F1 10 Tf
+(- Before launch, Analytics must confirm that UTM parameters, conversion events, lead source) Tj
+0 -16 Td
+(  mapping, and dashboard widgets are configured.) Tj
+0 -16 Td
+0 -16 Td
+(- The standard UTM format is: utm_source, utm_medium, utm_campaign, utm_content, and) Tj
+0 -16 Td
+(  utm_region.) Tj
+0 -16 Td
+0 -16 Td
+(- A/B tests must define a hypothesis, primary metric, minimum sample size, test duration, and) Tj
+0 -16 Td
+(  rollback condition.) Tj
+0 -16 Td
+0 -16 Td
+(- No campaign may launch if conversion tracking, consent banner behavior, or lead routing has) Tj
+0 -16 Td
+(  not been verified in staging.) Tj
+0 -16 Td
+0 -16 Td
+0 -16 Td
+/F1 13 Tf
+(5. Launch Readiness Review) Tj
+0 -16 Td
+/F1 10 Tf
+(- The Campaign Owner must run a launch readiness review at least three business days before) Tj
+0 -16 Td
+(  launch.) Tj
+0 -16 Td
+0 -16 Td
+(- Required attendees are Campaign Owner, Product Marketing Lead, Sales Representative,) Tj
+0 -16 Td
+(  Analytics Contact, Design Lead, and Legal Reviewer when applicable.) Tj
+0 -16 Td
+0 -16 Td
+(- The readiness review must confirm final asset links, approval status, localization status,) Tj
+0 -16 Td
+(  tracking validation, support handoff, and rollback plan.) Tj
+0 -16 Td
+0 -16 Td
+(- Open critical issues block launch. High-priority issues require Marketing Director approval) Tj
+0 -16 Td
+(  to proceed. Medium and low issues may be tracked post-launch.) Tj
+0 -16 Td
+0 -16 Td
+0 -16 Td
+/F1 13 Tf
+(6. Post-Launch Reporting) Tj
+0 -16 Td
+/F1 10 Tf
+(- Within five business days after launch, the Campaign Owner must publish an initial) Tj
+0 -16 Td
+(  performance summary.) Tj
+0 -16 Td
+0 -16 Td
+(- The report must include spend, impressions, click-through rate, conversion rate, cost per) Tj
+0 -16 Td
+(  lead, qualified pipeline, top-performing message, and underperforming channel.) Tj
+0 -16 Td
+0 -16 Td
+(- Campaigns below 70 percent of the target conversion rate after seven days require an) Tj
+0 -16 Td
+(  optimization action plan.) Tj
+0 -16 Td
+0 -16 Td
+(- The final retrospective must document lessons learned, reusable assets, experiment results,) Tj
+0 -16 Td
+(  budget variance, and recommendations for the next campaign.) Tj
+0 -16 Td
+0 -16 Td
+ET
+endstream
+endobj
+7 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R >> >> /Contents 6 0 R >>
+endobj
+xref
+0 8
+0000000000 65535 f 
+0000000015 00000 n 
+0000000064 00000 n 
+0000000127 00000 n 
+0000000197 00000 n 
+0000002944 00000 n 
+0000003070 00000 n 
+0000005342 00000 n 
+trailer
+<< /Size 8 /Root 1 0 R >>
+startxref
+5468
+%%EOF

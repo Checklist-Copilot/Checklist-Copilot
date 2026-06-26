@@ -1,4 +1,5 @@
 import type { CSSProperties } from 'react'
+import checklyLogo from '../assets/logo.svg'
 import styles from './ChecklistPrintReport.module.css'
 import type { ChecklistComponent, ChecklistRoot } from './types'
 import { componentTitle } from './utils'
@@ -30,7 +31,7 @@ export function ChecklistPrintReport({
   return (
     <section className={styles.report} data-print-report aria-hidden="true">
       <header className={styles.header}>
-        <img src="/src/assets/logo_cropped.png" alt="Checkly logo" className={styles.logo} />
+        <img src={checklyLogo} alt="Checkly logo" className={styles.logo} />
         <p className={styles.eyebrow}>Checklist Report</p>
         <h1>{title}</h1>
         <p>{description ?? 'No description.'}</p>

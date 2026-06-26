@@ -117,3 +117,19 @@ export function updateChecklistById(
     body: JSON.stringify({ operations: operations.map(toApiOperation) }),
   })
 }
+
+export function restorePreviousChecklist(checklistId: string): Promise<Checklist> {
+  return apiRequest<Checklist>(`/checklists/${checklistId}/restore-previous`, {
+    method: 'POST',
+  })
+}
+
+export function restoreChecklistJson(
+  checklistId: string,
+  checklist: Record<string, unknown>,
+): Promise<Checklist> {
+  return apiRequest<Checklist>(`/checklists/${checklistId}/restore-json`, {
+    method: 'POST',
+    body: JSON.stringify({ checklist }),
+  })
+}

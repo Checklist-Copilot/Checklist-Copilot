@@ -16,6 +16,7 @@ import { deleteUser } from '../api/user'
 import { ApiError } from '../api/http'
 import { removeToken } from '../auth/tokenStorage'
 import TopBar from '../components/TopBar'
+import { ConfirmationModal } from '../components/ConfirmationModal'
 import styles from '../page-styles/AccountPage.module.css'
 import type { User } from '../types/user'
 
@@ -32,6 +33,7 @@ function AccountPage() {
   const [isSavingProfile, setIsSavingProfile] = useState(false)
   const [isSavingPassword, setIsSavingPassword] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
   const [profileMessage, setProfileMessage] = useState<string | null>(null)
   const [passwordMessage, setPasswordMessage] = useState<string | null>(null)
   const [dangerMessage, setDangerMessage] = useState<string | null>(null)
@@ -135,11 +137,15 @@ function AccountPage() {
     }
   }
 
-  async function handleDeleteAccount() {
+  // Opens the shared destructive confirmation modal for account deletion.
+  function handleDeleteAccount() {
     if (!user || isDeleting) return
+    setIsDeleteModalOpen(true)
+  }
 
-    const confirmed = window.confirm('Delete your account and all associated data? This cannot be undone.')
-    if (!confirmed) return
+  // Deletes the signed-in account only after the modal confirmation succeeds.
+  async function confirmDeleteAccount() {
+    if (!user || isDeleting) return
 
     setIsDeleting(true)
     setDangerMessage(null)
@@ -152,6 +158,7 @@ function AccountPage() {
       setDangerMessage('Could not delete your account. Please try again.')
     } finally {
       setIsDeleting(false)
+      setIsDeleteModalOpen(false)
     }
   }
 
@@ -287,6 +294,16 @@ function AccountPage() {
           </section>
         </section>
       </main>
+
+      <ConfirmationModal
+        isOpen={isDeleteModalOpen}
+        title="Delete your account?"
+        message="This removes your profile, checklists, and associated data. You cannot undo this action."
+        confirmLabel="Delete account"
+        isConfirming={isDeleting}
+        onConfirm={confirmDeleteAccount}
+        onClose={() => setIsDeleteModalOpen(false)}
+      />
     </>
   )
 }

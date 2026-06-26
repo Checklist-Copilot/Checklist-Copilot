@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import styles from '../page-styles/UseChecklistPage.module.css'
-import { editChecklistWithAi } from '../api/ai'
+import { editChecklistWithAi, observeChecklistImages } from '../api/ai'
 import { getChecklistById } from '../api/checklist'
 import { CHECKLIST_FILES_CHANGED_EVENT } from '../api/files'
 import type { Checklist } from '../types/checklist'
@@ -14,7 +14,9 @@ import { removeImageFileReferencesFromRoot, updateComponentInRoot } from '../che
 import { HiOutlineSparkles } from 'react-icons/hi2'
 import TopBar from '../components/TopBar'
 import AIChatPopup from '../components/AIChatPopup'
+import type { ChatMessage } from '../components/AIChatPopup'
 import { ChecklistContextFiles } from '../components/ChecklistContextFiles'
+import { uploadChecklistImage } from '../api/files'
 
 function UseChecklistPage() {
   const navigate = useNavigate()
@@ -24,6 +26,13 @@ function UseChecklistPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [isAIChatOpen, setIsAIChatOpen] = useState(false)
+  const [aiMessages, setAiMessages] = useState<ChatMessage[]>([
+    {
+      id: 1,
+      sender: 'checkly',
+      text: 'Hi, I am Checkly. How can I help you with this checklist?',
+    },
+  ])
 
   const missingChecklistId = isAuthorized && !checklist_id
 
@@ -54,10 +63,16 @@ function UseChecklistPage() {
     enqueueOperation({ operation: 'updateComponent', targetId: componentId, patch })
   }
 
-  async function handleAiMessage(message: string) {
+  async function handleAiMessage(message: string, conversation: ChatMessage[], images: File[] = []) {
     if (!checklist_id) throw new Error('Checklist ID is missing.')
 
-    const response = await editChecklistWithAi(checklist_id, message)
+    const response = images.length > 0
+      ? await observeChecklistImages(checklist_id, {
+          instruction: message,
+          image_ids: (await Promise.all(images.map((image) => uploadChecklistImage(checklist_id, image)))).map((file) => file.id),
+          prior_messages: buildAiPriorMessages(conversation),
+        })
+      : await editChecklistWithAi(checklist_id, buildAiInstruction(message, conversation))
 
     setChecklist((currentChecklist) => {
       if (!currentChecklist) return currentChecklist
@@ -153,6 +168,8 @@ function UseChecklistPage() {
 
         <AIChatPopup
           isOpen={isAIChatOpen}
+          messages={aiMessages}
+          setMessages={setAiMessages}
           onClose={() => setIsAIChatOpen(false)}
           onSendMessage={handleAiMessage}
         />
@@ -237,6 +254,24 @@ function formatDate(value: string) {
     month: 'short',
     day: 'numeric',
   }).format(new Date(value))
+}
+
+function buildAiPriorMessages(conversation: ChatMessage[]) {
+  return conversation.slice(1, -1).map((chatMessage) => ({
+    role: chatMessage.sender === 'user' ? 'user' as const : 'assistant' as const,
+    content: chatMessage.text,
+  }))
+}
+
+function buildAiInstruction(message: string, conversation: ChatMessage[]) {
+  const priorMessages = conversation
+    .slice(1, -1)
+    .map((chatMessage) => `${chatMessage.sender === 'user' ? 'User' : 'Checkly'}: ${chatMessage.text}`)
+    .join('\n\n')
+
+  if (!priorMessages) return message
+
+  return `Conversation so far:\n\n${priorMessages}\n\nCurrent user instruction:\n${message}`
 }
 
 export default UseChecklistPage
