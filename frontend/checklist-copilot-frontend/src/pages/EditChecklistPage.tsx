@@ -5,6 +5,7 @@ import { HiOutlineSparkles } from 'react-icons/hi2'
 import styles from '../page-styles/UseChecklistPage.module.css'
 import editStyles from '../page-styles/EditChecklistPage.module.css'
 import { getChecklistById } from '../api/checklist'
+import type { ChecklistOperation } from '../api/checklist'
 import { CHECKLIST_FILES_CHANGED_EVENT, deleteChecklistFile, notifyChecklistFilesChanged } from '../api/files'
 import { editChecklistWithAi, observeChecklistImages, reviewChecklistWithAi } from '../api/ai'
 import type { Checklist } from '../types/checklist'
@@ -71,7 +72,7 @@ function EditChecklistPage() {
     if (isChecklistRoot(response.checklist)) setEditableChecklist(response.checklist)
   }, [])
 
-  const { enqueueOperation, clearQueue, pendingCount, isSaving, autosaveError } = useChecklistAutosave({
+  const { enqueueOperation, flush, clearQueue, pendingCount, isSaving, autosaveError } = useChecklistAutosave({
     checklistId: checklist_id,
     onServerChecklist: acceptServerChecklist,
   })
@@ -185,27 +186,22 @@ function EditChecklistPage() {
         }
 
       case 'table': {
-        const firstColumnId = createId()
-        const secondColumnId = createId()
+        const columns = Array.from({ length: 3 }, (_, index) => ({
+          id: createId(),
+          label: `Column ${index + 1}`,
+          type: 'text' as const,
+        }))
 
         return {
           id,
           humanReadableId: `table_${id}`,
           type: 'table',
           label: 'New Table',
-          columns: [
-            { id: firstColumnId, label: 'Column 1', type: 'text' },
-            { id: secondColumnId, label: 'Column 2', type: 'text' },
-          ],
-          rows: [
-            {
-              id: createId(),
-              cells: {
-                [firstColumnId]: '',
-                [secondColumnId]: '',
-              },
-            },
-          ],
+          columns,
+          rows: Array.from({ length: 3 }, () => ({
+            id: createId(),
+            cells: Object.fromEntries(columns.map((column) => [column.id, ''])),
+          })),
         }
       }
 
@@ -343,11 +339,12 @@ function EditChecklistPage() {
   }
 }
 
-  function handleComponentUpdate(componentId: string, patch: Record<string, unknown>) {
+  function handleComponentUpdate(componentId: string, patch: Record<string, unknown>, operation?: ChecklistOperation) {
   const nextChecklist = updateComponentInRoot(editableChecklist, componentId, patch)
   setEditableChecklist(nextChecklist)
   undoRedoRef.current?.recordInputSequenceState(nextChecklist)
-  enqueueOperation({ operation: 'updateComponent', targetId: componentId, patch })
+  enqueueOperation(operation ?? { operation: 'updateComponent', targetId: componentId, patch })
+  if (operation?.operation === 'deleteTableColumn' || operation?.operation === 'deleteTableRow') void flush()
 }
 
 

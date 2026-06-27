@@ -1,6 +1,7 @@
 import { ComponentRenderer } from './ComponentRenderer'
 import { EditableLabel } from './EditableLabel'
 import styles from './SectionRenderer.module.css'
+import type { ChecklistOperation } from '../api/checklist'
 import type { SectionComponent } from './types'
 import { componentTitle, defaultLabelForType } from './utils'
 
@@ -9,7 +10,7 @@ type SectionRendererProps = {
   index?: number
   checklistId?: string
   isEditMode?: boolean
-  onComponentUpdate?: (componentId: string, patch: Record<string, unknown>) => void
+  onComponentUpdate?: (componentId: string, patch: Record<string, unknown>, operation?: ChecklistOperation) => void
   onDeleteComponent?: (componentId: string) => void
   focusedComponentId?: string
   onFocusComponent?: (componentId: string) => void

@@ -5,6 +5,7 @@ import { NumberFieldRenderer } from './NumberFieldRenderer'
 import { SectionRenderer } from './SectionRenderer'
 import { TableRenderer } from './TableRenderer'
 import { TextFieldRenderer } from './TextFieldRenderer'
+import type { ChecklistOperation } from '../api/checklist'
 import type { ChecklistComponent } from './types'
 
 type ComponentRendererProps = {
@@ -12,12 +13,13 @@ type ComponentRendererProps = {
   index?: number
   checklistId?: string
   isEditMode?: boolean
-  onComponentUpdate?: (componentId: string, patch: Record<string, unknown>) => void
+  onComponentUpdate?: (componentId: string, patch: Record<string, unknown>, operation?: ChecklistOperation) => void
   onDeleteComponent?: (componentId: string) => void
   focusedComponentId?: string
   onFocusComponent?: (componentId: string) => void
 }
 
+// Routes a checklist component to its specialized renderer while keeping shared edit handlers wired through the tree.
 export function ComponentRenderer({
   component,
   index,

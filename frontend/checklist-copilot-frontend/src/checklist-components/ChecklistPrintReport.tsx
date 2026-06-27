@@ -158,7 +158,7 @@ function PrintChecklistComponent({
           <thead>
             <tr>
               {component.columns.map((column) => (
-                <th key={column.id}>{column.label}</th>
+                <th key={column.id}>{column.unit ? `${column.label} (${column.unit})` : column.label}</th>
               ))}
             </tr>
           </thead>

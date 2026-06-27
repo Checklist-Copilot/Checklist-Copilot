@@ -53,6 +53,8 @@ export type ChecklistOperation =
   | { operation: 'addComponent'; targetContainerId: string; position?: string | Record<string, unknown>; component: AddComponentPayload }
   | { operation: 'updateComponent'; targetId: string; patch: Record<string, unknown> }
   | { operation: 'deleteComponent'; targetId: string }
+  | { operation: 'deleteTableColumn'; targetId: string; columnId: string }
+  | { operation: 'deleteTableRow'; targetId: string; rowId: string }
 
 function defaultComponentLabel(type: string) {
   switch (type) {
@@ -94,6 +96,14 @@ function toApiOperation(operation: ChecklistOperation): ChecklistOperation {
   if (type === 'checkboxGroup') {
     const items = operation.component.items
     if (Array.isArray(items)) component.items = items
+  }
+
+  if (type === 'table') {
+    const columns = operation.component.columns
+    const rows = operation.component.rows
+
+    if (Array.isArray(columns)) component.columns = columns
+    if (Array.isArray(rows)) component.rows = rows
   }
 
   // The backend owns generated ids/default structure for new components, but

@@ -1,6 +1,11 @@
 from typing import Any
 
-from app.services.checklist_update.exceptions import CannotDeleteRootError, ComponentNotFoundError, InvalidTargetContainerError
+from app.services.checklist_update.exceptions import (
+    CannotDeleteRootError,
+    ComponentNotFoundError,
+    InvalidComponentPayloadError,
+    InvalidTargetContainerError,
+)
 
 
 # Component types that carry the server-controlled `edited` flag.
@@ -139,6 +144,51 @@ def delete_component_by_id(checklist: dict[str, Any], target_id: str) -> dict[st
         if isinstance(container, list):
             parent[key] = [item for item in container if not (isinstance(item, dict) and item.get("id") == target_id)]
 
+    return checklist
+
+
+def delete_table_column_by_id(checklist: dict[str, Any], target_id: str, column_id: str) -> dict[str, Any]:
+    """Remove one column from a table and strip the matching cell from every row."""
+    target = find_component_by_id(checklist, target_id)
+    if target is None:
+        raise ComponentNotFoundError(f"Component not found: {target_id}")
+    if target.get("type") != "table":
+        raise InvalidComponentPayloadError(f"Component is not a table: {target_id}")
+
+    columns = target.get("columns")
+    rows = target.get("rows")
+    if not isinstance(columns, list) or not isinstance(rows, list):
+        raise InvalidComponentPayloadError("table: expected columns and rows lists")
+    if not any(isinstance(column, dict) and column.get("id") == column_id for column in columns):
+        raise ComponentNotFoundError(f"Table column not found: {column_id}")
+
+    target["columns"] = [
+        column for column in columns if not (isinstance(column, dict) and column.get("id") == column_id)
+    ]
+    for row in rows:
+        if isinstance(row, dict) and isinstance(row.get("cells"), dict):
+            row["cells"].pop(column_id, None)
+
+    target["edited"] = _has_meaningful_user_input(target)
+    return checklist
+
+
+def delete_table_row_by_id(checklist: dict[str, Any], target_id: str, row_id: str) -> dict[str, Any]:
+    """Remove one row from a table without changing the table's columns."""
+    target = find_component_by_id(checklist, target_id)
+    if target is None:
+        raise ComponentNotFoundError(f"Component not found: {target_id}")
+    if target.get("type") != "table":
+        raise InvalidComponentPayloadError(f"Component is not a table: {target_id}")
+
+    rows = target.get("rows")
+    if not isinstance(rows, list):
+        raise InvalidComponentPayloadError("table: expected rows list")
+    if not any(isinstance(row, dict) and row.get("id") == row_id for row in rows):
+        raise ComponentNotFoundError(f"Table row not found: {row_id}")
+
+    target["rows"] = [row for row in rows if not (isinstance(row, dict) and row.get("id") == row_id)]
+    target["edited"] = _has_meaningful_user_input(target)
     return checklist
 
 

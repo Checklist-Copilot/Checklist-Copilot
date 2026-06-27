@@ -87,7 +87,16 @@ UPDATE_COMPONENT_TOOL: dict = {
                 },
                 "patch": {
                     "type": "object",
-                    "description": "Map of fields to overwrite. See docs/component-structure.md.",
+                    "description": (
+                        "Map of fields to overwrite. For table-specific edits, send "
+                        "`tableAction` as one of `newRow`, `deleteRow`, `newColumn`, "
+                        "`deleteColumn`, or `cell`. For `deleteRow`/`deleteColumn`, "
+                        "the update_component `targetId` must always be the table component id. "
+                        "For `deleteRow`/`deleteColumn`, include patch.`targetId` with the row id or column id. For `cell`, "
+                        "include `rowId`, `columnId`, and `value`; number cells require "
+                        "a JSON number or null. For `newRow`/`newColumn`, the backend "
+                        "creates blank values and ids."
+                    ),
                     "additionalProperties": True,
                 },
             },
