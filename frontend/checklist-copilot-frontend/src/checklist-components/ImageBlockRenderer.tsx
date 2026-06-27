@@ -216,7 +216,14 @@ function FetchedImage({ src, alt }: { src: string; alt: string }) {
     }
   }, [src])
 
-  if (hasError) return null
+  if (hasError) {
+    return (
+      <div className={`${styles.placeholder} ${styles.imageError}`} role="img" aria-label={`${alt} could not be loaded`}>
+        Could not load image
+      </div>
+    )
+  }
+
   if (!objectUrl) return <div className={styles.placeholder}>Loading image</div>
 
   return <img src={objectUrl} alt={alt} />
