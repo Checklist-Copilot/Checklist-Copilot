@@ -26,6 +26,7 @@ export function ChecklistRenderer({
       {checklist.children.map((component, index) => (
         <div
           key={component.id}
+          data-component-id={component.id}
           className={`${styles.componentWrapper} ${
             focusedComponentId === component.id ? styles.focusedComponent : ''
           }`}

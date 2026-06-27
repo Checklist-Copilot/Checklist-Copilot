@@ -11,6 +11,10 @@
   font-weight: 700;
 }
 
+.editMode {
+  padding-right: 44px;
+}
+
 .checkboxInput {
   width: 18px;
   height: 18px;

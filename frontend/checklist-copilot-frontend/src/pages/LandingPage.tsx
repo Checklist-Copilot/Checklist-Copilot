@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import {
   FiMenu,
   FiPlay,
@@ -9,9 +9,15 @@ import {
 import { HiOutlineSparkles } from 'react-icons/hi2'
 import checklyLogo from '../assets/logo.svg'
 import styles from '../page-styles/LandingPage.module.css'
+import { getToken } from '../auth/tokenStorage'
 
 function LandingPage() {
+  const navigate = useNavigate()
   const [isDemoOpen, setIsDemoOpen] = useState(false)
+
+  function handleLogoClick() {
+    navigate(getToken() ? '/home' : '/')
+  }
 
   useEffect(() => {
     if (!isDemoOpen) return
@@ -43,7 +49,17 @@ function LandingPage() {
             <FiMenu />
           </button>
 
-          <img src={checklyLogo} alt="Checkly logo" className={styles.logo} />
+          <img
+            src={checklyLogo}
+            alt="Checkly logo"
+            className={styles.logo}
+            role="button"
+            tabIndex={0}
+            onClick={handleLogoClick}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter' || event.key === ' ') handleLogoClick()
+            }}
+          />
         </div>
 
         <div className={styles.topbarActions}>

@@ -1,18 +1,24 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
-import { FiPlus } from 'react-icons/fi'
+import { FiCheckCircle, FiPlus } from 'react-icons/fi'
 import { HiOutlineSparkles } from 'react-icons/hi2'
 import styles from '../page-styles/UseChecklistPage.module.css'
 import editStyles from '../page-styles/EditChecklistPage.module.css'
 import { getChecklistById } from '../api/checklist'
+import { CHECKLIST_FILES_CHANGED_EVENT, deleteChecklistFile, notifyChecklistFilesChanged } from '../api/files'
 import { editChecklistWithAi, observeChecklistImages, reviewChecklistWithAi } from '../api/ai'
 import type { Checklist } from '../types/checklist'
 import { removeToken } from '../auth/tokenStorage'
 import { useRequireAuth } from '../hooks/useRequireAuth'
 import { useChecklistAutosave } from '../hooks/useChecklistAutosave'
 import { ChecklistRenderer, mockChecklist } from '../checklist-components'
-import type { ChecklistComponent, ChecklistRoot } from '../checklist-components'
-import { addComponentToRoot, deleteComponentFromRoot, updateComponentInRoot } from '../checklist-components/treeUtils'
+import type { ChecklistComponent, ChecklistImage, ChecklistRoot } from '../checklist-components'
+import {
+  addComponentToRoot,
+  deleteComponentFromRoot,
+  removeImageFileReferencesFromRoot,
+  updateComponentInRoot,
+} from '../checklist-components/treeUtils'
 import TopBar from '../components/TopBar'
 import AIChatPopup from '../components/AIChatPopup'
 import type { ChatMessage } from '../components/AIChatPopup'
@@ -53,6 +59,8 @@ function EditChecklistPage() {
     },
   ])
   const [focusedComponentId, setFocusedComponentId] = useState<string>('root')
+  const [scrollTargetComponentId, setScrollTargetComponentId] = useState<string | null>(null)
+  // const [toastMessage, setToastMessage] = useState<string | null>(null)
   const [toastMessage, setToastMessage] = useState<string | null>(() => routeState?.warning ?? null)
   const undoRedoRef = useRef<UndoRedoHandle>(null)
 
@@ -213,18 +221,26 @@ function EditChecklistPage() {
   function findComponentById(root: ChecklistRoot, componentId: string): ChecklistComponent | ChecklistRoot | null {
     if (componentId === 'root') return root
 
-    for (const component of root.children) {
+    function findInComponent(component: ChecklistComponent): ChecklistComponent | null {
       if (component.id === componentId) return component
 
       if (component.type === 'section') {
-        const child = component.children.find((item) => item.id === componentId)
-        if (child) return child
+        for (const child of component.children) {
+          const found = findInComponent(child)
+          if (found) return found
+        }
       }
 
       if (component.type === 'checkboxGroup' || component.type === 'checkboxContainer') {
-        const item = component.items.find((checkbox) => checkbox.id === componentId)
-        if (item) return item
+        return component.items.find((item) => item.id === componentId) ?? null
       }
+
+      return null
+    }
+
+    for (const component of root.children) {
+      const found = findInComponent(component)
+      if (found) return found
     }
 
     return null
@@ -304,14 +320,22 @@ function EditChecklistPage() {
     component: newComponent as unknown as { type: string; label: string } & Record<string, unknown>,
   })
 
-  setFocusedComponentId(newComponent.id)
+  setFocusedComponentId(targetContainerId)
+  setScrollTargetComponentId(newComponent.id)
 }
 
   function handleDeleteComponent(componentId: string) {
+  const targetComponent = findComponentById(editableChecklist, componentId)
+  const imageFileIds = targetComponent ? collectImageFileIds(targetComponent) : []
+
   const nextChecklist = deleteComponentFromRoot(editableChecklist, componentId)
   setEditableChecklist(nextChecklist)
   undoRedoRef.current?.recordSessionState(nextChecklist)
   enqueueOperation({ operation: 'deleteComponent', targetId: componentId })
+
+  if (imageFileIds.length > 0) {
+    void deleteImageFiles(imageFileIds, checklist_id)
+  }
 }
 
   function handleComponentUpdate(componentId: string, patch: Record<string, unknown>) {
@@ -321,9 +345,18 @@ function EditChecklistPage() {
   enqueueOperation({ operation: 'updateComponent', targetId: componentId, patch })
 }
 
+
+  function handleToggleRequired() {
+    const focusedComponent = findComponentById(editableChecklist, focusedComponentId)
+    if (!supportsRequired(focusedComponent)) return
+
+    handleComponentUpdate(focusedComponent.id, { required: !focusedComponent.required })
+  }
+
   // Sends chat instructions to the AI edit endpoint, including prior chat context so follow-up
   // requests like "apply your suggestions" can refer to an earlier AI review in the same session.
   async function handleAiMessage(message: string, conversation: ChatMessage[], images: File[] = []) {
+
     if (!checklist_id) {
       throw new Error('Checklist ID is missing.')
     }
@@ -429,6 +462,34 @@ function EditChecklistPage() {
     }
   }, [checklist_id, isAuthorized])
 
+  useEffect(() => {
+    function handleContextImageDeleted(event: Event) {
+      const { checklistId, deletedFileId } = (event as CustomEvent<{ checklistId?: string; deletedFileId?: string }>).detail ?? {}
+      if (checklistId !== checklist_id || !deletedFileId) return
+
+      const { root, removals } = removeImageFileReferencesFromRoot(editableChecklist, deletedFileId)
+      if (removals.length === 0) return
+
+      setEditableChecklist(root)
+      removals.forEach(({ componentId, images }) => {
+        enqueueOperation({ operation: 'updateComponent', targetId: componentId, patch: { images } })
+      })
+    }
+
+    window.addEventListener(CHECKLIST_FILES_CHANGED_EVENT, handleContextImageDeleted)
+    return () => window.removeEventListener(CHECKLIST_FILES_CHANGED_EVENT, handleContextImageDeleted)
+  }, [checklist_id, editableChecklist, enqueueOperation])
+
+  useEffect(() => {
+    if (!scrollTargetComponentId) return
+
+    const target = document.querySelector<HTMLElement>(`[data-component-id="${scrollTargetComponentId}"]`)
+    if (!target) return
+
+    target.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    setScrollTargetComponentId(null)
+  }, [editableChecklist, scrollTargetComponentId])
+
   if (isCheckingAuth) {
     return (
       <main className={styles.page}>
@@ -441,6 +502,9 @@ function EditChecklistPage() {
 
   if (!isAuthorized) return null
 
+  const focusedComponent = findComponentById(editableChecklist, focusedComponentId)
+  const canToggleRequired = supportsRequired(focusedComponent)
+
   return (
     <>
       <TopBar onLogout={handleLogout} />
@@ -450,6 +514,17 @@ function EditChecklistPage() {
           <aside className={styles.componentSidebar}>
             <p className={styles.sidebarTitle}>Components</p>
             <p className={styles.sidebarHint}>Click an item to insert it.</p>
+
+            {canToggleRequired ? (
+              <button
+                type="button"
+                className={`${styles.componentItem} ${styles.requiredToggle}`}
+                onClick={handleToggleRequired}
+              >
+                <FiCheckCircle />
+                {focusedComponent.required ? 'Make optional' : 'Make required'}
+              </button>
+            ) : null}
 
             <div className={styles.componentList}>
               {componentOptions.map((option) => (
@@ -594,6 +669,60 @@ function isChecklistRoot(value: unknown): value is ChecklistRoot {
 
   const candidate = value as { type?: unknown; children?: unknown }
   return candidate.type === 'root' && Array.isArray(candidate.children)
+}
+
+function supportsRequired(
+  component: ChecklistComponent | ChecklistRoot | null,
+): component is Extract<ChecklistComponent, { required?: boolean }> {
+  return (
+    component?.type === 'checkbox' ||
+    component?.type === 'checkboxItem' ||
+    component?.type === 'textField' ||
+    component?.type === 'numberField' ||
+    component?.type === 'numericField'
+  )
+}
+
+function collectImageFileIds(component: ChecklistComponent | ChecklistRoot): string[] {
+  const ids = new Set<string>()
+
+  function visit(node: ChecklistComponent | ChecklistRoot) {
+    if (node.type === 'imageBlock' || node.type === 'imagesSection') {
+      node.images.forEach((image) => {
+        const imageFileId = getImageFileId(image)
+        if (imageFileId) ids.add(imageFileId)
+      })
+      return
+    }
+
+    if (node.type === 'root' || node.type === 'section') {
+      node.children.forEach(visit)
+      return
+    }
+
+    if (node.type === 'checkboxGroup' || node.type === 'checkboxContainer') {
+      node.items.forEach(visit)
+    }
+  }
+
+  visit(component)
+  return [...ids]
+}
+
+function getImageFileId(image: ChecklistImage) {
+  return image.imageId ?? image.id ?? null
+}
+
+async function deleteImageFiles(imageFileIds: string[], checklistId?: string) {
+  await Promise.all(
+    imageFileIds.map((imageFileId) =>
+      deleteChecklistFile(imageFileId).catch(() => {
+        // The checklist JSON is already being saved without this reference.
+        // If the file was deleted elsewhere, there is nothing else to remove.
+      }),
+    ),
+  )
+  notifyChecklistFilesChanged(checklistId)
 }
 
 function formatDate(value: string) {

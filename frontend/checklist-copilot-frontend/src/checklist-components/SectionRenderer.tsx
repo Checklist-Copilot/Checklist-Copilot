@@ -52,6 +52,7 @@ export function SectionRenderer({
           {section.children.map((component) => (
             <div
               key={component.id}
+              data-component-id={component.id}
               className={`${styles.childWrapper} ${
                 focusedComponentId === component.id ? styles.focusedChild : ''
               }`}

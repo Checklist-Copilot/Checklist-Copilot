@@ -1,4 +1,5 @@
 .field {
+  position: relative;
   display: grid;
   gap: 10px;
   padding: 14px;
@@ -13,6 +14,17 @@
   gap: 8px;
   color: #eee9fb;
   font-weight: 850;
+}
+
+.editMode .labelRow {
+  flex-wrap: wrap;
+  padding-right: 128px;
+}
+
+.editMode .requiredBadge {
+  position: absolute;
+  top: 14px;
+  right: 54px;
 }
 
 .requiredBadge {

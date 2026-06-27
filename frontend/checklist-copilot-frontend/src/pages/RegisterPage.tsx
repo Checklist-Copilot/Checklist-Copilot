@@ -5,7 +5,7 @@ import checklyLogo from '../assets/logo.svg'
 import styles from '../page-styles/RegisterPage.module.css'
 import { registerUser } from '../api/user'
 import { ApiError } from '../api/http'
-import { saveToken } from '../auth/tokenStorage'
+import { saveToken, getToken } from '../auth/tokenStorage'
 import { FiMenu, FiMail, FiEye, FiUser, FiEyeOff } from 'react-icons/fi'
 
 function RegisterPage() {
@@ -18,6 +18,10 @@ function RegisterPage() {
   const [confirmPassword, setConfirmPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+
+  function handleLogoClick() {
+    navigate(getToken() ? '/home' : '/')
+  }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -52,7 +56,17 @@ function RegisterPage() {
             <FiMenu />
           </button>
 
-          <img src={checklyLogo} alt='Checkly logo' className={styles.logo} />
+          <img
+            src={checklyLogo}
+            alt='Checkly logo'
+            className={styles.logo}
+            role='button'
+            tabIndex={0}
+            onClick={handleLogoClick}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter' || event.key === ' ') handleLogoClick()
+            }}
+          />
         </div>
 
         <div className={styles.topbarActions}>

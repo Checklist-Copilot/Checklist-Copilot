@@ -56,7 +56,7 @@
 }
 
 .menuButton:hover { transform: translateY(-2px) rotate(-4deg); background: rgba(255,255,255,.11); }
-.logo { height: 34px; width: auto; object-fit: contain; filter: drop-shadow(0 0 18px rgba(139,92,246,.22)); }
+.logo { height: 34px; width: auto; object-fit: contain; cursor: pointer; filter: drop-shadow(0 0 18px rgba(139,92,246,.22)); }
 .topbarActions { display: flex; align-items: center; gap: 12px; min-width: 0; }
 
 .loginButton,

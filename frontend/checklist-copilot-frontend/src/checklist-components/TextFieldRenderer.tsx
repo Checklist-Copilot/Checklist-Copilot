@@ -24,7 +24,7 @@ export function TextFieldRenderer({ component, isEditMode = false, onComponentUp
   )
 
   return (
-    <div className={styles.field} data-component-id={component.id}>
+    <div className={`${styles.field} ${isEditMode ? styles.editMode : ''}`} data-component-id={component.id}>
       {isEditMode ? (
         <div className={styles.labelRow}>{labelContent}</div>
       ) : (

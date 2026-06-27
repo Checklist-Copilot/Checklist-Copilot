@@ -3,13 +3,14 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import styles from '../page-styles/UseChecklistPage.module.css'
 import { editChecklistWithAi, observeChecklistImages } from '../api/ai'
 import { getChecklistById } from '../api/checklist'
+import { CHECKLIST_FILES_CHANGED_EVENT } from '../api/files'
 import type { Checklist } from '../types/checklist'
 import { removeToken } from '../auth/tokenStorage'
 import { useRequireAuth } from '../hooks/useRequireAuth'
 import { useChecklistAutosave } from '../hooks/useChecklistAutosave'
 import { ChecklistRenderer, mockChecklist } from '../checklist-components'
 import type { ChecklistRoot } from '../checklist-components'
-import { updateComponentInRoot } from '../checklist-components/treeUtils'
+import { removeImageFileReferencesFromRoot, updateComponentInRoot } from '../checklist-components/treeUtils'
 import { HiOutlineSparkles } from 'react-icons/hi2'
 import TopBar from '../components/TopBar'
 import AIChatPopup from '../components/AIChatPopup'
@@ -114,6 +115,28 @@ function UseChecklistPage() {
       isMounted = false
     }
   }, [checklist_id, isAuthorized])
+
+  useEffect(() => {
+    function handleContextImageDeleted(event: Event) {
+      const { checklistId, deletedFileId } = (event as CustomEvent<{ checklistId?: string; deletedFileId?: string }>).detail ?? {}
+      if (checklistId !== checklist_id || !deletedFileId || !isChecklistRoot(checklist?.checklist)) return
+
+      const { root, removals } = removeImageFileReferencesFromRoot(checklist.checklist, deletedFileId)
+      if (removals.length === 0) return
+
+      setChecklist((currentChecklist) =>
+        currentChecklist
+          ? { ...currentChecklist, checklist: root as unknown as Record<string, unknown> }
+          : currentChecklist,
+      )
+      removals.forEach(({ componentId, images }) => {
+        enqueueOperation({ operation: 'updateComponent', targetId: componentId, patch: { images } })
+      })
+    }
+
+    window.addEventListener(CHECKLIST_FILES_CHANGED_EVENT, handleContextImageDeleted)
+    return () => window.removeEventListener(CHECKLIST_FILES_CHANGED_EVENT, handleContextImageDeleted)
+  }, [checklist, checklist_id, enqueueOperation])
 
   if (isCheckingAuth) {
     return (

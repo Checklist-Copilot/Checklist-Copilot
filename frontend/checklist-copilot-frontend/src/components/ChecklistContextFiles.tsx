@@ -5,8 +5,10 @@ import { FiEye, FiFileText, FiImage, FiRefreshCw, FiTrash2, FiUpload, FiX } from
 import { getToken } from '../auth/tokenStorage'
 import { API_BASE_URL } from '../api/http'
 import {
+  CHECKLIST_FILES_CHANGED_EVENT,
   deleteChecklistFile,
   listChecklistFiles,
+  notifyChecklistFilesChanged,
   uploadChecklistFileWithProgress,
   type ChecklistContextFile,
 } from '../api/files'
@@ -132,6 +134,7 @@ export function ChecklistContextFiles({ checklistId }: ChecklistContextFilesProp
           },
           ...currentFiles,
         ])
+        notifyChecklistFilesChanged(checklistId)
         setUploadState(null)
       } catch (error) {
         setUploadState({
@@ -152,6 +155,7 @@ export function ChecklistContextFiles({ checklistId }: ChecklistContextFilesProp
     try {
       await deleteChecklistFile(fileId)
       setFiles((currentFiles) => currentFiles.filter((file) => file.id !== fileId))
+      notifyChecklistFilesChanged(checklistId, fileId)
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : 'Could not delete file.')
     } finally {
@@ -203,6 +207,19 @@ export function ChecklistContextFiles({ checklistId }: ChecklistContextFilesProp
   useEffect(() => {
     void refreshFiles()
   }, [refreshFiles])
+
+  useEffect(() => {
+    function handleChecklistFilesChanged(event: Event) {
+      const changedChecklistId = (event as CustomEvent<{ checklistId?: string }>).detail?.checklistId
+      if (changedChecklistId === checklistId) void refreshFiles()
+    }
+
+    window.addEventListener(CHECKLIST_FILES_CHANGED_EVENT, handleChecklistFilesChanged)
+
+    return () => {
+      window.removeEventListener(CHECKLIST_FILES_CHANGED_EVENT, handleChecklistFilesChanged)
+    }
+  }, [checklistId, refreshFiles])
 
   useEffect(() => {
     return () => {
