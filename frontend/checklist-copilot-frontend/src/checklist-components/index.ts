@@ -6,6 +6,7 @@ export type {
   CheckboxComponent,
   CheckboxGroupComponent,
   ChecklistComponent,
+  ChecklistImage,
   ChecklistRoot,
   ImageBlockComponent,
   NumberFieldComponent,

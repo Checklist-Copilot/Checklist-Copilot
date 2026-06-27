@@ -452,6 +452,21 @@
   font-size: 14px;
 }
 
+.requiredToggle {
+  margin-bottom: 8px;
+  color: #ffe6a6;
+  background: rgba(244, 201, 93, 0.13);
+  border-color: rgba(244, 201, 93, 0.26);
+}
+
+.requiredToggle svg {
+  color: #f4c95d;
+}
+
+.requiredToggle:hover {
+  background: rgba(244, 201, 93, 0.22);
+}
+
 .toast {
   position: fixed;
   right: 28px;

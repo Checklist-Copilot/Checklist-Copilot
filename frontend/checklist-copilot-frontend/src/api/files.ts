@@ -33,6 +33,18 @@ export type FileDeleteResponse = {
 
 export type UploadProgressCallback = (progress: number) => void
 
+export const CHECKLIST_FILES_CHANGED_EVENT = 'checklist-files-changed'
+
+export function notifyChecklistFilesChanged(checklistId?: string | null, deletedFileId?: string) {
+  if (!checklistId) return
+
+  window.dispatchEvent(
+    new CustomEvent(CHECKLIST_FILES_CHANGED_EVENT, {
+      detail: { checklistId, deletedFileId },
+    }),
+  )
+}
+
 export function listChecklistFiles(
   checklistId: string,
   fileType?: 'pdf' | 'image',

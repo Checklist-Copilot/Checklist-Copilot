@@ -44,7 +44,16 @@ export function ComponentRenderer({
       )
     case 'checkboxGroup':
     case 'checkboxContainer':
-      return <CheckboxGroupRenderer component={component} isEditMode={isEditMode} onComponentUpdate={onComponentUpdate} />
+      return (
+        <CheckboxGroupRenderer
+          component={component}
+          isEditMode={isEditMode}
+          onComponentUpdate={onComponentUpdate}
+          onDeleteComponent={onDeleteComponent}
+          focusedComponentId={focusedComponentId}
+          onFocusComponent={onFocusComponent}
+        />
+      )
     case 'checkbox':
     case 'checkboxItem':
       return <CheckboxRenderer component={component} isEditMode={isEditMode} onComponentUpdate={onComponentUpdate} />
