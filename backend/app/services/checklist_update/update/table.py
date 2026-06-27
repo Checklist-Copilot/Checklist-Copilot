@@ -1,3 +1,5 @@
+import uuid
+
 from app.schemas.checklist_operations import UpdateComponentOperation
 from app.services.checklist_update._common import (
     patch_to_dict,
@@ -91,6 +93,120 @@ def _validate_row(row: object, index: int, columns: list[dict]) -> dict:
     return {"id": row_id, "cells": validated_cells}
 
 
+def _blank_value_for_column(column: dict) -> object:
+    return None if column.get("type") == "number" else ""
+
+
+def _update_table_action(checklist: dict, operation: UpdateComponentOperation, patch: dict) -> dict:
+    target = find_component_by_id(checklist, operation.targetId)
+    if target is None:
+        # Let the shared helper raise the project's standard not-found error.
+        return update_component_by_id(checklist, operation.targetId, {})
+    if target.get("type") != "table":
+        raise InvalidComponentPayloadError("tableAction patches can only target tables")
+
+    columns = target.get("columns")
+    rows = target.get("rows")
+    if not isinstance(columns, list) or not isinstance(rows, list):
+        raise InvalidComponentPayloadError("table: expected columns and rows lists")
+
+    action = patch.get("tableAction")
+
+    if action == "newRow":
+        row = {
+            "id": str(uuid.uuid4()),
+            "cells": {
+                column["id"]: _blank_value_for_column(column)
+                for column in columns
+                if isinstance(column, dict) and isinstance(column.get("id"), str)
+            },
+        }
+        return update_component_by_id(checklist, operation.targetId, {"rows": [*rows, row]})
+
+    if action == "deleteRow":
+        target_id = patch.get("targetId")
+        if not isinstance(target_id, str) or not target_id:
+            raise InvalidComponentPayloadError("table deleteRow: 'targetId' must be a row id")
+        return update_component_by_id(
+            checklist,
+            operation.targetId,
+            {"rows": [row for row in rows if not (isinstance(row, dict) and row.get("id") == target_id)]},
+        )
+
+    if action == "newColumn":
+        column_type = patch.get("columnType", "text")
+        if column_type not in _ALLOWED_COLUMN_TYPES:
+            raise InvalidComponentPayloadError("table newColumn: 'columnType' must be 'text' or 'number'")
+        label = patch.get("label")
+        if not isinstance(label, str) or not label.strip():
+            label = f"Column {len(columns) + 1}"
+        column = {"id": str(uuid.uuid4()), "label": label.strip(), "type": column_type}
+        if column_type == "number":
+            unit = patch.get("unit")
+            column["unit"] = unit.strip() if isinstance(unit, str) and unit.strip() else None
+        next_rows = []
+        for row in rows:
+            if isinstance(row, dict):
+                next_rows.append({
+                    **row,
+                    "cells": {
+                        **(row.get("cells") if isinstance(row.get("cells"), dict) else {}),
+                        column["id"]: _blank_value_for_column(column),
+                    },
+                })
+            else:
+                next_rows.append(row)
+        return update_component_by_id(checklist, operation.targetId, {"columns": [*columns, column], "rows": next_rows})
+
+    if action == "deleteColumn":
+        target_id = patch.get("targetId")
+        if not isinstance(target_id, str) or not target_id:
+            raise InvalidComponentPayloadError("table deleteColumn: 'targetId' must be a column id")
+        next_columns = [
+            column for column in columns if not (isinstance(column, dict) and column.get("id") == target_id)
+        ]
+        next_rows = []
+        for row in rows:
+            if isinstance(row, dict):
+                cells = dict(row.get("cells") if isinstance(row.get("cells"), dict) else {})
+                cells.pop(target_id, None)
+                next_rows.append({**row, "cells": cells})
+            else:
+                next_rows.append(row)
+        return update_component_by_id(checklist, operation.targetId, {"columns": next_columns, "rows": next_rows})
+
+    if action == "cell":
+        row_id = patch.get("rowId")
+        column_id = patch.get("columnId")
+        if not isinstance(row_id, str) or not isinstance(column_id, str):
+            raise InvalidComponentPayloadError("table cell: 'rowId' and 'columnId' must be strings")
+        column = next((col for col in columns if isinstance(col, dict) and col.get("id") == column_id), None)
+        if column is None:
+            raise InvalidComponentPayloadError(f"table cell: unknown column id {column_id}")
+        value = _validate_cell_value(patch.get("value"), column.get("type"), column_id, 0)
+        next_rows = []
+        found_row = False
+        for row in rows:
+            if isinstance(row, dict) and row.get("id") == row_id:
+                found_row = True
+                next_rows.append({
+                    **row,
+                    "cells": {
+                        **(row.get("cells") if isinstance(row.get("cells"), dict) else {}),
+                        column_id: value,
+                    },
+                })
+            else:
+                next_rows.append(row)
+        if not found_row:
+            raise InvalidComponentPayloadError(f"table cell: unknown row id {row_id}")
+        return update_component_by_id(checklist, operation.targetId, {"rows": next_rows})
+
+    raise InvalidComponentPayloadError(
+        "tableAction must be one of: newRow, deleteRow, newColumn, deleteColumn, cell"
+    )
+
+
 def update_table(checklist: dict, operation: UpdateComponentOperation) -> dict:
     """
     DONE (implemented):
@@ -98,6 +214,9 @@ def update_table(checklist: dict, operation: UpdateComponentOperation) -> dict:
     - Apply component-specific transformations if needed
     """
     patch = patch_to_dict(operation.patch)
+    if "tableAction" in patch:
+        return _update_table_action(checklist, operation, patch)
+
     validate_patch_fields(patch, _ALLOWED_PATCH_FIELDS, "table")
 
     if "label" in patch and (not isinstance(patch["label"], str) or not patch["label"].strip()):

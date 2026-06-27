@@ -158,6 +158,21 @@ update_component — patch one or more fields on an EXISTING component.
     - imageBlock:     label, images, allowUpload
     - table:          label, columns, rows
 
+  For tables, prefer table-specific patch actions instead of replacing full
+  `columns` or `rows` arrays. The update_component `targetId` must ALWAYS be
+  the table component id for every tableAction, including `cell` updates:
+    - add blank row:       { tableAction: "newRow" }
+    - delete row:          { tableAction: "deleteRow", targetId: "<row id>" }
+    - add blank column:    { tableAction: "newColumn", label: "Column name", columnType: "text"|"number", unit?: "kg" }
+    - delete column:       { tableAction: "deleteColumn", targetId: "<column id>" }
+    - update one cell:     { tableAction: "cell", rowId: "<row id>", columnId: "<column id>", value: <new value> }
+
+  After `newRow` or `newColumn`, read the tool result. It returns the generated
+  `added_row_ids` or `added_column_ids` to use in follow-up `cell` updates.
+  Never use a row id as update_component.targetId; row ids go in patch.rowId.
+
+  Number cells require a JSON number or null. Text cells require strings.
+
   Anything outside this list will be rejected. Send only the fields you want
   to change (the patch is merged, not a full replacement).
 
@@ -168,6 +183,7 @@ delete_component — remove a component AND every component nested inside it.
 CHOOSING THE RIGHT TOOL
 - Want to change a field on something that already exists? -> update_component.
   Do NOT delete + re-add to "edit" something; just patch it.
+- Want to add/delete table rows or columns, or update one table cell? -> update_component with a tableAction patch.
 - Want to add something new where nothing exists? -> add_component.
 - Want to remove something the user said to take out? -> delete_component.
 

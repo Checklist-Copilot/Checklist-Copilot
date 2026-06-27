@@ -21,6 +21,7 @@ class Settings(BaseSettings):
 
     OPENAI_API_KEY: str | None = None
     OPENAI_MODEL: str = "gpt-4o-mini"
+    LOG_LEVEL: str = "INFO"
 
     BACKEND_CORS_ORIGINS: list[str] = [
         "http://localhost:5173",

@@ -14,12 +14,15 @@ from __future__ import annotations
 
 import base64
 import json
+import logging
 import os
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Callable
 
 from dotenv import load_dotenv
+
+logger = logging.getLogger(__name__)
 
 
 # Default model — small + cheap + supports tool calling reliably.
@@ -277,6 +280,7 @@ class OpenAIClient:
         reply_parts: list[str] = []
 
         for _round in range(max_rounds):
+            round_number = _round + 1
             response = self._client.chat.completions.create(
                 model=self.model,
                 temperature=temperature,
@@ -286,6 +290,20 @@ class OpenAIClient:
             )
             msg = response.choices[0].message
             raw_tool_calls = msg.tool_calls or []
+            logger.info(
+                "AI tool-loop round %s/%s response: tool_calls=%s reply=%r",
+                round_number,
+                max_rounds,
+                [
+                    {
+                        "id": tc.id,
+                        "name": tc.function.name,
+                        "arguments": tc.function.arguments,
+                    }
+                    for tc in raw_tool_calls
+                ],
+                msg.content,
+            )
 
             # Capture any natural-language text the model produced this round.
             # This is the channel it uses to "talk back" to the user — e.g.
@@ -323,13 +341,33 @@ class OpenAIClient:
                     args = json.loads(tc.function.arguments or "{}")
                 except json.JSONDecodeError:
                     args = {}
+                    logger.exception(
+                        "AI tool call JSON parse failed: round=%s tool=%s raw_arguments=%r",
+                        round_number,
+                        tc.function.name,
+                        tc.function.arguments,
+                    )
                 call = ToolCall(name=tc.function.name, arguments=args)
                 all_calls.append(call)
 
                 try:
                     outcome = on_tool_call(call)
                 except Exception as exc:  # noqa: BLE001 — never let a callback error kill the loop
+                    logger.exception(
+                        "AI tool callback crashed: round=%s tool=%s arguments=%s",
+                        round_number,
+                        call.name,
+                        call.arguments,
+                    )
                     outcome = {"ok": False, "error": f"{type(exc).__name__}: {exc}"}
+
+                logger.info(
+                    "AI tool call outcome: round=%s tool=%s arguments=%s outcome=%s",
+                    round_number,
+                    call.name,
+                    call.arguments,
+                    outcome,
+                )
 
                 messages.append(
                     {

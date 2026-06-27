@@ -1,12 +1,13 @@
 import { ComponentRenderer } from './ComponentRenderer'
 import styles from './ChecklistRenderer.module.css'
+import type { ChecklistOperation } from '../api/checklist'
 import type { ChecklistRoot } from './types'
 
 type ChecklistRendererProps = {
   checklist: ChecklistRoot
   checklistId?: string
   isEditMode?: boolean
-  onComponentUpdate?: (componentId: string, patch: Record<string, unknown>) => void
+  onComponentUpdate?: (componentId: string, patch: Record<string, unknown>, operation?: ChecklistOperation) => void
   onDeleteComponent?: (componentId: string) => void
   focusedComponentId?: string
   onFocusComponent?: (componentId: string) => void

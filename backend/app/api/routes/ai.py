@@ -102,6 +102,16 @@ def ai_edit_checklist(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc)
         ) from exc
 
+    logger.info(
+        "AI edit completed: checklist_id=%s applied_calls=%s skipped_calls=%s raw_tool_calls=%s reply=%r changed=%s",
+        checklist_id,
+        result.applied_calls,
+        result.skipped_calls,
+        result.raw_tool_calls,
+        result.reply,
+        result.checklist != original_checklist,
+    )
+
     # Snapshot for undo, then save the AI-modified JSON. If the model only replied
     # without applying a structural/value change, leave the DB row untouched.
     if result.checklist != original_checklist:

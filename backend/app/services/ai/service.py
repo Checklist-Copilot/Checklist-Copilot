@@ -162,6 +162,7 @@ def _build_callback(result: AIRunResult):
     def on_tool_call(call: ToolCall) -> dict:
         result.raw_tool_calls.append({"name": call.name, "arguments": call.arguments})
         args = call.arguments
+        table_action_context: dict[str, Any] | None = None
 
         try:
             if call.name == "add_component":
@@ -195,10 +196,26 @@ def _build_callback(result: AIRunResult):
                     position=args.get("position", "end"),
                 )
             elif call.name == "update_component":
+                target_id = args["targetId"]
+                patch = args["patch"]
+                if isinstance(patch, dict) and isinstance(patch.get("tableAction"), str):
+                    target = find_component_by_id(result.checklist, target_id)
+                    if target and target.get("type") == "table":
+                        table_action_context = {
+                            "action": patch.get("tableAction"),
+                            "targetId": target_id,
+                            "row_ids_before": [
+                                row.get("id") for row in target.get("rows", []) if isinstance(row, dict)
+                            ],
+                            "column_ids_before": [
+                                column.get("id") for column in target.get("columns", []) if isinstance(column, dict)
+                            ],
+                        }
+
                 op = UpdateComponentOperation.model_construct(
                     operation="updateComponent",
-                    targetId=args["targetId"],
-                    patch=args["patch"],
+                    targetId=target_id,
+                    patch=patch,
                 )
             elif call.name == "delete_component":
                 op = DeleteComponentOperation.model_construct(
@@ -232,6 +249,29 @@ def _build_callback(result: AIRunResult):
                 "humanReadableId": hrid,
             }
         if call.name == "update_component":
+            if table_action_context:
+                target = find_component_by_id(result.checklist, table_action_context["targetId"])
+                rows = target.get("rows", []) if isinstance(target, dict) else []
+                columns = target.get("columns", []) if isinstance(target, dict) else []
+                row_ids_after = [row.get("id") for row in rows if isinstance(row, dict)]
+                column_ids_after = [column.get("id") for column in columns if isinstance(column, dict)]
+                added_row_ids = [row_id for row_id in row_ids_after if row_id not in table_action_context["row_ids_before"]]
+                added_column_ids = [
+                    column_id for column_id in column_ids_after if column_id not in table_action_context["column_ids_before"]
+                ]
+
+                return {
+                    "ok": True,
+                    "updated_id": args.get("targetId"),
+                    "tableAction": table_action_context["action"],
+                    "added_row_ids": added_row_ids,
+                    "added_column_ids": added_column_ids,
+                    "message": (
+                        "For follow-up tableAction='cell' calls, keep targetId set to this table id. "
+                        "Use the added row id as rowId. Do not use row ids as targetId."
+                    ),
+                }
+
             return {"ok": True, "updated_id": args.get("targetId")}
         if call.name == "delete_component":
             return {"ok": True, "deleted_id": args.get("targetId")}

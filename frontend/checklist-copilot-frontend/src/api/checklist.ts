@@ -53,6 +53,8 @@ export type ChecklistOperation =
   | { operation: 'addComponent'; targetContainerId: string; position?: string | Record<string, unknown>; component: AddComponentPayload }
   | { operation: 'updateComponent'; targetId: string; patch: Record<string, unknown> }
   | { operation: 'deleteComponent'; targetId: string }
+  | { operation: 'deleteTableColumn'; targetId: string; columnId: string }
+  | { operation: 'deleteTableRow'; targetId: string; rowId: string }
 
 function defaultComponentLabel(type: string) {
   switch (type) {
