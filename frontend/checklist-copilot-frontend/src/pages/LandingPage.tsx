@@ -10,7 +10,9 @@ import { HiOutlineSparkles } from 'react-icons/hi2'
 import checklyLogo from '../assets/logo.svg'
 import styles from '../page-styles/LandingPage.module.css'
 import { getToken } from '../auth/tokenStorage'
+import { pingBackendHealth } from '../api/health'
 
+// Renders the public landing page and starts warming the backend as soon as visitors arrive.
 function LandingPage() {
   const navigate = useNavigate()
   const [isDemoOpen, setIsDemoOpen] = useState(false)
@@ -18,6 +20,10 @@ function LandingPage() {
   function handleLogoClick() {
     navigate(getToken() ? '/home' : '/')
   }
+
+  useEffect(() => {
+    void pingBackendHealth().catch(() => undefined)
+  }, [])
 
   useEffect(() => {
     if (!isDemoOpen) return
