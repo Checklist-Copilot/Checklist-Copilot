@@ -162,7 +162,7 @@ function UseChecklistPage() {
           className={styles.aiButton}
           type="button"
           aria-label="Open AI assistant"
-          onClick={() => setIsAIChatOpen(true)}
+          onClick={() => setIsAIChatOpen((isOpen) => !isOpen)}
         >
           <HiOutlineSparkles />
         </button>

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
-import { FiCheckCircle, FiPlus } from 'react-icons/fi'
+import { FiCheckCircle, FiPlus, FiX } from 'react-icons/fi'
 import { HiOutlineSparkles } from 'react-icons/hi2'
 import styles from '../page-styles/UseChecklistPage.module.css'
 import editStyles from '../page-styles/EditChecklistPage.module.css'
@@ -50,6 +50,9 @@ function EditChecklistPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [isAIChatOpen, setIsAIChatOpen] = useState(false)
+  const [isComponentPanelOpen, setIsComponentPanelOpen] = useState(false)
+  const [isComponentPanelClosing, setIsComponentPanelClosing] = useState(false)
+  const [shouldRenderComponentPanel, setShouldRenderComponentPanel] = useState(false)
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(() => Boolean(routeState?.openAiReview))
   const [isReviewingChecklist, setIsReviewingChecklist] = useState(false)
   const [aiMessages, setAiMessages] = useState<ChatMessage[]>([
@@ -97,6 +100,34 @@ function EditChecklistPage() {
   function handleLogout() {
     removeToken()
     navigate('/')
+  }
+
+  // Keeps the component library mounted long enough to play the same closing
+  // motion as the AI chat popup before removing it from the page.
+  useEffect(() => {
+    const animationFrame = window.requestAnimationFrame(() => {
+      if (isComponentPanelOpen) {
+        setShouldRenderComponentPanel(true)
+        setIsComponentPanelClosing(false)
+        return
+      }
+
+      if (shouldRenderComponentPanel) {
+        setIsComponentPanelClosing(true)
+      }
+    })
+
+    return () => window.cancelAnimationFrame(animationFrame)
+  }, [isComponentPanelOpen, shouldRenderComponentPanel])
+
+  function handleComponentPanelClose() {
+    setIsComponentPanelOpen(false)
+  }
+
+  function handleComponentPanelAnimationEnd() {
+    if (!isComponentPanelClosing) return
+    setShouldRenderComponentPanel(false)
+    setIsComponentPanelClosing(false)
   }
 
   function createId() {
@@ -514,47 +545,66 @@ function EditChecklistPage() {
 
       <main className={styles.page}>
         <div className={styles.editLayout}>
-          <aside className={styles.componentSidebar}>
-            <p className={styles.sidebarTitle}>Components</p>
-            <p className={styles.sidebarHint}>Click an item to insert it.</p>
+          {shouldRenderComponentPanel ? (
+            <aside
+              className={`${styles.componentSidebar} ${isComponentPanelClosing ? styles.componentSidebarClosing : ''}`}
+              aria-label="Component library"
+              onAnimationEnd={handleComponentPanelAnimationEnd}
+            >
+              <div className={styles.sidebarHeader}>
+                <div>
+                  <p className={styles.sidebarTitle}>Components</p>
+                  <p className={styles.sidebarHint}>Click an item to insert it.</p>
+                </div>
 
-            {canToggleRequired ? (
-              <button
-                type="button"
-                className={`${styles.componentItem} ${styles.requiredToggle}`}
-                onClick={handleToggleRequired}
-              >
-                <FiCheckCircle />
-                {focusedComponent.required ? 'Make optional' : 'Make required'}
-              </button>
-            ) : null}
-
-            <div className={styles.componentList}>
-              {componentOptions.map((option) => (
                 <button
-                  key={option.type}
                   type="button"
-                  className={styles.componentItem}
-                  onClick={() => handleAddComponent(option.type)}
+                  className={styles.sidebarCloseButton}
+                  aria-label="Close component library"
+                  onClick={handleComponentPanelClose}
                 >
-                  <FiPlus />
-                  {option.label}
+                  <FiX />
                 </button>
-              ))}
-            </div>
+              </div>
 
-            <UndoRedo
-              ref={undoRedoRef}
-              checklistId={checklist_id}
-              isSaving={isSaving}
-              pendingCount={pendingCount}
-              clearQueue={clearQueue}
-              onServerChecklist={acceptServerChecklist}
-              setEditableChecklist={setEditableChecklist}
-              setErrorMessage={setErrorMessage}
-              showToast={showToast}
-            />
-          </aside>
+              {canToggleRequired ? (
+                <button
+                  type="button"
+                  className={`${styles.componentItem} ${styles.requiredToggle}`}
+                  onClick={handleToggleRequired}
+                >
+                  <FiCheckCircle />
+                  {focusedComponent.required ? 'Make optional' : 'Make required'}
+                </button>
+              ) : null}
+
+              <div className={styles.componentList}>
+                {componentOptions.map((option) => (
+                  <button
+                    key={option.type}
+                    type="button"
+                    className={styles.componentItem}
+                    onClick={() => handleAddComponent(option.type)}
+                  >
+                    <FiPlus />
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+
+              <UndoRedo
+                ref={undoRedoRef}
+                checklistId={checklist_id}
+                isSaving={isSaving}
+                pendingCount={pendingCount}
+                clearQueue={clearQueue}
+                onServerChecklist={acceptServerChecklist}
+                setEditableChecklist={setEditableChecklist}
+                setErrorMessage={setErrorMessage}
+                showToast={showToast}
+              />
+            </aside>
+          ) : null}
 
           <section className={`${styles.content} ${styles.editContent}`}>
             <header className={styles.checklistHeader}>
@@ -622,10 +672,20 @@ function EditChecklistPage() {
       ) : null}
 
         <button
+          className={styles.componentButton}
+          type="button"
+          aria-label="Open component library"
+          aria-pressed={isComponentPanelOpen}
+          onClick={() => setIsComponentPanelOpen((isOpen) => !isOpen)}
+        >
+          <FiPlus />
+        </button>
+
+        <button
           className={styles.aiButton}
           type="button"
           aria-label="Open AI assistant"
-          onClick={() => setIsAIChatOpen(true)}
+          onClick={() => setIsAIChatOpen((isOpen) => !isOpen)}
         >
           <HiOutlineSparkles />
         </button>
