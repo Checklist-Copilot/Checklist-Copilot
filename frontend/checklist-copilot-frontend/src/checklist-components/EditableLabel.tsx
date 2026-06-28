@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useLayoutEffect, useRef, useState } from 'react'
 import styles from './EditableLabel.module.css'
 
 type EditableLabelProps = {
@@ -18,7 +18,14 @@ export function EditableLabel({
 }: EditableLabelProps) {
   const [draftValue, setDraftValue] = useState(value)
   const [isFocused, setIsFocused] = useState(false)
+  const inputRef = useRef<HTMLTextAreaElement | null>(null)
 
+  useLayoutEffect(() => {
+    if (!isEditMode || !inputRef.current) return
+
+    inputRef.current.style.height = 'auto'
+    inputRef.current.style.height = `${inputRef.current.scrollHeight}px`
+  }, [draftValue, isEditMode, value])
 
   if (!isEditMode) return <>{value}</>
 
@@ -40,9 +47,11 @@ export function EditableLabel({
   }
 
   return (
-    <input
+    <textarea
+      ref={inputRef}
       className={styles.input}
       value={isFocused ? draftValue : value}
+      rows={1}
       aria-label={ariaLabel ?? 'Component label'}
       onFocus={() => {
         setIsFocused(true)

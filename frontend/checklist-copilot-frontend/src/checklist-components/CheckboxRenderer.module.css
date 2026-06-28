@@ -32,3 +32,36 @@
   font-size: 12px;
   font-weight: 900;
 }
+
+@media (max-width: 620px) {
+  .item {
+    min-height: 40px;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 8px;
+    font-size: 13px;
+    line-height: 1.25;
+  }
+
+  .editMode {
+    padding-right: 34px;
+  }
+
+  .item span:not(.requiredBadge) {
+    flex: 0 1 220px;
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .checkboxInput {
+    width: 16px;
+    height: 16px;
+    margin-top: 2px;
+  }
+
+  .requiredBadge {
+    margin-left: 0;
+    padding: 3px 7px;
+    font-size: 10px;
+  }
+}

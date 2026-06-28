@@ -201,7 +201,7 @@ export function TableRenderer({ component, isEditMode = false, onComponentUpdate
   }
 
   return (
-    <section className={styles.block} data-component-id={component.id}>
+    <section className={`${styles.block} ${isEditMode ? styles.editMode : ''}`} data-component-id={component.id}>
       <h3 className={styles.title}>
         <EditableLabel
           value={componentTitle(component)}

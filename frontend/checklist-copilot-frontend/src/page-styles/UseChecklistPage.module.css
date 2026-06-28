@@ -260,13 +260,24 @@
 
 @media (max-width: 760px) {
   .content {
-    width: min(100% - 28px, 920px);
-    padding-top: 24px;
+    width: min(100% - 12px, 920px);
+    padding-top: 20px;
+  }
+
+  .editLayout {
+    width: min(100% - 12px, 920px);
+    padding-top: 20px;
+  }
+
+  .editContent {
+    width: 100%;
+    margin: 0;
   }
 
   .checklistShell {
-    padding: 10px;
-    border-radius: 22px;
+    width: 100%;
+    padding: 6px;
+    border-radius: 18px;
     overflow-x: auto;
   }
 

@@ -23,7 +23,7 @@ export function CheckboxGroupRenderer({
   onFocusComponent,
 }: CheckboxGroupRendererProps) {
   return (
-    <section className={styles.group} data-component-id={component.id} aria-labelledby={`${component.id}-title`}>
+    <section className={`${styles.group} ${isEditMode ? styles.editMode : ''}`} data-component-id={component.id} aria-labelledby={`${component.id}-title`}>
       <div className={styles.header}>
         <h3 className={styles.title} id={`${component.id}-title`}>
           <EditableLabel
