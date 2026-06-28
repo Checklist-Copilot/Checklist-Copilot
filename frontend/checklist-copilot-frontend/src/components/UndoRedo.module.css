@@ -8,6 +8,22 @@
   margin-bottom: 10px;
 }
 
+.historyTitle {
+  margin: 0;
+  color: #f8f5ff;
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.historyHint {
+  margin: 6px 0 0;
+  color: #9f96b4;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
 .historyButtons {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -68,4 +84,52 @@
 .discardSessionButton:focus-visible {
   outline: 3px solid rgba(34, 211, 238, 0.55);
   outline-offset: 3px;
+}
+
+@media (max-width: 560px) {
+  .historySection {
+    margin-top: 10px;
+    padding-top: 10px;
+  }
+
+  .historyHeader {
+    margin-bottom: 8px;
+  }
+
+  .historyButtons {
+    gap: 6px;
+  }
+
+  .historyButton,
+  .discardSessionButton {
+    appearance: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    border: 1px solid rgba(248, 245, 255, 0.14);
+    border-radius: 9px;
+    font-size: 11px;
+    font-weight: 900;
+  }
+
+  .historyButton {
+    min-height: 30px;
+    background: rgba(253, 230, 138, 0.1);
+    color: #fde68a;
+  }
+
+  .historyButton svg,
+  .discardSessionButton svg {
+    width: 13px;
+    height: 13px;
+  }
+
+  .discardSessionButton {
+    min-height: 32px;
+    margin-top: 6px;
+    padding: 0 8px;
+    background: rgba(251, 113, 133, 0.12);
+    color: #fecdd3;
+  }
 }
