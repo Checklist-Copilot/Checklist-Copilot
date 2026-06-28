@@ -18,10 +18,7 @@ Definitions (agreed with the team):
     textField    -> value is a non-empty string
     numberField  -> value is not null
     imageBlock   -> images list is non-empty
-    table        -> every required cell in every row is filled
-                    (required = column.required === true; if no required
-                    columns, the table counts as completed when it has at
-                    least one row)
+    table        -> at least one cell is filled
 """
 from __future__ import annotations
 
@@ -56,31 +53,30 @@ def _is_completed_image_block(node: dict[str, Any]) -> bool:
 
 
 def _is_completed_table(node: dict[str, Any]) -> bool:
-    """
-    Table is completed when every required cell is filled. If the table has
-    no `required` columns at all, fall back to "has at least one row."
-    """
+    """A table counts as completed once the user has filled at least one cell."""
     columns = node.get("columns") or []
     rows = node.get("rows") or []
     if not isinstance(columns, list) or not isinstance(rows, list):
         return False
 
-    required_cols = [c for c in columns if isinstance(c, dict) and c.get("required") is True]
-    if not required_cols:
-        return len(rows) > 0
-
-    if not rows:
-        return False
+    column_types = {
+        column.get("id"): column.get("type")
+        for column in columns
+        if isinstance(column, dict) and isinstance(column.get("id"), str)
+    }
 
     for row in rows:
         if not isinstance(row, dict):
-            return False
+            continue
         cells = row.get("cells") or {}
-        for col in required_cols:
-            value = cells.get(col["id"])
-            if not _cell_is_filled(value, col.get("type")):
-                return False
-    return True
+        if not isinstance(cells, dict):
+            continue
+
+        for column_id, value in cells.items():
+            if _cell_is_filled(value, column_types.get(column_id)):
+                return True
+
+    return False
 
 
 def _cell_is_filled(value: Any, col_type: str | None) -> bool:

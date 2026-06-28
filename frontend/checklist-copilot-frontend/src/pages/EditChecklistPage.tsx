@@ -13,6 +13,7 @@ import type { Checklist } from '../types/checklist'
 import { removeToken } from '../auth/tokenStorage'
 import { useRequireAuth } from '../hooks/useRequireAuth'
 import { useChecklistAutosave } from '../hooks/useChecklistAutosave'
+import { useChecklistCreatorName } from '../hooks/useChecklistCreatorName'
 import { ChecklistRenderer, mockChecklist } from '../checklist-components'
 import type { ChecklistComponent, ChecklistImage, ChecklistRoot } from '../checklist-components'
 import {
@@ -70,6 +71,7 @@ function EditChecklistPage() {
   const undoRedoRef = useRef<UndoRedoHandle>(null)
 
   const missingChecklistId = isAuthorized && !checklist_id
+  const creatorName = useChecklistCreatorName(checklist?.user_id)
 
   const acceptServerChecklist = useCallback((response: Checklist) => {
     setChecklist(response)
@@ -618,7 +620,7 @@ function EditChecklistPage() {
 
                 <div className={styles.metaRow}>
                   <span>{editableChecklist.children.length} components</span>
-                  {checklist ? <span>Creator {checklist.user_id}</span> : null}
+                  {creatorName ? <span>Creator: {creatorName}</span> : null}
                   {checklist ? <span>Created {formatDate(checklist.created_at)}</span> : null}
                   {checklist ? <span>Updated {formatDate(checklist.updated_at)}</span> : null}
                   <span>Checklist ID {checklist_id ?? 'mock'}</span>

@@ -153,6 +153,17 @@
 
 .input::placeholder { color: #756c85; }
 
+.input:-webkit-autofill,
+.input:-webkit-autofill:hover,
+.input:-webkit-autofill:focus,
+.input:-webkit-autofill:active {
+  -webkit-text-fill-color: #f8f5ff;
+  caret-color: #f8f5ff;
+  box-shadow: 0 0 0 1000px #241f35 inset, 0 0 0 4px rgba(139, 92, 246, 0.12);
+  border-color: rgba(139, 92, 246, 0.42);
+  transition: background-color 9999s ease-in-out 0s;
+}
+
 .inputIcon {
   position: absolute;
   right: 20px;

@@ -8,6 +8,7 @@ import type { Checklist } from '../types/checklist'
 import { removeToken } from '../auth/tokenStorage'
 import { useRequireAuth } from '../hooks/useRequireAuth'
 import { useChecklistAutosave } from '../hooks/useChecklistAutosave'
+import { useChecklistCreatorName } from '../hooks/useChecklistCreatorName'
 import { ChecklistRenderer, mockChecklist } from '../checklist-components'
 import type { ChecklistRoot } from '../checklist-components'
 import { removeImageFileReferencesFromRoot, updateComponentInRoot } from '../checklist-components/treeUtils'
@@ -35,6 +36,7 @@ function UseChecklistPage() {
   ])
 
   const missingChecklistId = isAuthorized && !checklist_id
+  const creatorName = useChecklistCreatorName(checklist?.user_id)
 
   const acceptServerChecklist = useCallback((response: Checklist) => {
     setChecklist(response)
@@ -155,6 +157,11 @@ function UseChecklistPage() {
   const completionPercent = checklist && checklist.total_items > 0
     ? Math.round((checklist.completed_items / checklist.total_items) * 100)
     : 0
+  const progressStatus = completionPercent === 0
+    ? 'Not Started'
+    : completionPercent === 100
+      ? 'Completed'
+      : 'In Progress'
 
   return (
     <>
@@ -182,7 +189,7 @@ function UseChecklistPage() {
         <section className={styles.content}>
           <header className={styles.checklistHeader}>
             <div>
-              <p className={styles.status}>In Progress</p>
+              <p className={styles.status}>{progressStatus}</p>
               <h1 className={styles.title}>{checklist?.title ?? 'Use Checklist'}</h1>
               <p className={styles.description}>
                 {checklist?.description ?? 'Review each section and complete the required inspection fields.'}
@@ -190,7 +197,7 @@ function UseChecklistPage() {
 
               <div className={styles.metaRow}>
                 <span>{renderedChecklist.children.length} sections</span>
-                {checklist ? <span>Creator {checklist.user_id}</span> : null}
+                {creatorName ? <span>Creator: {creatorName}</span> : null}
                 {checklist ? <span>Created {formatDate(checklist.created_at)}</span> : null}
                 {checklist ? <span>Updated {formatDate(checklist.updated_at)}</span> : null}
                 <span>Checklist ID {checklist_id ?? 'mock'}</span>
@@ -213,7 +220,10 @@ function UseChecklistPage() {
             aria-valuemax={100}
             aria-valuenow={completionPercent}
           >
-            <span className={styles.progressFill} style={{ width: `${completionPercent}%` }} />
+            <span
+              className={`${styles.progressFill} ${completionPercent === 100 ? styles.progressFillComplete : ''}`}
+              style={{ width: `${completionPercent}%` }}
+            />
           </div>
 
           {isLoading ? <p className={styles.message}>Loading checklist...</p> : null}
