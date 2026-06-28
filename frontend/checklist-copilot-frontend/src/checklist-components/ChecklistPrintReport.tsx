@@ -1,4 +1,6 @@
-import type { CSSProperties } from 'react'
+import { useEffect, useRef, useState, type CSSProperties } from 'react'
+import { API_BASE_URL } from '../api/http'
+import { getToken } from '../auth/tokenStorage'
 import checklyLogo from '../assets/logo.svg'
 import styles from './ChecklistPrintReport.module.css'
 import type { ChecklistComponent, ChecklistRoot } from './types'
@@ -14,6 +16,7 @@ type ChecklistPrintReportProps = {
   description?: string | null
   checklist: ChecklistRoot
   stats: ChecklistPrintStat[]
+  onReady?: () => void
 }
 
 /*
@@ -27,7 +30,22 @@ export function ChecklistPrintReport({
   description,
   checklist,
   stats,
+  onReady,
 }: ChecklistPrintReportProps) {
+  const imageCount = countPrintableImages(checklist)
+  const [settledImageCount, setSettledImageCount] = useState(0)
+
+  useEffect(() => {
+    setSettledImageCount(0)
+  }, [checklist])
+
+  useEffect(() => {
+    if (!onReady || settledImageCount < imageCount) return
+
+    const animationFrame = window.requestAnimationFrame(() => onReady())
+    return () => window.cancelAnimationFrame(animationFrame)
+  }, [imageCount, onReady, settledImageCount])
+
   return (
     <section className={styles.report} data-print-report aria-hidden="true">
       <header className={styles.header}>
@@ -53,6 +71,7 @@ export function ChecklistPrintReport({
             component={component}
             level={0}
             indexPath={`${index + 1}`}
+            onImageSettled={() => setSettledImageCount((count) => count + 1)}
           />
         ))}
       </div>
@@ -64,10 +83,12 @@ function PrintChecklistComponent({
   component,
   level,
   indexPath,
+  onImageSettled,
 }: {
   component: ChecklistComponent
   level: number
   indexPath: string
+  onImageSettled: () => void
 }) {
   const title = componentTitle(component)
 
@@ -84,6 +105,7 @@ function PrintChecklistComponent({
             component={child}
             level={level + 1}
             indexPath={`${indexPath}.${index + 1}`}
+            onImageSettled={onImageSettled}
           />
         ))}
       </section>
@@ -100,8 +122,8 @@ function PrintChecklistComponent({
         <ul className={styles.list}>
           {component.items.map((item) => (
             <li key={item.id}>
-              {item.checked ? '[x]' : '[ ]'} {componentTitle(item)}
               {item.required ? <span className={styles.required}>Required</span> : null}
+              {item.checked ? '[x]' : '[ ]'} {componentTitle(item)}
             </li>
           ))}
         </ul>
@@ -112,8 +134,8 @@ function PrintChecklistComponent({
   if (component.type === 'checkbox' || component.type === 'checkboxItem') {
     return (
       <p className={styles.item} style={{ '--print-level': level } as CSSProperties}>
-        {component.checked ? '[x]' : '[ ]'} {indexPath}. {title}
         {component.required ? <span className={styles.required}>Required</span> : null}
+        {component.checked ? '[x]' : '[ ]'} {indexPath}. {title}
       </p>
     )
   }
@@ -121,8 +143,8 @@ function PrintChecklistComponent({
   if (component.type === 'textField') {
     return (
       <p className={styles.item} style={{ '--print-level': level } as CSSProperties}>
-        {indexPath}. {title}: {component.value || 'Not filled'}
         {component.required ? <span className={styles.required}>Required</span> : null}
+        {indexPath}. {title}: {component.value || 'Not filled'}
       </p>
     )
   }
@@ -132,18 +154,42 @@ function PrintChecklistComponent({
 
     return (
       <p className={styles.item} style={{ '--print-level': level } as CSSProperties}>
+        {component.required ? <span className={styles.required}>Required</span> : null}
         {indexPath}. {title}: {value}
         {component.unit ? ` ${component.unit}` : ''}
-        {component.required ? <span className={styles.required}>Required</span> : null}
       </p>
     )
   }
 
   if (component.type === 'imageBlock' || component.type === 'imagesSection') {
     return (
-      <p className={styles.item} style={{ '--print-level': level } as CSSProperties}>
-        {indexPath}. {title}: {component.images.length} image{component.images.length === 1 ? '' : 's'} attached
-      </p>
+      <section className={`${styles.group} ${styles.imageGroup}`} style={{ '--print-level': level } as CSSProperties}>
+        <h3 className={styles.groupTitle}>
+          {indexPath}. {title}
+        </h3>
+        {component.description ? <p className={styles.description}>{component.description}</p> : null}
+        {component.images.length > 0 ? (
+          <div className={styles.imageGrid}>
+            {component.images.map((image) => {
+              const imageUrl = image.url ?? image.path
+              const imageLabel = image.caption ?? image.label ?? title
+
+              return (
+                <figure className={styles.imageFigure} key={getPrintImageKey(image)}>
+                  {imageUrl ? (
+                    <PrintImage src={imageUrl} alt={imageLabel} onSettled={onImageSettled} />
+                  ) : (
+                    <div className={styles.imagePlaceholder}>Image unavailable</div>
+                  )}
+                  <figcaption>{imageLabel}</figcaption>
+                </figure>
+              )
+            })}
+          </div>
+        ) : (
+          <p className={styles.emptyImages}>No images attached.</p>
+        )}
+      </section>
     )
   }
 
@@ -177,6 +223,102 @@ function PrintChecklistComponent({
   }
 
   return null
+}
+
+function PrintImage({ src, alt, onSettled }: { src: string; alt: string; onSettled: () => void }) {
+  const [objectUrl, setObjectUrl] = useState<string | null>(null)
+  const [hasError, setHasError] = useState(false)
+  const hasSettledRef = useRef(false)
+
+  function markSettled() {
+    if (hasSettledRef.current) return
+    hasSettledRef.current = true
+    onSettled()
+  }
+
+  useEffect(() => {
+    hasSettledRef.current = false
+
+    if (src.startsWith('data:') || src.startsWith('blob:')) {
+      setObjectUrl(src)
+      return
+    }
+
+    const abortController = new AbortController()
+    let currentObjectUrl: string | null = null
+
+    async function loadImage() {
+      setHasError(false)
+      setObjectUrl(null)
+
+      try {
+        const token = getToken()
+        const headers = new Headers()
+        if (token) headers.set('Authorization', `Bearer ${token}`)
+
+        const response = await fetch(resolvePrintImageUrl(src), {
+          headers,
+          signal: abortController.signal,
+        })
+
+        if (!response.ok) throw new Error('Image request failed')
+
+        const blob = await response.blob()
+        currentObjectUrl = URL.createObjectURL(blob)
+        setObjectUrl(currentObjectUrl)
+      } catch {
+        if (!abortController.signal.aborted) setHasError(true)
+      }
+    }
+
+    void loadImage()
+
+    return () => {
+      abortController.abort()
+      if (currentObjectUrl) URL.revokeObjectURL(currentObjectUrl)
+    }
+  }, [src])
+
+  useEffect(() => {
+    if (hasError) markSettled()
+  }, [hasError])
+
+  if (hasError) return <div className={styles.imagePlaceholder}>Could not load image</div>
+  if (!objectUrl) return <div className={styles.imagePlaceholder}>Loading image</div>
+
+  return <img src={objectUrl} alt={alt} onLoad={markSettled} onError={markSettled} />
+}
+
+function resolvePrintImageUrl(src: string) {
+  if (/^https?:\/\//i.test(src)) return src
+
+  const apiBaseUrl = new URL(API_BASE_URL, window.location.origin)
+  if (src.startsWith('/api/')) return `${apiBaseUrl.origin}${src}`
+  if (src.startsWith('/')) return `${apiBaseUrl.origin}${src}`
+
+  return `${API_BASE_URL.replace(/\/$/, '')}/${src}`
+}
+
+function countPrintableImages(checklist: ChecklistRoot) {
+  let count = 0
+
+  function walk(component: ChecklistComponent) {
+    if (component.type === 'section') {
+      component.children.forEach(walk)
+      return
+    }
+
+    if (component.type === 'imageBlock' || component.type === 'imagesSection') {
+      count += component.images.filter((image) => image.url || image.path).length
+    }
+  }
+
+  checklist.children.forEach(walk)
+  return count
+}
+
+function getPrintImageKey(image: { imageId?: string; id?: string; url?: string; path?: string; caption?: string | null; label?: string | null }) {
+  return image.imageId ?? image.id ?? image.url ?? image.path ?? image.caption ?? image.label ?? 'image'
 }
 
 function formatPrintValue(value: unknown) {

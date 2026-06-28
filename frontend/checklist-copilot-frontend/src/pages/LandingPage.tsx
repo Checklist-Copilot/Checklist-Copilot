@@ -75,7 +75,7 @@ function LandingPage() {
       </header>
 
       <section className={styles.hero}>
-        <div className={styles.heroBadge}>AI checklist copilot</div>
+      {/*<div className={styles.heroBadge}>AI checklist copilot</div>*/}
         <h1 className={styles.title}>
           Checklists that actually
           <br />
@@ -83,7 +83,7 @@ function LandingPage() {
         </h1>
 
         <p className={styles.subtitle}>
-          Build inspection forms, verify them with photos, and keep every review moving from one workspace.
+          Design checklist workflows with AI, refine them by hand, and complete every step with context-aware assistance.
         </p>
 
         <div className={styles.actions}>
@@ -106,24 +106,24 @@ function LandingPage() {
             <div className={styles.yellowIcon}>
               <FiCamera />
             </div>
-            <h2>Photo checks</h2>
-            <p>Visual verification</p>
+            <h2>Smart photo placement</h2>
+            <p>Upload photos and AI places them in the right checklist step.</p>
           </div>
 
           <div className={styles.featureCard}>
             <div className={styles.blueIcon}>
               <HiOutlineSparkles />
             </div>
-            <h2>AI Assistant</h2>
-            <p>Smart verification</p>
+            <h2>AI assistant</h2>
+            <p>Scaffold, edit, and complete checklist workflows with guided AI.</p>
           </div>
 
           <div className={styles.featureCard}>
             <div className={styles.greenIcon}>
               <FiList />
             </div>
-            <h2>Designer</h2>
-            <p>Drag-and-drop</p>
+            <h2>Manual designer</h2>
+            <p>Keep full control with direct editing whenever you need it.</p>
           </div>
         </div>
       </section>

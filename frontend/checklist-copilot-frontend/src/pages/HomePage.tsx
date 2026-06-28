@@ -1,5 +1,5 @@
 import { Link, useNavigate } from 'react-router-dom'
-import { useState } from 'react'
+import { useCallback, useState } from 'react'
 import { FaPlus } from 'react-icons/fa'
 import styles from '../page-styles/HomePage.module.css'
 import { deleteChecklist, getChecklistById } from '../api/checklist'
@@ -63,15 +63,18 @@ function HomePage() {
     try {
       const response = await getChecklistById(selectedChecklistId)
       setPdfChecklist(response)
-      window.setTimeout(() => {
-        window.print()
-        setIsPreparingPdf(false)
-      }, 100)
     } catch {
       setErrorMessage('Could not prepare PDF.')
       setIsPreparingPdf(false)
     }
   }
+
+  const handlePrintReportReady = useCallback(() => {
+    if (!isPreparingPdf || !pdfChecklist) return
+
+    window.print()
+    setIsPreparingPdf(false)
+  }, [isPreparingPdf, pdfChecklist])
 
   if (isCheckingAuth) {
     return (
@@ -130,7 +133,7 @@ function HomePage() {
           onDelete={handleDeleteChecklist}
         />
 
-        <HomePrintReport pdfChecklist={pdfChecklist} selectedChecklist={selectedChecklist} />
+        <HomePrintReport pdfChecklist={pdfChecklist} selectedChecklist={selectedChecklist} onReady={handlePrintReportReady} />
       </main>
 
       <ConfirmationModal

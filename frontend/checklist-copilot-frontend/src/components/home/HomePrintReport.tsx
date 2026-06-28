@@ -5,9 +5,10 @@ import { getChecklistStatus, getSelectedItemCounts } from './homePageUtils'
 type HomePrintReportProps = {
   pdfChecklist: Checklist | null
   selectedChecklist: ChecklistSummary | null
+  onReady: () => void
 }
 
-export function HomePrintReport({ pdfChecklist, selectedChecklist }: HomePrintReportProps) {
+export function HomePrintReport({ pdfChecklist, selectedChecklist, onReady }: HomePrintReportProps) {
   const pdfChecklistRoot = isChecklistRoot(pdfChecklist?.checklist) ? pdfChecklist.checklist : null
 
   if (!pdfChecklist || !selectedChecklist || !pdfChecklistRoot) return null
@@ -30,6 +31,7 @@ export function HomePrintReport({ pdfChecklist, selectedChecklist }: HomePrintRe
         { label: 'Not started', value: statusCounts['Not Started'] },
         { label: 'Completed', value: selectedChecklist.completed_items },
       ]}
+      onReady={onReady}
     />
   )
 }

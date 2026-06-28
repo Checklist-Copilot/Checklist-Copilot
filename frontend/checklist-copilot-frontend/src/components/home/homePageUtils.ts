@@ -90,9 +90,9 @@ export function getDonutStyle(statusCounts: Record<ChecklistStatus, number>) {
     '--donut-background':
       statusTotal > 0
         ? `conic-gradient(
-            #fb7185 0 ${notStartedEnd}%,
-            #d6b95a ${notStartedEnd}% ${inProgressEnd}%,
-            #3b9b70 ${inProgressEnd}% 100%
+            #ff4f73 0 ${notStartedEnd}%,
+            #ffd166 ${notStartedEnd}% ${inProgressEnd}%,
+            #4adeb8 ${inProgressEnd}% 100%
           )`
         : 'conic-gradient(rgba(255, 255, 255, 0.14) 0 100%)',
   } as CSSProperties & Record<'--donut-background', string>
