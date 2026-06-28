@@ -175,8 +175,54 @@
 }
 
 @media (max-width: 620px) {
+  .field {
+    gap: 8px;
+    padding: 10px;
+    border-radius: 14px;
+    font-size: 13px;
+  }
+
+  .labelRow {
+    align-items: flex-start;
+    line-height: 1.25;
+  }
+
+  .editMode .labelRow {
+    padding-right: 34px;
+  }
+
+  .editMode .labelRow > :first-child {
+    flex: 0 0 min(100%, 220px);
+  }
+
+  .editMode .requiredBadge {
+    position: static;
+  }
+
+  .requiredBadge {
+    padding: 3px 7px;
+    font-size: 10px;
+  }
+
+  .description,
+  .hint {
+    font-size: 12px;
+  }
+
   .inputGrid {
     grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .numberControl,
+  .unit,
+  .unitInput {
+    height: 40px;
+    min-height: 40px;
+  }
+
+  .input {
+    padding: 0 11px;
   }
 
   .unitField,

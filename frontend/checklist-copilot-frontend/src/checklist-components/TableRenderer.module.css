@@ -394,3 +394,41 @@
   color: #f8f5ff;
   cursor: pointer;
 }
+
+@media (max-width: 620px) {
+  .block {
+    gap: 10px;
+    padding: 10px;
+    border-radius: 14px;
+    font-size: 13px;
+  }
+
+  .editMode > .title {
+    padding-right: 32px;
+  }
+
+  .title {
+    max-width: 220px;
+    font-size: 14px;
+    line-height: 1.25;
+    overflow-wrap: anywhere;
+  }
+
+  .title textarea {
+    width: min(100%, 220px);
+  }
+
+  .description {
+    font-size: 12px;
+  }
+
+  .table {
+    min-width: 520px;
+  }
+
+  .table th,
+  .table td {
+    padding: 8px;
+    font-size: 12px;
+  }
+}

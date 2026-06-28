@@ -375,14 +375,34 @@
 }
 
 @media (max-width: 680px) {
+  .panel {
+    margin: 12px 0;
+    padding: 10px;
+    border-radius: 16px;
+  }
+
   .header,
   .actions {
     align-items: stretch;
     flex-direction: column;
   }
 
+  .title {
+    font-size: 17px;
+  }
+
+  .uploadButton,
+  .iconButton,
+  .iconOnlyButton,
+  .dangerButton {
+    min-height: 34px;
+    font-size: 13px;
+  }
+
   .fileItem {
     grid-template-columns: 44px minmax(0, 1fr);
+    gap: 8px;
+    padding: 8px;
   }
 
   .filePreview {

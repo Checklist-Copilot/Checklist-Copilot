@@ -125,25 +125,63 @@
 
 @media (max-width: 620px) {
   .section {
-    gap: 16px;
-    padding: 16px;
-    border-radius: 20px;
-    border-color: rgba(248, 245, 255, 0.18);
+    gap: 12px;
+    padding: 10px;
+    border: 1px solid rgba(248, 245, 255, 0.22);
+    border-radius: 18px;
+    background:
+      linear-gradient(180deg, rgba(248, 245, 255, 0.085), rgba(248, 245, 255, 0.04)),
+      radial-gradient(circle at 100% 0%, rgba(124, 58, 237, 0.14), transparent 14rem);
+    box-shadow: inset 0 1px 0 rgba(248, 245, 255, 0.08), 0 12px 34px rgba(0, 0, 0, 0.18);
   }
 
   .header {
     min-width: 0;
   }
 
+  .header > div {
+    min-width: 0;
+    width: 100%;
+  }
+
   .title {
     min-width: 0;
-    font-size: 19px;
+    align-items: flex-start;
+    font-size: 17px;
+    line-height: 1.18;
+  }
+
+  .title textarea {
+    width: min(100%, 240px);
   }
 
   .index {
-    width: 26px;
-    height: 26px;
-    border-radius: 9px;
+    width: 24px;
+    height: 24px;
+    border: 1px solid rgba(167, 139, 250, 0.44);
+    border-radius: 8px;
+    color: #f3ecff;
+    background: rgba(124, 58, 237, 0.3);
+    box-shadow: inset 0 1px 0 rgba(248, 245, 255, 0.12);
+    font-size: 11px;
+  }
+
+  .children {
+    gap: 10px;
+  }
+
+  .description {
     font-size: 12px;
+  }
+
+  .childDeleteButton {
+    top: 8px;
+    right: 8px;
+    z-index: 12;
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    font-size: 17px;
+    line-height: 1;
   }
 }

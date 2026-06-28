@@ -107,12 +107,49 @@
 
 @media (max-width: 620px) {
   .block {
+    gap: 10px;
     padding: 10px;
+    border-radius: 14px;
+    font-size: 13px;
   }
 
   .header {
     align-items: flex-start;
     flex-direction: column;
+    gap: 8px;
+  }
+
+  .editMode .header {
+    padding-right: 32px;
+  }
+
+  .header > div {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .title {
+    max-width: 220px;
+    font-size: 14px;
+    line-height: 1.25;
+    overflow-wrap: anywhere;
+  }
+
+  .title textarea {
+    width: min(100%, 220px);
+  }
+
+  .description,
+  .emptyText,
+  .caption {
+    font-size: 12px;
+  }
+
+  .uploadBadge,
+  .uploadStatus,
+  .uploadHint,
+  .uploadError {
+    font-size: 11px;
   }
 
   .images {

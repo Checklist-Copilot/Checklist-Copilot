@@ -68,3 +68,37 @@
   width: 15px;
   height: 15px;
 }
+
+@media (max-width: 620px) {
+  .group {
+    gap: 10px;
+    padding: 10px;
+    border-radius: 14px;
+    font-size: 13px;
+  }
+
+  .editMode .header {
+    padding-right: 32px;
+  }
+
+  .title {
+    max-width: 220px;
+    font-size: 14px;
+    line-height: 1.25;
+    overflow-wrap: anywhere;
+  }
+
+  .title textarea {
+    width: min(100%, 220px);
+  }
+
+  .description {
+    font-size: 12px;
+  }
+
+  .deleteItemButton {
+    right: 6px;
+    width: 24px;
+    height: 24px;
+  }
+}

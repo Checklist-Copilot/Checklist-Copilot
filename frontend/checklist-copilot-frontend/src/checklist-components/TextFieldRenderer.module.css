@@ -65,3 +65,48 @@
   background: rgba(248, 245, 255, 0.085);
   box-shadow: 0 0 0 4px rgba(124, 58, 237, 0.14);
 }
+
+@media (max-width: 620px) {
+  .field {
+    gap: 8px;
+    padding: 10px;
+    border-radius: 14px;
+    font-size: 13px;
+  }
+
+  .labelRow {
+    align-items: flex-start;
+    line-height: 1.25;
+  }
+
+  .editMode .labelRow {
+    padding-right: 34px;
+  }
+
+  .editMode .labelRow > :first-child {
+    flex: 0 0 min(100%, 220px);
+  }
+
+  .editMode .requiredBadge {
+    position: static;
+  }
+
+  .requiredBadge {
+    padding: 3px 7px;
+    font-size: 10px;
+  }
+
+  .description {
+    font-size: 12px;
+  }
+
+  .input {
+    height: 40px;
+    padding: 0 11px;
+  }
+
+  .textarea {
+    min-height: 88px;
+    padding: 11px;
+  }
+}

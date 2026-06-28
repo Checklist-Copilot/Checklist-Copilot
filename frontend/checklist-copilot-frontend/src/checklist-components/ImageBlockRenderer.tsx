@@ -82,7 +82,7 @@ export function ImageBlockRenderer({
   }
 
   return (
-    <section className={styles.block} data-component-id={component.id}>
+    <section className={`${styles.block} ${isEditMode ? styles.editMode : ''}`} data-component-id={component.id}>
       <div className={styles.header}>
         <div>
           <h3 className={styles.title}>
