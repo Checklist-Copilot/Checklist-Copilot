@@ -219,13 +219,31 @@ async def upload_image_file(
     checklist_id: uuid.UUID | None = None,
 ) -> FileModel:
     if file.content_type not in _IMAGE_CONTENT_TYPES:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Only PNG and JPEG images are allowed.")
+        # Echo back what the browser actually sent so the chat bubble shows
+        # the user WHY the upload was rejected, instead of a generic message.
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=(
+                f"Only PNG and JPEG images are allowed (got "
+                f"{file.content_type or 'unknown'!r} for {file.filename or 'this file'!r}). "
+                f"If it's an iPhone selfie, your phone likely saved it as HEIC — "
+                f"set the camera to 'Most Compatible' or convert the image to JPEG first."
+            ),
+        )
     if checklist_id is not None:
         _validate_checklist_access(db, checklist_id, user_id)
 
     content = await file.read()
     if len(content) > _MAX_IMAGE_SIZE_BYTES:
-        raise HTTPException(status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE, detail="Images must be 2 MB or smaller.")
+        size_mb = len(content) / (1024 * 1024)
+        limit_mb = _MAX_IMAGE_SIZE_BYTES / (1024 * 1024)
+        raise HTTPException(
+            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            detail=(
+                f"That image is {size_mb:.1f} MB; the limit is {limit_mb:.0f} MB. "
+                f"Re-export it at a lower resolution or compress it, then try again."
+            ),
+        )
     ext = _extension_from_upload(file, ".png")
     return await _upload_file_with_metadata_id(
         db,

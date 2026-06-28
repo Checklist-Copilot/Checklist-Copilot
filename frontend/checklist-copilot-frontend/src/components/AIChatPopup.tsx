@@ -95,13 +95,21 @@ function AIChatPopup({ isOpen, messages, setMessages, onClose, onSendMessage }: 
         ...currentMessages,
         { id: Date.now() + 1, sender: 'checkly', text: reply || 'Done.' },
       ])
-    } catch {
+    } catch (error) {
+      // Surface the real failure reason instead of the old generic
+      // "I could not update this checklist". A silent generic message
+      // is how you end up unable to tell apart "image too big", "wrong
+      // file format", "AI is down" and "your session expired".
+      const detail =
+        error && typeof error === 'object' && 'message' in error && typeof (error as { message?: unknown }).message === 'string'
+          ? (error as { message: string }).message
+          : 'Unknown error. Check the browser DevTools network tab for details.'
       setMessages((currentMessages) => [
         ...currentMessages,
         {
           id: Date.now() + 1,
           sender: 'checkly',
-          text: 'I could not update this checklist. Please try again.',
+          text: `Sorry — that didn't go through.\n\n**${detail}**`,
         },
       ])
     } finally {
