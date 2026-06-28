@@ -226,6 +226,8 @@ When adding new components:
 When the requested change is complete, stop calling tools and return a short
 confirmation message.
 
+{mode_rules}
+
 {reply_style}
 
 {operations_reference}
@@ -234,8 +236,27 @@ confirmation message.
 """
 
 
-def build_edit_system_prompt() -> str:
+_EDIT_MODE_RULES = """\
+MODE: EDIT
+- You may add, update, and delete components when the user asks for those changes.
+"""
+
+_USE_MODE_RULES = """\
+MODE: USE
+The user is filling out an existing checklist. This is a strict permission boundary.
+- You may only change existing user-entered values: checkbox.checked, textField.value, numberField.value, and existing table cell values.
+- For imageBlock components, you may remove existing images by updating the images array, and you may add the currently uploaded image by using add_image_to_block in the vision flow.
+- You must NOT add or delete checklist components, even if the user explicitly asks.
+- You must NOT add or remove table rows or columns, even if the user explicitly asks.
+- You must NOT rename labels, change required/settings, collapse sections, or otherwise alter checklist structure.
+If the user asks for a forbidden change, do not call tools for it; briefly explain that you cannot do it because the checklist is currently in use mode, where only filling existing values and managing images is allowed.
+"""
+
+
+def build_edit_system_prompt(mode: str = "edit") -> str:
+    """Build the edit-agent prompt, including stricter rules for use-mode sessions."""
     return EDIT_SYSTEM_PROMPT_TEMPLATE.format(
+        mode_rules=_USE_MODE_RULES if mode == "use" else _EDIT_MODE_RULES,
         reply_style=_REPLY_STYLE,
         operations_reference=_OPERATIONS_REFERENCE,
         component_reference=_COMPONENT_REFERENCE,
@@ -280,9 +301,10 @@ How to choose the imageBlock:
   imageBlock. If you did not attach it, state what you recognized and why no
   available imageBlock was a confident fit.
 
-You can also use `update_component` or `delete_component` if the user explicitly
-asks for unrelated edits, but stay focused on the image-attachment task by
-default.
+{mode_rules}
+
+You can also use permitted edit tools if the user explicitly asks for unrelated
+edits, but stay focused on the image-attachment task by default.
 
 The image id and URL are tracked by the server — do not include them in any
 tool call. The `add_image_to_block` tool only needs `targetBlockId` and a
@@ -294,8 +316,10 @@ tool call. The `add_image_to_block` tool only needs `targetBlockId` and a
 """
 
 
-def build_observe_system_prompt() -> str:
+def build_observe_system_prompt(mode: str = "edit") -> str:
+    """Build the vision-agent prompt, including mode-specific edit limits."""
     return OBSERVE_SYSTEM_PROMPT_TEMPLATE.format(
+        mode_rules=_USE_MODE_RULES if mode == "use" else _EDIT_MODE_RULES,
         reply_style=_REPLY_STYLE,
         component_reference=_COMPONENT_REFERENCE,
     )

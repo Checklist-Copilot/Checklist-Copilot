@@ -39,6 +39,7 @@ from app.services.ai.prompts import (
     build_observe_system_prompt,
 )
 from app.services.ai.tools import ALL_TOOLS, CREATE_TOOLS, OBSERVE_TOOLS
+from app.services.ai.use_mode_guard import AiChecklistMode, validate_use_mode_tool_call
 from app.services.checklist_update.exceptions import ChecklistOperationError
 from app.services.checklist_update.service import apply_checklist_operations
 from app.services.checklist_update.tree_utils import find_component_by_id
@@ -151,17 +152,31 @@ def _find_existing_checkbox_group(checklist: dict, container_id: str, label: str
     return None
 
 
-def _build_callback(result: AIRunResult):
+def _build_callback(result: AIRunResult, mode: AiChecklistMode = "edit"):
     """
     Build the `on_tool_call` callback the OpenAI client invokes for each tool
-    call. The callback applies the call via the regular operation pipeline,
-    updates `result`, and returns a JSON-serialisable outcome that's fed back
-    to the model so it can reference newly-created ids.
+    call. It enforces use-mode permissions before applying allowed calls via
+    the regular operation pipeline.
     """
 
     def on_tool_call(call: ToolCall) -> dict:
         result.raw_tool_calls.append({"name": call.name, "arguments": call.arguments})
         args = call.arguments
+        if mode == "use":
+            guard = validate_use_mode_tool_call(result.checklist, call)
+            if not guard.allowed:
+                reason = guard.reason or "This tool call is not allowed in use mode."
+                result.skipped_calls.append({"call": {"name": call.name, "arguments": args}, "reason": reason})
+                return {
+                    "ok": False,
+                    "error": reason,
+                    "hint": (
+                        "Tell the user this cannot be done because the checklist is in USE MODE. "
+                        "Use mode only permits updating existing user-entered values, existing "
+                        "table cells, and image attachments. Do not add/delete components or "
+                        "table rows/columns."
+                    ),
+                }
         table_action_context: dict[str, Any] | None = None
 
         try:
@@ -419,6 +434,7 @@ def edit_checklist_with_ai(
     checklist: dict,
     instruction: str,
     *,
+    mode: AiChecklistMode = "edit",
     max_rounds: int = 4,
 ) -> AIRunResult:
     """
@@ -429,9 +445,9 @@ def edit_checklist_with_ai(
     - persisting `result.checklist` back to the DB
     """
     result = AIRunResult(checklist=checklist)
-    on_tool_call = _build_callback(result)
+    on_tool_call = _build_callback(result, mode)
 
-    system_prompt = build_edit_system_prompt()
+    system_prompt = build_edit_system_prompt(mode)
     user_prompt = (
         f"Current checklist JSON:\n```json\n{json.dumps(checklist, indent=2)}\n```\n\n"
         f"User instruction:\n{instruction}"
@@ -458,6 +474,7 @@ def _build_observe_callback(
     result: AIRunResult,
     image_id: str,
     image_url: str,
+    mode: AiChecklistMode = "edit",
 ):
     """
     Callback for the vision flow. Handles `add_image_to_block` specially —
@@ -469,7 +486,7 @@ def _build_observe_callback(
     All other tool calls (`update_component`, `delete_component`) are
     delegated to the standard callback so the same code path handles them.
     """
-    standard = _build_callback(result)
+    standard = _build_callback(result, mode)
 
     def on_tool_call(call: ToolCall) -> dict:
         if call.name != "add_image_to_block":
@@ -477,6 +494,12 @@ def _build_observe_callback(
 
         result.raw_tool_calls.append({"name": call.name, "arguments": call.arguments})
         args = call.arguments
+        if mode == "use":
+            guard = validate_use_mode_tool_call(result.checklist, call)
+            if not guard.allowed:
+                reason = guard.reason or "This image tool call is not allowed in use mode."
+                result.skipped_calls.append({"call": {"name": call.name, "arguments": args}, "reason": reason})
+                return {"ok": False, "error": reason}
         try:
             target_block_id = args["targetBlockId"]
             caption = args.get("caption")
@@ -547,6 +570,7 @@ def observe_with_image(
     image_url: str,
     image_data_url: str,
     prior_messages: list[dict] | None = None,
+    mode: AiChecklistMode = "edit",
     max_rounds: int = 3,
 ) -> AIRunResult:
     """
@@ -565,9 +589,9 @@ def observe_with_image(
       frontend so the user can ask follow-up questions about the same image.
     """
     result = AIRunResult(checklist=checklist)
-    on_tool_call = _build_observe_callback(result, image_id, image_url)
+    on_tool_call = _build_observe_callback(result, image_id, image_url, mode)
 
-    system_prompt = build_observe_system_prompt()
+    system_prompt = build_observe_system_prompt(mode)
     user_text = (
         f"Current checklist JSON:\n```json\n{json.dumps(checklist, indent=2)}\n```\n\n"
         f"An image is attached to this message. (id={image_id})\n\n"

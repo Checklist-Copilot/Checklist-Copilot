@@ -22,9 +22,12 @@ export type AiObserveMessage = {
   content: string
 }
 
+export type AiChecklistMode = 'edit' | 'use'
+
 export type AiObserveRequest = {
   instruction: string
   image_ids: string[]
+  mode?: AiChecklistMode
   prior_messages?: AiObserveMessage[]
 }
 
@@ -34,14 +37,15 @@ export type AiCreateFromTextRequest = {
   description?: string | null
 }
 
-// Sends the user's chat text to the backend as an AI edit instruction.
+// Sends the user's chat text and current UI mode to the backend AI edit endpoint.
 export function editChecklistWithAi(
   checklistId: string,
   instruction: string,
+  mode: AiChecklistMode = 'edit',
 ): Promise<AiEditChecklistResponse> {
   return apiRequest<AiEditChecklistResponse>(`/ai/checklists/${checklistId}/edit`, {
     method: 'POST',
-    body: JSON.stringify({ instruction }),
+    body: JSON.stringify({ instruction, mode }),
   })
 }
 
