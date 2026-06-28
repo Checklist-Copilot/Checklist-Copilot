@@ -3,7 +3,6 @@ import { FiArrowLeft, FiArrowRight, FiTrash2 } from 'react-icons/fi'
 import { restoreChecklistJson } from '../api/checklist'
 import type { Checklist } from '../types/checklist'
 import type { ChecklistRoot } from '../checklist-components'
-import styles from '../page-styles/UseChecklistPage.module.css'
 import undoRedoStyles from './UndoRedo.module.css'
 import { ConfirmationModal } from './ConfirmationModal'
 
@@ -189,8 +188,8 @@ export const UndoRedo = forwardRef<UndoRedoHandle, UndoRedoProps>(function UndoR
   return (
     <div className={undoRedoStyles.historySection}>
       <div className={undoRedoStyles.historyHeader}>
-        <p className={styles.sidebarTitle}>Edit Session</p>
-        <p className={styles.sidebarHint}>Step through changes from this session.</p>
+        <p className={undoRedoStyles.historyTitle}>Edit Session</p>
+        <p className={undoRedoStyles.historyHint}>Step through changes from this session.</p>
       </div>
 
       <div className={undoRedoStyles.historyButtons}>

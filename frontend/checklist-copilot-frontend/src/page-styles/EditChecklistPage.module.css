@@ -1,41 +1,3 @@
-.page {
-  position: relative;
-  min-height: 100vh;
-  padding: 2rem;
-  background:
-    radial-gradient(circle at 78% 8%, rgba(139, 92, 246, 0.24), transparent 30rem),
-    linear-gradient(145deg, #0d0c18, #171322 58%, #080812);
-  color: #f8f5ff;
-  overflow: hidden;
-}
-
-.page::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  background-image: linear-gradient(rgba(255,255,255,.045) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.045) 1px, transparent 1px);
-  background-size: 58px 58px;
-  mask-image: radial-gradient(circle at 50% 35%, black, transparent 70%);
-  animation: gridDrift 18s linear infinite;
-}
-
-.content {
-  width: min(100%, 58rem);
-  margin: 5rem auto 0;
-  position: relative;
-  z-index: 1;
-  padding: 2rem;
-  border-radius: 28px;
-  background: rgba(255,255,255,.075);
-  border: 1px solid rgba(255,255,255,.13);
-  backdrop-filter: blur(18px);
-  box-shadow: 0 24px 80px rgba(0,0,0,.28);
-  animation: cardRise 760ms cubic-bezier(.16,1,.3,1) both;
-}
-
-.title { margin: 0; font-size: clamp(2rem, 5vw, 4rem); line-height: .95; font-weight: 800; letter-spacing: -0.06em; }
-
 .headerTools {
   display: flex;
   align-items: flex-start;
@@ -78,29 +40,8 @@
   outline-offset: 3px;
 }
 
-.message { margin-top: 1rem; color: #b9b0ce; }
-.error { margin-top: 1rem; color: #fb7185; }
-.json { margin-top: 1rem; border: 1px solid rgba(255,255,255,.12); border-radius: 18px; background: rgba(10,10,18,.72); color: #e8ddff; padding: 1rem; overflow: auto; font-size: 0.92rem; line-height: 1.5; }
-
-.logoutButton {
-  position: absolute;
-  top: 1.5rem;
-  right: 1.5rem;
-  z-index: 2;
-  border: 1px solid rgba(255,255,255,.14);
-  background: rgba(255,255,255,.055);
-  color: #f8f5ff;
-  border-radius: 14px;
-  padding: 0.7rem 1rem;
-  font-weight: 800;
-  cursor: pointer;
-  transition: transform 260ms cubic-bezier(.16,1,.3,1), background 260ms;
-}
-.logoutButton:hover { transform: translateY(-3px); background: rgba(255,255,255,.1); }
-@keyframes cardRise { from { opacity: 0; transform: translateY(30px) scale(.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
-@keyframes gridDrift { from { background-position: 0 0; } to { background-position: 58px 58px; } }
 @media (max-width: 760px) {
-  .headerTools { justify-content: flex-start; }
+  .headerTools {
+    justify-content: flex-start;
+  }
 }
-
-@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 1ms !important; animation-iteration-count: 1 !important; transition-duration: 1ms !important; } }

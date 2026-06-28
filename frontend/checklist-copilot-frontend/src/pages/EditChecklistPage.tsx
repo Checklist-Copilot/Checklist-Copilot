@@ -4,6 +4,7 @@ import { FiCheckCircle, FiPlus, FiX } from 'react-icons/fi'
 import { HiOutlineSparkles } from 'react-icons/hi2'
 import styles from '../page-styles/UseChecklistPage.module.css'
 import editStyles from '../page-styles/EditChecklistPage.module.css'
+import componentPanelStyles from '../page-styles/EditChecklistComponentsPanel.module.css'
 import { getChecklistById } from '../api/checklist'
 import type { ChecklistOperation } from '../api/checklist'
 import { CHECKLIST_FILES_CHANGED_EVENT, deleteChecklistFile, notifyChecklistFilesChanged } from '../api/files'
@@ -547,19 +548,19 @@ function EditChecklistPage() {
         <div className={styles.editLayout}>
           {shouldRenderComponentPanel ? (
             <aside
-              className={`${styles.componentSidebar} ${isComponentPanelClosing ? styles.componentSidebarClosing : ''}`}
+              className={`${componentPanelStyles.componentSidebar} ${isComponentPanelClosing ? componentPanelStyles.componentSidebarClosing : ''}`}
               aria-label="Component library"
               onAnimationEnd={handleComponentPanelAnimationEnd}
             >
-              <div className={styles.sidebarHeader}>
+              <div className={componentPanelStyles.sidebarHeader}>
                 <div>
-                  <p className={styles.sidebarTitle}>Components</p>
-                  <p className={styles.sidebarHint}>Click an item to insert it.</p>
+                  <p className={componentPanelStyles.sidebarTitle}>Components</p>
+                  <p className={componentPanelStyles.sidebarHint}>Click an item to insert it.</p>
                 </div>
 
                 <button
                   type="button"
-                  className={styles.sidebarCloseButton}
+                  className={componentPanelStyles.sidebarCloseButton}
                   aria-label="Close component library"
                   onClick={handleComponentPanelClose}
                 >
@@ -570,7 +571,7 @@ function EditChecklistPage() {
               {canToggleRequired ? (
                 <button
                   type="button"
-                  className={`${styles.componentItem} ${styles.requiredToggle}`}
+                  className={`${componentPanelStyles.componentItem} ${componentPanelStyles.requiredToggle}`}
                   onClick={handleToggleRequired}
                 >
                   <FiCheckCircle />
@@ -578,12 +579,12 @@ function EditChecklistPage() {
                 </button>
               ) : null}
 
-              <div className={styles.componentList}>
+              <div className={componentPanelStyles.componentList}>
                 {componentOptions.map((option) => (
                   <button
                     key={option.type}
                     type="button"
-                    className={styles.componentItem}
+                    className={componentPanelStyles.componentItem}
                     onClick={() => handleAddComponent(option.type)}
                   >
                     <FiPlus />
@@ -672,7 +673,7 @@ function EditChecklistPage() {
       ) : null}
 
         <button
-          className={styles.componentButton}
+          className={componentPanelStyles.componentButton}
           type="button"
           aria-label="Open component library"
           aria-pressed={isComponentPanelOpen}
@@ -685,6 +686,7 @@ function EditChecklistPage() {
           className={styles.aiButton}
           type="button"
           aria-label="Open AI assistant"
+          aria-pressed={isAIChatOpen}
           onClick={() => setIsAIChatOpen((isOpen) => !isOpen)}
         >
           <HiOutlineSparkles />
