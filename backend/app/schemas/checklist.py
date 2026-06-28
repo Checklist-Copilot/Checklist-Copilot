@@ -15,6 +15,11 @@ class ChecklistCreateRequest(ChecklistBase):
     pass
 
 
+class EmptyChecklistCreateRequest(BaseModel):
+    title: str
+    description: str | None = None
+
+
 class ChecklistUpdateRequest(BaseModel):
     title: str | None = None
     description: str | None = None

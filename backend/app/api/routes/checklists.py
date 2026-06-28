@@ -11,6 +11,7 @@ from app.schemas.checklist import (
     ChecklistCreateResponse,
     ChecklistDeleteResponse,
     ChecklistGetResponse,
+    EmptyChecklistCreateRequest,
     ChecklistJsonRestoreRequest,
     ChecklistListResponse,
     ChecklistSummaryResponse,
@@ -30,6 +31,7 @@ from app.services.checklist_update.service import apply_checklist_operations
 from app.services.checklists import (
     apply_stats,
     create_checklist_for_user,
+    create_empty_checklist_for_user,
     delete_checklist,
     get_checklist_for_user,
     list_checklist_file_counts_for_user,
@@ -77,6 +79,16 @@ def create_checklist_route(
     current_user: User = Depends(get_current_user),
 ) -> ChecklistCreateResponse:
     checklist = create_checklist_for_user(db, current_user.id, payload)
+    return ChecklistCreateResponse.model_validate(checklist)
+
+
+@router.post("/create-empty", response_model=ChecklistCreateResponse, status_code=status.HTTP_201_CREATED)
+def create_empty_checklist_route(
+    payload: EmptyChecklistCreateRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> ChecklistCreateResponse:
+    checklist = create_empty_checklist_for_user(db, current_user.id, payload)
     return ChecklistCreateResponse.model_validate(checklist)
 
 

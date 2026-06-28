@@ -9,6 +9,11 @@ export type ChecklistCreateRequest = {
   checklist: Record<string, unknown>
 }
 
+export type EmptyChecklistCreateRequest = {
+  title: string
+  description?: string | null
+}
+
 export function listChecklists(): Promise<ChecklistListResponse> {
   return apiRequest<ChecklistListResponse>('/checklists', { method: 'GET' })
 }
@@ -20,6 +25,14 @@ export function getChecklistById(checklistId: string): Promise<Checklist> {
 // POST /api/checklists/create — manual create, returns the persisted row.
 export function createChecklist(payload: ChecklistCreateRequest): Promise<Checklist> {
   return apiRequest<Checklist>('/checklists/create', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  })
+}
+
+// POST /api/checklists/create-empty — create a persisted checklist with an empty root tree.
+export function createEmptyChecklist(payload: EmptyChecklistCreateRequest): Promise<Checklist> {
+  return apiRequest<Checklist>('/checklists/create-empty', {
     method: 'POST',
     body: JSON.stringify(payload),
   })

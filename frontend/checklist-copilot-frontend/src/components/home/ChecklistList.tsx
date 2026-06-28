@@ -43,23 +43,16 @@ export function ChecklistList({
 }: ChecklistListProps) {
   const navigate = useNavigate()
   const [statusFilter, setStatusFilter] = useState<ChecklistStatus | 'all'>('all')
-  const [ownerFilter, setOwnerFilter] = useState('all')
   const [sortMode, setSortMode] = useState<SortMode>('updatedDesc')
   const [searchTerm, setSearchTerm] = useState('')
 
   const normalizedSearchTerm = searchTerm.trim().toLowerCase()
-  const owners = Array.from(new Set(checklists.map((checklist) => checklist.user_id))).sort()
-  const ownerFilterOptions: DropdownOption<string>[] = [
-    { value: 'all', label: 'All owners', tone: 'purple' },
-    ...owners.map((ownerId) => ({ value: ownerId, label: getOwnerName(ownerNames, ownerId), tone: 'neutral' as const })),
-  ]
   const sortedChecklists = checklists
     .filter((checklist) => {
       const matchesStatus = statusFilter === 'all' || getChecklistStatus(checklist) === statusFilter
-      const matchesOwner = ownerFilter === 'all' || checklist.user_id === ownerFilter
       const matchesSearch = checklist.title.toLowerCase().includes(normalizedSearchTerm)
 
-      return matchesStatus && matchesOwner && matchesSearch
+      return matchesStatus && matchesSearch
     })
     .sort((a, b) => {
       const updatedDiff = new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
@@ -96,13 +89,6 @@ export function ChecklistList({
               onChange={setStatusFilter}
             />
 
-            <CustomDropdown
-              label="Filter by owner"
-              value={ownerFilter}
-              options={ownerFilterOptions}
-              onChange={setOwnerFilter}
-            />
-
             <CustomDropdown label="Sort checklists" value={sortMode} options={sortOptions} onChange={setSortMode} />
           </div>
 
@@ -130,7 +116,7 @@ export function ChecklistList({
       {!isLoading && !errorMessage && checklists.length > 0 && sortedChecklists.length === 0 ? (
         <div className={styles.emptyState}>
           <h3>No matching checklists</h3>
-          <p>Try another name, status, owner, or sort option.</p>
+          <p>Try another name, status, or sort option.</p>
         </div>
       ) : null}
 

@@ -5,7 +5,7 @@ import TopBar from '../components/TopBar'
 import { TypingDots } from '../components/TypingDots'
 import { removeToken } from '../auth/tokenStorage'
 import { useRequireAuth } from '../hooks/useRequireAuth'
-import { createChecklist } from '../api/checklist'
+import { createChecklist, createEmptyChecklist } from '../api/checklist'
 import { generateChecklistWithContext } from '../api/ai'
 import { uploadChecklistPdf } from '../api/files'
 import styles from '../pages-styles/NewChecklistPage.module.css'
@@ -38,9 +38,10 @@ function NewChecklistPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [progressMessage, setProgressMessage] = useState('')
   const [hasSubmitted, setHasSubmitted] = useState(false)
+  const [shouldCreateWithAi, setShouldCreateWithAi] = useState(true)
 
   const titleError = hasSubmitted && !title.trim() ? 'Checklist title is required.' : ''
-  const descriptionError = hasSubmitted && !description.trim() ? 'Checklist description is required.' : ''
+  const descriptionError = hasSubmitted && shouldCreateWithAi && !description.trim() ? 'Checklist description is required for AI generation.' : ''
   const totalUploadSize = useMemo(() => pdfFiles.reduce((sum, file) => sum + file.size, 0), [pdfFiles])
 
   function handleLogout() {
@@ -83,7 +84,7 @@ function NewChecklistPage() {
     const trimmedTitle = title.trim()
     const trimmedDescription = description.trim()
 
-    if (!trimmedTitle || !trimmedDescription) return
+    if (!trimmedTitle || (shouldCreateWithAi && !trimmedDescription)) return
 
     setIsSubmitting(true)
     setProgressMessage('Creating checklist...')
@@ -91,6 +92,15 @@ function NewChecklistPage() {
     let newChecklistId: string | null = null
 
     try {
+      if (!shouldCreateWithAi) {
+        const createdChecklist = await createEmptyChecklist({
+          title: trimmedTitle,
+          description: trimmedDescription || null,
+        })
+        navigate(`/checklist/edit/${createdChecklist.id}`)
+        return
+      }
+
       const createdChecklist = await createChecklist({
         title: trimmedTitle,
         description: trimmedDescription,
@@ -190,11 +200,24 @@ function NewChecklistPage() {
               {descriptionError ? <p className={styles.fieldError}>{descriptionError}</p> : null}
             </div>
 
+            <label className={styles.aiOption}>
+              <input
+                type="checkbox"
+                checked={shouldCreateWithAi}
+                onChange={(event) => {
+                  setShouldCreateWithAi(event.target.checked)
+                  if (!event.target.checked) setPdfFiles([])
+                }}
+                disabled={isSubmitting}
+              />
+              <span>Create initial version of checklist with AI</span>
+            </label>
+
             <div className={styles.uploadSection}>
               <label className={styles.uploadLabel} htmlFor="pdf-upload">
                 <FiUploadCloud />
                 <span>Upload PDF context</span>
-                <small>Choose one or more PDF files, up to 10 MB each.</small>
+                <small>Choose one or more PDF files, up to 10 MB each. Used when AI generation is enabled.</small>
               </label>
               <input
                 id="pdf-upload"
@@ -203,7 +226,7 @@ function NewChecklistPage() {
                 accept="application/pdf,.pdf"
                 multiple
                 onChange={handleFileChange}
-                disabled={isSubmitting}
+                disabled={isSubmitting || !shouldCreateWithAi}
               />
 
               {pdfFiles.length > 0 ? (

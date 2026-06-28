@@ -5,7 +5,11 @@ from sqlalchemy.orm import Session, load_only
 
 from app.db.models import Checklist
 from app.db.models import File as FileModel
-from app.schemas.checklist import ChecklistCreateRequest, ChecklistUpdateRequest
+from app.schemas.checklist import (
+    ChecklistCreateRequest,
+    ChecklistUpdateRequest,
+    EmptyChecklistCreateRequest,
+)
 from app.services.checklist_update.stats import recount
 
 
@@ -77,6 +81,26 @@ def create_checklist_for_user(db: Session, user_id: uuid.UUID, payload: Checklis
         title=payload.title,
         description=payload.description,
         checklist=payload.checklist,
+        checklist_prev=None,
+    )
+    apply_stats(checklist)
+    db.add(checklist)
+    db.commit()
+    db.refresh(checklist)
+    return checklist
+
+
+def create_empty_checklist_for_user(
+    db: Session,
+    user_id: uuid.UUID,
+    payload: EmptyChecklistCreateRequest,
+) -> Checklist:
+    """Create a checklist row with the canonical empty root tree and no AI-generated content."""
+    checklist = Checklist(
+        user_id=user_id,
+        title=payload.title,
+        description=payload.description,
+        checklist={"id": "root", "type": "root", "children": []},
         checklist_prev=None,
     )
     apply_stats(checklist)

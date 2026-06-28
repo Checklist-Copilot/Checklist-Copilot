@@ -152,6 +152,9 @@ function UseChecklistPage() {
   if (!isAuthorized) return null
 
   const renderedChecklist = isChecklistRoot(checklist?.checklist) ? checklist.checklist : mockChecklist
+  const completionPercent = checklist && checklist.total_items > 0
+    ? Math.round((checklist.completed_items / checklist.total_items) * 100)
+    : 0
 
   return (
     <>
@@ -199,11 +202,18 @@ function UseChecklistPage() {
 
           <div className={styles.progressHeader}>
             <span>Progress (%)</span>
-            <span>33%</span>
+            <span>{completionPercent}%</span>
           </div>
 
-          <div className={styles.progressTrack} aria-hidden="true">
-            <span className={styles.progressFill} />
+          <div
+            className={styles.progressTrack}
+            role="progressbar"
+            aria-label="Checklist completion progress"
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={completionPercent}
+          >
+            <span className={styles.progressFill} style={{ width: `${completionPercent}%` }} />
           </div>
 
           {isLoading ? <p className={styles.message}>Loading checklist...</p> : null}
