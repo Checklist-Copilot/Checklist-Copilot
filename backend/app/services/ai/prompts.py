@@ -112,9 +112,19 @@ checklist for the user's request usually contains:
   - 2–5 checkbox items per checkboxGroup
   - tables with explicit columns and at least one example row
 
+HARD RULE — NO EMPTY CONTAINERS
+Every `section` you add MUST receive at least 2 components before you stop.
+Every `checkboxGroup` you add MUST receive at least 2 `checkbox` items.
+Empty sections and empty checkboxGroups are unacceptable — they look like a
+bug in the rendered UI. If you scaffold sections in an early round, you MUST
+fill them in a later round BEFORE you stop. Run as many rounds as you need.
+Before you stop, mentally walk the tree: any `section` with zero `children`
+or any `checkboxGroup` with zero `items` means you are NOT done — keep going.
+
 When (and only when) every part of the user's request is represented in the
-tree, stop calling tools and return a short plain-text confirmation. Don't
-stop early — the user expects a complete, usable checklist.
+tree AND every section/checkboxGroup you created has content, stop calling
+tools and return a short plain-text confirmation. Don't stop early — the
+user expects a complete, usable checklist.
 
 {reply_style}
 
