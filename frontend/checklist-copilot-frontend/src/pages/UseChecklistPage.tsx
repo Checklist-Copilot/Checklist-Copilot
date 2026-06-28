@@ -70,9 +70,10 @@ function UseChecklistPage() {
       ? await observeChecklistImages(checklist_id, {
           instruction: message,
           image_ids: (await Promise.all(images.map((image) => uploadChecklistImage(checklist_id, image)))).map((file) => file.id),
+          mode: 'use',
           prior_messages: buildAiPriorMessages(conversation),
         })
-      : await editChecklistWithAi(checklist_id, buildAiInstruction(message, conversation))
+      : await editChecklistWithAi(checklist_id, buildAiInstruction(message, conversation), 'use')
 
     setChecklist((currentChecklist) => {
       if (!currentChecklist) return currentChecklist

@@ -96,7 +96,7 @@ def ai_edit_checklist(
     working_checklist = copy.deepcopy(checklist.checklist)
 
     try:
-        result = edit_checklist_with_ai(working_checklist, payload.instruction)
+        result = edit_checklist_with_ai(working_checklist, payload.instruction, mode=payload.mode)
     except RuntimeError as exc:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc)
@@ -232,6 +232,7 @@ async def ai_observe(
                 image_url=image_url,
                 image_data_url=image_data_url,
                 prior_messages=prior,
+                mode=payload.mode,
             )
             working_checklist = result.checklist
             applied_calls += result.applied_calls

@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel
 
@@ -10,7 +10,9 @@ class AiCreateFromTextRequest(BaseModel):
 
 
 class AiEditChecklistRequest(BaseModel):
+    """AI edit request with the UI mode that determines allowed tool actions."""
     instruction: str
+    mode: Literal["edit", "use"] = "edit"
 
 
 class AiGenerateRequest(BaseModel):
@@ -25,11 +27,11 @@ class AiObserveChatMessage(BaseModel):
 
 class AiObserveRequest(BaseModel):
     """
-    Vision request. Images must already exist in storage (uploaded via
-    POST /api/files/upload/image) — pass their ids here. `image_id` is kept for
-    backwards compatibility with older clients that can only send one image.
+    Vision request. The mode field lets the backend enforce use-mode limits on
+    any non-image edits the model attempts while inspecting uploaded images.
     """
     instruction: str
+    mode: Literal["edit", "use"] = "edit"
     image_id: Any | None = None  # uuid; kept loose so pydantic accepts strings/UUIDs
     image_ids: list[Any] | None = None
     prior_messages: list[AiObserveChatMessage] | None = None
