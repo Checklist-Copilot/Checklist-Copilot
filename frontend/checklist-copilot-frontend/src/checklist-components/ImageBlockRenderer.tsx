@@ -8,6 +8,8 @@ import styles from './ImageBlockRenderer.module.css'
 import type { ChecklistImage, ImageBlockComponent } from './types'
 import { componentTitle, defaultLabelForType } from './utils'
 
+const MAX_IMAGES = 3
+
 type ImageBlockRendererProps = {
   component: ImageBlockComponent
   checklistId?: string
@@ -25,20 +27,50 @@ export function ImageBlockRenderer({
   const [isUploading, setIsUploading] = useState(false)
   const [uploadProgress, setUploadProgress] = useState<number | null>(null)
   const [uploadError, setUploadError] = useState<string | null>(null)
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
 
   const isSavingNewComponent = isEditMode && isTemporaryComponentId(component.id)
-  const canUpload = Boolean(component.allowUpload && checklistId && onComponentUpdate && !isSavingNewComponent)
+  const imageCount = component.images.length
+  const remainingSlots = Math.max(0, MAX_IMAGES - imageCount)
+  const isAtCapacity = remainingSlots === 0
+  const canUpload = Boolean(
+    component.allowUpload && checklistId && onComponentUpdate && !isSavingNewComponent && !isAtCapacity,
+  )
   const canDeleteImages = Boolean(onComponentUpdate)
+  const displayColumns = Math.min(Math.max(imageCount, 1), MAX_IMAGES)
+
+  useEffect(() => {
+    if (lightboxIndex === null) return
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') setLightboxIndex(null)
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [lightboxIndex])
 
   async function handleFilesSelected(event: ChangeEvent<HTMLInputElement>) {
-    const files = Array.from(event.target.files ?? [])
+    const selected = Array.from(event.target.files ?? [])
     event.target.value = ''
 
-    if (!files.length || !checklistId || !onComponentUpdate) return
+    if (!selected.length || !checklistId || !onComponentUpdate) return
+
+    const files = selected.slice(0, remainingSlots)
+    const droppedCount = selected.length - files.length
+
+    if (files.length === 0) {
+      setUploadError(`This block already holds the maximum of ${MAX_IMAGES} images.`)
+      return
+    }
 
     setIsUploading(true)
     setUploadProgress(0)
-    setUploadError(null)
+    setUploadError(
+      droppedCount > 0
+        ? `Only ${files.length} of ${selected.length} images fit; max ${MAX_IMAGES} per block.`
+        : null,
+    )
 
     try {
       const uploadedImages: ChecklistImage[] = []
@@ -54,7 +86,7 @@ export function ImageBlockRenderer({
       }
 
       onComponentUpdate(component.id, {
-        images: [...component.images, ...uploadedImages],
+        images: [...component.images, ...uploadedImages].slice(0, MAX_IMAGES),
       })
       notifyChecklistFilesChanged(checklistId)
     } catch (error) {
@@ -81,6 +113,18 @@ export function ImageBlockRenderer({
       })
   }
 
+  function handleCaptionChange(image: ChecklistImage, nextCaption: string) {
+    if (!onComponentUpdate) return
+
+    const targetKey = getImageKey(image)
+    const nextImages = component.images.map((item) =>
+      getImageKey(item) === targetKey ? { ...item, caption: nextCaption } : item,
+    )
+    onComponentUpdate(component.id, { images: nextImages })
+  }
+
+  const lightboxImage = lightboxIndex !== null ? component.images[lightboxIndex] : null
+
   return (
     <section className={`${styles.block} ${isEditMode ? styles.editMode : ''}`} data-component-id={component.id}>
       <div className={styles.header}>
@@ -99,11 +143,15 @@ export function ImageBlockRenderer({
         {component.allowUpload ? <span className={styles.uploadBadge}>Upload enabled</span> : null}
       </div>
 
-      {component.images.length > 0 ? (
-        <div className={styles.images}>
-          {component.images.map((image) => {
+      {imageCount > 0 ? (
+        <div
+          className={styles.images}
+          style={{ gridTemplateColumns: `repeat(${displayColumns}, minmax(0, 1fr))` }}
+        >
+          {component.images.slice(0, MAX_IMAGES).map((image, index) => {
             const imageUrl = image.url ?? image.path
             const imageLabel = image.caption ?? image.label ?? componentTitle(component)
+            const fallbackCaption = image.label ?? defaultLabelForType(component.type) ?? 'Image'
 
             return (
               <figure className={styles.card} key={getImageKey(image)}>
@@ -121,13 +169,26 @@ export function ImageBlockRenderer({
                     <FiX />
                   </button>
                 ) : null}
-                {imageUrl ? (
-                  <AuthenticatedImage src={imageUrl} alt={imageLabel} />
-                ) : (
-                  <div className={styles.placeholder}>Image</div>
-                )}
+                <button
+                  type="button"
+                  className={styles.imageButton}
+                  aria-label={`Open ${imageLabel} in full size`}
+                  onClick={() => setLightboxIndex(index)}
+                >
+                  {imageUrl ? (
+                    <AuthenticatedImage src={imageUrl} alt={imageLabel} />
+                  ) : (
+                    <div className={styles.placeholder}>Image</div>
+                  )}
+                </button>
                 <figcaption className={styles.caption}>
-                  {imageLabel}
+                  <EditableLabel
+                    value={imageLabel}
+                    fallbackValue={fallbackCaption}
+                    isEditMode={Boolean(onComponentUpdate)}
+                    ariaLabel="Image caption"
+                    onChange={(value) => handleCaptionChange(image, value)}
+                  />
                   {image.bucket || image.mimeType ? (
                     <span className={styles.meta}>{[image.bucket, image.mimeType].filter(Boolean).join(' · ')}</span>
                   ) : null}
@@ -158,15 +219,63 @@ export function ImageBlockRenderer({
           >
             {isUploading ? 'Uploading...' : 'Upload photo'}
           </button>
+          <span className={styles.uploadHint}>
+            {imageCount}/{MAX_IMAGES} images
+          </span>
           {isUploading && uploadProgress !== null ? (
             <span className={styles.uploadStatus}>{uploadProgress}%</span>
           ) : null}
           {isSavingNewComponent ? <span className={styles.uploadHint}>Saving image block...</span> : null}
           {!checklistId ? <span className={styles.uploadHint}>Open a saved checklist to upload.</span> : null}
+          {isAtCapacity && !isUploading ? (
+            <span className={styles.uploadHint}>Delete an image to add another.</span>
+          ) : null}
           {uploadError ? <span className={styles.uploadError}>{uploadError}</span> : null}
         </div>
       ) : null}
+
+      {lightboxImage ? (
+        <ImageLightbox
+          image={lightboxImage}
+          caption={lightboxImage.caption ?? lightboxImage.label ?? componentTitle(component)}
+          onClose={() => setLightboxIndex(null)}
+        />
+      ) : null}
     </section>
+  )
+}
+
+function ImageLightbox({
+  image,
+  caption,
+  onClose,
+}: {
+  image: ChecklistImage
+  caption: string
+  onClose: () => void
+}) {
+  const imageUrl = image.url ?? image.path
+
+  return (
+    <div
+      className={styles.lightboxBackdrop}
+      role="dialog"
+      aria-modal="true"
+      aria-label={caption}
+      onClick={onClose}
+    >
+      <div className={styles.lightboxContent} onClick={(event) => event.stopPropagation()}>
+        <button type="button" className={styles.lightboxClose} aria-label="Close image" onClick={onClose}>
+          <FiX />
+        </button>
+        {imageUrl ? (
+          <AuthenticatedImage src={imageUrl} alt={caption} />
+        ) : (
+          <div className={styles.placeholder}>Image</div>
+        )}
+        {caption ? <p className={styles.lightboxCaption}>{caption}</p> : null}
+      </div>
+    </div>
   )
 }
 
