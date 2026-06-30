@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type ChangeEvent } from 'react'
+import { createPortal } from 'react-dom'
 import { FiX } from 'react-icons/fi'
 import { API_BASE_URL } from '../api/http'
 import { deleteChecklistFile, notifyChecklistFilesChanged, uploadChecklistImageWithProgress } from '../api/files'
@@ -245,6 +246,8 @@ export function ImageBlockRenderer({
   )
 }
 
+// Renders the enlarged image outside the checklist tree so fixed positioning is always viewport-relative.
+// This avoids transformed or scrolled checklist containers becoming the modal's containing block.
 function ImageLightbox({
   image,
   caption,
@@ -256,7 +259,7 @@ function ImageLightbox({
 }) {
   const imageUrl = image.url ?? image.path
 
-  return (
+  return createPortal(
     <div
       className={styles.lightboxBackdrop}
       role="dialog"
@@ -275,7 +278,8 @@ function ImageLightbox({
         )}
         {caption ? <p className={styles.lightboxCaption}>{caption}</p> : null}
       </div>
-    </div>
+    </div>,
+    document.body,
   )
 }
 
