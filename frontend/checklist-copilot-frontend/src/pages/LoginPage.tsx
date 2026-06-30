@@ -104,9 +104,6 @@ function LoginPage() {
                 Password
               </label>
 
-              <Link to="/forgot-password" className={styles.forgotLink}>
-                Forgot Password?
-              </Link>
             </div>
 
             <div className={styles.inputWrapper}>
