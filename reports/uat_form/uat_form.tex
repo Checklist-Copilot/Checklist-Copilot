@@ -1,0 +1,134 @@
+\documentclass[11pt]{article}
+
+\usepackage[a4paper,margin=1in,top=0.5in]{geometry}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{enumitem}
+\usepackage{hyperref}
+\usepackage{array}
+\usepackage{amssymb}
+\usepackage{tabularx}
+
+\newcolumntype{Y}{>{\raggedright\arraybackslash}X}
+\newcolumntype{C}{>{\centering\arraybackslash}p{0.65cm}}
+
+\newcommand{\fillline}[1]{\makebox[#1][l]{\hrulefill}}
+\newcommand{\ansline}{\par\noindent\rule{\linewidth}{0.3pt}\par\vspace{0.5em}}
+\newcommand{\ansblock}{\ansline\ansline}
+
+\makeatletter
+\renewcommand{\@maketitle}{%
+  \newpage
+  \null
+  \vskip 0.2em%
+  \begin{center}%
+  \let \footnote \thanks
+    {\LARGE \@title \par}%
+    \vskip 1em%
+    {\large
+      \lineskip .5em%
+      \begin{tabular}[t]{c}%
+        \@author
+      \end{tabular}\par}%
+    \vskip 0.5em%
+  \end{center}%
+  \par
+  \vskip 1em}
+\makeatother
+
+\title{\includegraphics[width=5.5cm]{../assets/logo.pdf}\\[0.5em]\textbf{User Acceptance Testing Form}}
+\author{Checkly}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\begin{center}
+\small This form can be completed as a PDF or via Google Forms: \href{https://docs.google.com/forms/d/e/1FAIpQLSeXisUHeyiNp6xcpsaMaFFlzQmLwat27WgNNU8XmNLZmMYivQ/viewform?usp=sharing&ouid=100005269846048668522}{Google Forms}
+\end{center}
+
+\section*{Tester Information}
+
+\begin{enumerate}[leftmargin=1.4em,itemsep=0.4em]
+  \item First name: \fillline{6cm}
+  \item Last name: \fillline{6cm}
+  \item Date: \fillline{4cm}
+  \item Age: \fillline{3cm}
+  \item Occupation: \fillline{6cm}
+  \item Device used during testing:\\
+  $\Box$ Desktop \qquad $\Box$ Tablet \textit{(recommended)} \qquad $\Box$ Mobile
+  \item Browser used: \fillline{6cm}
+  \item Have you ever used checklist software before?\\
+  $\Box$ Never \qquad $\Box$ Occasionally \qquad $\Box$ Frequently
+  \item If yes, which checklist tools have you used?\\
+  $\Box$ Apple Reminders \qquad $\Box$ Google Keep \qquad $\Box$ Microsoft To Do\\
+  $\Box$ Trello \qquad $\Box$ Paper checklists \qquad $\Box$ Other: \fillline{3cm}
+\end{enumerate}
+
+\section*{Testing Tasks}
+
+\textbf{App link:} \url{https://checkly-builder.vercel.app/}
+
+Checkly is an AI-assisted checklist tool: you create a checklist, optionally attach a PDF for context, and then fill it out --- checking off items, adding photos, and using an AI assistant to help build or complete it.
+
+\textbf{Possible use cases} (pick whichever fits you, or invent your own): a safety inspection, an equipment/maintenance check, a quality audit, a site walkthrough, a recurring cleaning or setup routine, an onboarding/training checklist, or a packing/travel checklist.
+
+Feel free to explore the app on your own. If you'd like some guidance, here are a few recommended steps:
+
+\begin{enumerate}[leftmargin=1.6em,itemsep=0.3em]
+  \item \textbf{Sign up / log in} at the link above.
+  \item \textbf{Create a new checklist} with a title and description.
+  \item \textbf{Upload a PDF} as context for the checklist.
+  \item \textbf{Build out the checklist}: add a section and a mix of item types (checkbox, text, photo).
+  \item \textbf{Use the AI Assistant} to add or modify something in the checklist.
+  \item \textbf{Run through the checklist}: check off items, fill in a text field, and upload a photo as evidence.
+  \item \textbf{Check the dashboard} for progress / stats on the checklist.
+  \item \textbf{Export the checklist to PDF}.
+\end{enumerate}
+
+\section*{Evaluation}
+
+\textit{Rate each statement from 1 (Strongly disagree) to 5 (Strongly agree).}
+
+\begin{tabularx}{\textwidth}{@{}YCCCCC@{}}
+\toprule
+Statement & 1 & 2 & 3 & 4 & 5\\
+\midrule
+First impression / clarity & $\Box$ & $\Box$ & $\Box$ & $\Box$ & $\Box$\\
+Ease of checklist creation & $\Box$ & $\Box$ & $\Box$ & $\Box$ & $\Box$\\
+Usefulness of PDF context & $\Box$ & $\Box$ & $\Box$ & $\Box$ & $\Box$\\
+AI Assistant understanding & $\Box$ & $\Box$ & $\Box$ & $\Box$ & $\Box$\\
+Trust in AI Assistant changes & $\Box$ & $\Box$ & $\Box$ & $\Box$ & $\Box$\\
+Ease of photo upload & $\Box$ & $\Box$ & $\Box$ & $\Box$ & $\Box$\\
+Dashboard clarity & $\Box$ & $\Box$ & $\Box$ & $\Box$ & $\Box$\\
+Overall satisfaction & $\Box$ & $\Box$ & $\Box$ & $\Box$ & $\Box$\\
+\bottomrule
+\end{tabularx}
+
+\vspace{0.8em}
+On a scale of 0--10, how likely are you to recommend Checkly to a colleague who does this kind of work?
+
+\begin{center}
+\begin{tabular}{*{11}{c}}
+0 & 1 & 2 & 3 & 4 & 5 & 6 & 7 & 8 & 9 & 10\\
+$\Box$ & $\Box$ & $\Box$ & $\Box$ & $\Box$ & $\Box$ & $\Box$ & $\Box$ & $\Box$ & $\Box$ & $\Box$\\
+\end{tabular}
+\end{center}
+
+\section*{Open Feedback}
+
+\begin{enumerate}[leftmargin=1.6em,itemsep=0.3em]
+  \item What did you like most about Checkly?
+  \ansblock
+  \item What was confusing, slow, or didn't work as you expected?
+  \ansblock
+  \item If you could change or add one thing, what would it be?
+  \ansblock
+  \item Is there a feature you expected to find but didn't?
+  \ansblock
+  \item What improvements would you suggest for Checkly?
+  \ansblock
+\end{enumerate}
+
+\end{document}

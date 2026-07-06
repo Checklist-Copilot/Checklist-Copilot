@@ -1,0 +1,219 @@
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[english]{babel}
+\usepackage{geometry}
+\usepackage{array}
+\usepackage{booktabs}
+\usepackage{enumitem}
+\usepackage{amssymb}
+\usepackage[hidelinks]{hyperref}
+\usepackage{longtable}
+\usepackage{tabularx}
+
+\geometry{margin=2.4cm}
+\setlist[itemize]{leftmargin=1.4em,itemsep=0.25em,topsep=0.35em}
+\setlist[enumerate]{leftmargin=1.6em,itemsep=0.25em,topsep=0.35em}
+
+\renewcommand{\arraystretch}{1.25}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.65em}
+
+\newcolumntype{Y}{>{\raggedright\arraybackslash}X}
+\newcolumntype{C}{>{\centering\arraybackslash}p{0.65cm}}
+
+\newcommand{\fillline}[1]{\makebox[#1][l]{\hrulefill}}
+\newcommand{\ansline}{\par\noindent\rule{\linewidth}{0.3pt}\par\vspace{0.5em}}
+\newcommand{\ansblock}{\ansline\ansline}
+
+\title{Checkly --- User Acceptance Testing Survey\vspace{0.3em}\\\large Draft v1 --- Survey Instrument}
+\author{}
+\date{}
+
+\begin{document}
+
+\maketitle
+
+\section*{Note to the Team}
+
+\textit{Delete this section before sending the survey out.}
+
+\begin{enumerate}
+  \item Fill in the placeholders in brackets (app link, test account / sample PDF, deadline, contact email).
+  \item Decide on a sending format: paste the questions into Google Forms / Typeform, or send this document as a fillable PDF.
+  \item Aim for \textbf{at least 5 participants} who plausibly match our target user (someone who does recurring inspections, audits, QA checks, or checklist-based work --- e.g.\ a safety officer, facility/maintenance technician, QA engineer, or site supervisor). A less perfect proxy, such as a teammate or another student, is acceptable as a backup but should be noted as such in the report.
+  \item Everything from the next section onward is what participants actually see.
+\end{enumerate}
+
+\section*{Introduction}
+
+Thank you for taking the time to try out \textbf{Checkly}!
+
+Checkly is an AI-assisted checklist tool: you design a checklist (e.g.\ a safety inspection, equipment check, or quality audit), optionally attach reference documents (PDFs) for context, and then fill it out --- verifying items with photos and an AI assistant that can help you build and check off the form by chatting with it.
+
+We are building this as part of a university project and would love your honest feedback --- including the negative kind. It helps us much more than compliments.
+
+\textbf{Time required:} approximately 15--20 minutes.\\
+\textbf{What you'll do:} try a few core tasks in the app, then answer some short questions.\\
+\textbf{Privacy:} your responses will only be used for this course project's evaluation. You can skip your name/email if you prefer to stay anonymous.
+
+\textbf{App link:} \url{https://checkly-builder.vercel.app/}\\
+\textbf{Test account / login (if needed):} [INSERT CREDENTIALS]\\
+\textbf{Sample PDF to upload during the task} (if you don't have your own): [INSERT LINK TO SAMPLE PDF, e.g.\ a short safety-guideline or manual]\\
+\textbf{Please complete this by:} [INSERT DEADLINE]
+
+If you get stuck or something breaks, please note it down anyway in the feedback section --- that is valuable too.
+
+\section*{Part 1 --- About You}
+
+\begin{enumerate}
+  \item Name \textit{(optional)} \fillline{6cm}
+  \item Email \textit{(optional --- only if you're open to a short follow-up question)}\\
+  \fillline{6cm}
+  \item What is your current role / occupation? \fillline{6cm}
+  \item Does your work or studies involve recurring inspections, audits, quality checks, or checklist-based tasks (e.g.\ safety inspections, equipment/maintenance checks, site audits, QA checklists)?\\
+  $\Box$ Yes \qquad $\Box$ No
+  \item If yes, briefly describe what kind: \fillline{8cm}
+  \item What do you currently use to manage these checklists/inspections?
+  \begin{itemize}[label=$\Box$]
+    \item Paper forms
+    \item Excel / Google Sheets
+    \item Word / PDF templates
+    \item Dedicated inspection software (please name it: \fillline{4cm})
+    \item Nothing formal
+    \item Other: \fillline{5cm}
+  \end{itemize}
+  \item How comfortable are you with learning new software/apps in general?
+  \begin{center}
+  \begin{tabular}{*{5}{c}}
+  1 & 2 & 3 & 4 & 5\\
+  $\Box$ & $\Box$ & $\Box$ & $\Box$ & $\Box$\\
+  \end{tabular}\\[0.2em]
+  {\small (1 = Not comfortable, 5 = Very comfortable)}
+  \end{center}
+\end{enumerate}
+
+\section*{Part 2 --- Try Checkly}
+
+Please complete these steps in order. Don't worry about doing it ``perfectly'' --- we want to see how it feels for a first-time user.
+
+\begin{enumerate}
+  \item \textbf{Sign up / log in} at \url{https://checkly-builder.vercel.app/}.
+  \item \textbf{Create a new checklist} --- give it a title and description (e.g.\ ``Safety inspection --- Warehouse A'').
+  \item \textbf{Upload a PDF as context} for the checklist (use the sample PDF above, or one of your own, e.g.\ a guideline/manual).
+  \item \textbf{Build out the checklist}: add at least one section, and a mix of item types (e.g.\ a checkbox, a text field, and a photo-check item).
+  \item \textbf{Open the AI Assistant} and ask it to do at least one thing for you --- e.g.\ ``Add a section for fire safety with two checkbox items'' or ``What does this checklist cover?''
+  \item \textbf{Run through the checklist} as if performing the inspection: check off a few items, fill in a text field, and upload at least one photo as evidence.
+  \item \textbf{Go to the dashboard} and check your progress / stats for the checklist you created.
+  \item \textbf{Export the checklist to PDF} using the ``Create PDF'' option.
+\end{enumerate}
+
+\section*{Part 3 --- Evaluation}
+
+\textit{Rate each statement from 1 (Strongly disagree) to 5 (Strongly agree).}
+
+\subsection*{3.1 First impression \& onboarding}
+
+\begin{tabularx}{\textwidth}{@{}YCCCCC@{}}
+\toprule
+Statement & 1 & 2 & 3 & 4 & 5\\
+\midrule
+It was easy to understand what Checkly does within the first minute. & $\Box$ & $\Box$ & $\Box$ & $\Box$ & $\Box$\\
+I knew what to do without needing outside instructions. & $\Box$ & $\Box$ & $\Box$ & $\Box$ & $\Box$\\
+The interface felt clear and uncluttered. & $\Box$ & $\Box$ & $\Box$ & $\Box$ & $\Box$\\
+\bottomrule
+\end{tabularx}
+
+\subsection*{3.2 Creating a checklist \& PDF context}
+
+\begin{tabularx}{\textwidth}{@{}YCCCCC@{}}
+\toprule
+Statement & 1 & 2 & 3 & 4 & 5\\
+\midrule
+Creating a new checklist was straightforward. & $\Box$ & $\Box$ & $\Box$ & $\Box$ & $\Box$\\
+Attaching a PDF as context felt useful, not just an extra step. & $\Box$ & $\Box$ & $\Box$ & $\Box$ & $\Box$\\
+Adding sections and different item types (checkbox, text, photo, etc.) was intuitive. & $\Box$ & $\Box$ & $\Box$ & $\Box$ & $\Box$\\
+\bottomrule
+\end{tabularx}
+
+\subsection*{3.3 AI Assistant}
+
+\begin{tabularx}{\textwidth}{@{}YCCCCC@{}}
+\toprule
+Statement & 1 & 2 & 3 & 4 & 5\\
+\midrule
+The AI Assistant understood what I asked it to do. & $\Box$ & $\Box$ & $\Box$ & $\Box$ & $\Box$\\
+The changes the AI made matched what I expected. & $\Box$ & $\Box$ & $\Box$ & $\Box$ & $\Box$\\
+I trusted the AI Assistant's changes to my checklist. & $\Box$ & $\Box$ & $\Box$ & $\Box$ & $\Box$\\
+The AI Assistant saved me time compared to doing it manually. & $\Box$ & $\Box$ & $\Box$ & $\Box$ & $\Box$\\
+\bottomrule
+\end{tabularx}
+
+\subsection*{3.4 Photo verification}
+
+\begin{tabularx}{\textwidth}{@{}YCCCCC@{}}
+\toprule
+Statement & 1 & 2 & 3 & 4 & 5\\
+\midrule
+Uploading a photo as proof for a checklist item was easy. & $\Box$ & $\Box$ & $\Box$ & $\Box$ & $\Box$\\
+I see clear value in photo verification for real inspections. & $\Box$ & $\Box$ & $\Box$ & $\Box$ & $\Box$\\
+\bottomrule
+\end{tabularx}
+
+\subsection*{3.5 Dashboard \& progress tracking}
+
+\begin{tabularx}{\textwidth}{@{}YCCCCC@{}}
+\toprule
+Statement & 1 & 2 & 3 & 4 & 5\\
+\midrule
+The dashboard gave me a clear sense of progress/status. & $\Box$ & $\Box$ & $\Box$ & $\Box$ & $\Box$\\
+The PDF export would be useful for sharing/reporting results. & $\Box$ & $\Box$ & $\Box$ & $\Box$ & $\Box$\\
+\bottomrule
+\end{tabularx}
+
+\subsection*{3.6 Overall}
+
+\begin{tabularx}{\textwidth}{@{}YCCCCC@{}}
+\toprule
+Statement & 1 & 2 & 3 & 4 & 5\\
+\midrule
+Checkly would solve a real problem I (or someone in my field) have today. & $\Box$ & $\Box$ & $\Box$ & $\Box$ & $\Box$\\
+I would consider using Checkly (or recommending it) for real inspection/checklist work. & $\Box$ & $\Box$ & $\Box$ & $\Box$ & $\Box$\\
+Overall, I am satisfied with my experience using Checkly. & $\Box$ & $\Box$ & $\Box$ & $\Box$ & $\Box$\\
+\bottomrule
+\end{tabularx}
+
+\subsection*{Likelihood to recommend}
+
+On a scale of 0--10, how likely are you to recommend Checkly to a colleague who does this kind of work?
+
+\begin{center}
+\begin{tabular}{*{11}{c}}
+0 & 1 & 2 & 3 & 4 & 5 & 6 & 7 & 8 & 9 & 10\\
+$\Box$ & $\Box$ & $\Box$ & $\Box$ & $\Box$ & $\Box$ & $\Box$ & $\Box$ & $\Box$ & $\Box$ & $\Box$\\
+\end{tabular}
+\end{center}
+
+\section*{Part 4 --- Open Feedback}
+
+\begin{enumerate}
+  \item What did you like most about Checkly?
+  \ansblock
+  \item What was confusing, slow, or didn't work as you expected?
+  \ansblock
+  \item If you could change or add one thing, what would it be?
+  \ansblock
+  \item Is there a feature you expected to find but didn't?
+  \ansblock
+  \item Any other comments?
+  \ansblock
+\end{enumerate}
+
+\section*{Closing}
+
+Thank you so much for your time --- this directly shapes what we build next!
+
+\textit{Questions about this survey? Contact: [INSERT CONTACT EMAIL]}
+
+\end{document}
