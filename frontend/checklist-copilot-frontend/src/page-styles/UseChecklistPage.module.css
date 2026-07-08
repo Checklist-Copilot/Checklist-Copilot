@@ -42,6 +42,7 @@
   align-items: start;
   gap: 24px;
   margin-bottom: 14px;
+  padding-inline: 5px;
 }
 
 .status {
