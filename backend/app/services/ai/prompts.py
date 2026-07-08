@@ -30,7 +30,7 @@ _COMPONENT_REFERENCE = """\
 Component types and their key fields:
 
 - section { label, collapsed?: bool, children: [components except checkbox] }
-- checkboxGroup { label, items: [checkbox, ...] }
+- checkboxGroup { label, items: [checkbox, ...] }  # nested items must include type: "checkbox"
 - checkbox { label, checked?: bool, required?: bool }       # MUST live inside a checkboxGroup
 - textField { label, value?: str, placeholder?: str, required?: bool, multiline?: bool }
 - numberField { label, value?: number|null, unit?: str, min?: number, max?: number, required?: bool }
@@ -39,10 +39,10 @@ Component types and their key fields:
 
 GENERAL RULES
 - Every component must have a `label`.
-- ALWAYS give a `humanReadableId` (snake_case) to every component that may be
-  a parent later: every section, every checkboxGroup, every table. Skip it
-  for leaf fields if you want.
-- Never send `id` — the server assigns ids and returns them in the tool response.
+- You may give a `humanReadableId` (snake_case) to components for readability/debugging,
+  but NEVER use it as `targetContainerId`.
+- Never send `id` — the server assigns ids and returns the real id in the tool response.
+  In later tool calls, always use that returned real `id` as `targetContainerId`.
 - Never send `edited` (on add OR update). It is server-controlled: the backend
   sets it to true automatically whenever a leaf is patched. Sending it will be
   rejected.
@@ -75,25 +75,26 @@ checkboxGroup inside that section, then target the group.
 
 CORRECT SEQUENCE (do exactly this):
   1) add_component {
-       targetContainerId: "section_ppe",        // a section you already added
+       targetContainerId: "sec_abc123",        // the real id returned when you added the section
        component: {
          type: "checkboxGroup",
-         humanReadableId: "group_ppe",          // <-- REQUIRED so you can target it next
+         humanReadableId: "group_ppe",
          label: "Personal Protective Equipment"
        }
      }
+     // The server replies with the group's real id, e.g. "group_def456".
   2) add_component {
-       targetContainerId: "group_ppe",          // <-- the GROUP, not the section
+       targetContainerId: "group_def456",       // the real GROUP id from the tool response
        component: { type: "checkbox", label: "Hard hat is worn" }
      }
   3) add_component {
-       targetContainerId: "group_ppe",
+       targetContainerId: "group_def456",
        component: { type: "checkbox", label: "Safety vest is worn" }
      }
 
 WRONG (will fail validation):
   add_component {
-    targetContainerId: "section_ppe",           // <-- section, not group
+    targetContainerId: "sec_abc123",           // <-- section id, not group id
     component: { type: "checkbox", ... }        // <-- REJECTED
   }
 
@@ -115,15 +116,16 @@ How to build the tree:
 
 Round 1 — add the top-level sections under the root.
   Each call: `add_component` with `targetContainerId="{root_id}"` and a
-  `section` component. Give every section a `humanReadableId`.
+  `section` component. You may give sections a `humanReadableId` for readability.
 
 Round 2+ — fill each section. For each section, add the components inside it
 (textField, numberField, checkboxGroup, table, imageBlock) using the section's
-real id (returned to you in the previous round's tool response) or its
-`humanReadableId`.
+real id returned in the previous round's tool response. Do NOT use
+`humanReadableId` as `targetContainerId`.
 
 Whenever you add a `checkboxGroup`, follow up with `checkbox` calls inside that
-group in the same or next round.
+group in the same or next round. If you include `items` directly in a
+checkboxGroup payload, every item must include `type: "checkbox"`.
 
 You MUST keep going until the checklist is fully built. A "fully built"
 checklist for the user's request usually contains:
@@ -242,8 +244,9 @@ one immediately and feeds the result back.
 
 When adding new components:
 - Use real `id` values from the current checklist as `targetContainerId`.
-- For components you add in this run, you may reference them by
-  `humanReadableId` until the server returns the real id.
+- For components you add in this run, use the real `id` returned by the tool
+  response for later `targetContainerId` values. Do not use `humanReadableId`
+  as a target.
 
 When the requested change is complete, stop calling tools and return a short
 confirmation message.

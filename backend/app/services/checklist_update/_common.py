@@ -202,9 +202,17 @@ def materialize_section_children(children: Any) -> list[dict[str, Any]]:
 
 
 def materialize_checkbox_items(items: Any) -> list[dict[str, Any]]:
+    """Materialize checkboxGroup items, accepting concise AI checkbox payloads."""
     if not isinstance(items, list):
         raise InvalidComponentPayloadError("checkboxGroup: 'items' must be a list")
-    return [materialize_added_component(item, parent_type="checkboxGroup") for item in items]
+
+    normalized_items = []
+    for item in items:
+        if isinstance(item, dict) and item.get("type") is None:
+            normalized_items.append({**item, "type": "checkbox"})
+        else:
+            normalized_items.append(item)
+    return [materialize_added_component(item, parent_type="checkboxGroup") for item in normalized_items]
 
 
 def validate_patch_fields(
