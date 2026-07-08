@@ -1,0 +1,157 @@
+\documentclass[11pt]{article}
+
+\usepackage[a4paper,margin=1in,top=0.5in]{geometry}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{enumitem}
+\usepackage{hyperref}
+\usepackage{array}
+\usepackage{amssymb}
+\usepackage{tabularx}
+
+\newcolumntype{Y}{>{\raggedright\arraybackslash\hspace{0pt}}X}
+\newcolumntype{C}{>{\centering\arraybackslash}p{0.65cm}}
+
+\newcommand{\fillline}[1]{\makebox[#1][l]{\hrulefill}}
+\newcommand{\ansline}{\par\noindent\rule{\linewidth}{0.3pt}\par\vspace{0.5em}}
+\newcommand{\ansblock}{\ansline\ansline\ansline}
+
+\makeatletter
+\renewcommand{\@maketitle}{%
+  \newpage
+  \null
+  \vskip -3.2em%
+  \begin{center}%
+  \let \footnote \thanks
+    {\LARGE \@title \par}%
+    \vskip 0em%
+    {\large
+      \lineskip .5em%
+      \begin{tabular}[t]{c}%
+        \@author
+      \end{tabular}\par}%
+    \vskip 0.5em%
+  \end{center}%
+  \par
+  \vskip 0.2em}
+\makeatother
+
+\title{\raisebox{0.8em}[0pt][0pt]{\includegraphics[width=5.5cm]{../assets/logo.pdf}}\\[-0.3em]\textbf{Checkly - User Acceptance Testing Form}}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\begin{center}
+\Large\textbf{App link:} \href{https://checkly-builder.vercel.app/}{Go to Checkly}
+\end{center}
+\vspace{0.1em}
+
+\begin{center}
+\small This form can be completed as a PDF or via Google Forms: \href{https://docs.google.com/forms/d/e/1FAIpQLSeXisUHeyiNp6xcpsaMaFFlzQmLwat27WgNNU8XmNLZmMYivQ/viewform?usp=sharing&ouid=100005269846048668522}{Google Forms}
+\end{center}
+
+\subsection*{What is Checkly?}
+
+Checkly is an AI-assisted checklist web platform that makes it easier for you to create, manage, and complete checklists by integrating AI into every step of the process.
+
+\subsection*{Example Use Cases}
+
+\begin{itemize}[leftmargin=1.4em,itemsep=0.2em]
+  \item Safety inspection
+  \item Equipment and maintenance check
+  \item Quality audit
+  \item Site walkthrough
+  \item Recurring task
+  \item Setup routine
+  \item Onboarding and training checklist
+  \item Packing and travel checklist
+\end{itemize}
+
+\subsection*{Tester Information}
+
+\small Description (optional)
+
+\begin{itemize}[leftmargin=1.4em,itemsep=0.4em,label={}]
+  \item First Name*\hfill \fillline{7cm}
+  \item Last Name*\hfill \fillline{7cm}
+  \item Occupation\\
+  $\Box$ Student \qquad $\Box$ Professor \qquad $\Box$ Software Developer\\
+  $\Box$ Office Worker \qquad $\Box$ Technician \qquad $\Box$ Manager\\
+  $\Box$ Other: \fillline{5cm}
+  \item Device used during testing\\
+  $\Box$ Tablet (recommended) \qquad $\Box$ Desktop \qquad $\Box$ Mobile\\
+  $\Box$ Other: \fillline{5cm}
+  \item Browser used\\
+  $\Box$ Chrome \qquad $\Box$ Safari \qquad $\Box$ Firefox\\
+  $\Box$ Microsoft Edge \qquad $\Box$ Opera \qquad $\Box$ Brave\\
+  $\Box$ Arc \qquad $\Box$ Other: \fillline{5cm}
+  \item Have you used checklist software before?\\
+  $\Box$ Frequently \qquad $\Box$ Occasionally \qquad $\Box$ Never
+  \item If yes, which checklist tools have you used?\\
+  $\Box$ Apple Reminders \qquad $\Box$ Google Keep \qquad $\Box$ Microsoft To Do\\
+  $\Box$ Trello \qquad $\Box$ Paper Checklists \qquad $\Box$ Other: \fillline{5cm}
+\end{itemize}
+
+\subsection*{Your Task}
+
+Feel free to explore the app on your own. If you’d like some guidance, here are a few recommended steps:
+
+\begin{itemize}[leftmargin=1.4em,itemsep=0.25em]
+  \item Sign up / log in
+  \item Create a new checklist
+  \item Build out the checklist: add a section and a mix of item types (checkbox, text, photo)
+  \item Use the AI Assistant to add or modify something in the checklist
+  \item Complete the checklist by filling in its items
+\end{itemize}
+
+
+\subsection*{Evaluation*}
+
+\textit{Rate each statement from 1 (Strongly disagree) to 5 (Strongly agree).}
+
+\begingroup
+\setlength{\tabcolsep}{3pt}
+\small
+\begin{tabularx}{\textwidth}{@{}YCCCCC@{}}
+\toprule
+Statement & 1 & 2 & 3 & 4 & 5\\
+\midrule
+First impression & $\Box$ & $\Box$ & $\Box$ & $\Box$ & $\Box$\\
+The application was easy to use & $\Box$ & $\Box$ & $\Box$ & $\Box$ & $\Box$\\
+The application behaved reliably without crashes or unexpected errors & $\Box$ & $\Box$ & $\Box$ & $\Box$ & $\Box$\\
+The application responded quickly & $\Box$ & $\Box$ & $\Box$ & $\Box$ & $\Box$\\
+Ease of checklist creation & $\Box$ & $\Box$ & $\Box$ & $\Box$ & $\Box$\\
+Usefulness of AI Features & $\Box$ & $\Box$ & $\Box$ & $\Box$ & $\Box$\\
+The AI Assistant understood my requests & $\Box$ & $\Box$ & $\Box$ & $\Box$ & $\Box$\\
+I trusted the changes suggested by the AI Assistant & $\Box$ & $\Box$ & $\Box$ & $\Box$ & $\Box$\\
+Overall satisfaction & $\Box$ & $\Box$ & $\Box$ & $\Box$ & $\Box$\\
+How likely are you to recommend Checkly? & $\Box$ & $\Box$ & $\Box$ & $\Box$ & $\Box$\\
+\bottomrule
+\end{tabularx}
+\endgroup
+
+\subsection*{Open Feedback}
+
+\begin{itemize}[leftmargin=1.4em,itemsep=0.8em,label={}]
+  \item What did you like most about Checkly?
+  \ansblock
+
+  \item What was confusing, slow, or didn’t work as you expected?
+  \ansblock
+
+  \item What could be improved?
+  \ansblock
+
+  \item Was there any feature you expected to find but didn't?
+  \ansblock
+
+  \item Is there any chance you see yourself using Checkly in the future?\\
+  $\Box$ Yes \qquad $\Box$ No
+
+  \item Additional comments.
+  \ansblock
+\end{itemize}
+
+\end{document}

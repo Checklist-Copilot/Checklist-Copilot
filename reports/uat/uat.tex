@@ -1,0 +1,199 @@
+\documentclass[11pt]{article}
+
+\usepackage[a4paper,margin=1in,top=0.5in]{geometry}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{enumitem}
+\usepackage{hyperref}
+\usepackage{array}
+
+\makeatletter
+\renewcommand{\@maketitle}{%
+  \newpage
+  \null
+  \vskip 0.2em%
+  \begin{center}%
+  \let \footnote \thanks
+    {\LARGE \@title \par}%
+    \vskip 1em%
+    {\large
+      \lineskip .5em%
+      \begin{tabular}[t]{c}%
+        \@author
+      \end{tabular}\par}%
+    \vskip 0.5em%
+    {\large \@date}%
+  \end{center}%
+  \par
+  \vskip 1em}
+\makeatother
+
+\title{\includegraphics[width=4cm]{../assets/logo.pdf}\\[0.5em]\textbf{User Acceptance Testing Report}}
+\author{Checkly \\ Team 10}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Introduction}
+
+\textbf{Checkly} is an AI-powered checklist platform that enables users to create, manage, complete, and modify checklists within a single web application. The platform's main value proposition is the integration of AI assistance throughout every stage of the checklist workflow.
+
+Conducting User Acceptance Testing (UAT) was essential to validate that the application meets the needs and expectations of its intended users. As students at the Technical University of Munich (TUM), we primarily targeted professionals within the university environment, including professors, doctoral researchers, and other academic staff, as they closely match our envisioned user base. Since the project was initially developed in collaboration with \textbf{R\"{O}SBERG Engineering}, who provided the initial idea and requirements, we considered their feedback to be highly valuable. Although the collaboration ended at an early stage due to their limited capacity to supervise the project, and we subsequently developed the concept in a more generalizable direction, they still represent one of our key target audiences.
+
+The primary objective of the UAT was to evaluate the platform from several perspectives, including its technical functionality, usability, user experience, and overall usefulness. We assessed whether the application operated reliably across different browsers and devices, whether the interface was intuitive and easy to use, and whether the implemented features effectively addressed the intended problem while providing meaningful value to users. In addition, we collected suggestions for future improvements and measured overall user satisfaction to better understand how well the platform met the expectations of our target audience.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{User Case Study}
+
+\subsection{Target Audience}
+
+Our primary target audience is the B2B sector, particularly professionals who rely on structured checklists as part of their daily workflows. This includes technicians, field workers, inspectors, quality assurance teams, project teams, event organizers, and small businesses. These examples are representative rather than exhaustive, as the product is designed for anyone who regularly performs repetitive, process-driven tasks that require structured documentation.
+
+The common characteristic of our target users is that they spend a significant amount of time manually creating, maintaining, and updating checklists. Checkly addresses this problem by enabling users to generate, modify, and manage checklists in a smarter, faster, and more efficient way through AI-assisted functionality, significantly reducing the time and effort required for these repetitive tasks.
+
+\subsection{Why This User Group?}
+
+Explain why this user group represents your intended audience.
+
+\textit{Placeholder:}
+
+Lorem ipsum dolor sit amet...
+
+\subsection{User Needs}
+
+Describe the main problems the application is intended to solve.
+
+\begin{itemize}
+    \item Need 1
+    \item Need 2
+    \item Need 3
+\end{itemize}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{User Survey Design}
+
+The following evaluation process was designed to assess the usability and usefulness
+of the application.
+
+\subsection{Testing Procedure}
+
+Each participant was asked to complete the following tasks:
+
+\begin{enumerate}
+    \item Create an account / log in.
+    \item Perform Task 1.
+    \item Perform Task 2.
+    \item Use the GenAI functionality.
+    \item Complete the feedback questionnaire.
+\end{enumerate}
+
+\subsection{Evaluation Criteria}
+
+Participants evaluated the application according to:
+
+\begin{itemize}
+    \item Ease of use
+    \item Interface clarity
+    \item Performance
+    \item Feature usefulness
+    \item Overall satisfaction
+\end{itemize}
+
+\subsection{Survey Questions}
+
+Example questions:
+
+\begin{enumerate}
+    \item How easy was the application to use?
+    \item Did the application solve your problem?
+    \item Which feature was the most useful?
+    \item Which feature needs improvement?
+    \item Would you use this application again?
+\end{enumerate}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{User Survey Results}
+
+A total of \textbf{[5]} participants completed the survey.
+
+\begin{table}[h]
+\centering
+\begin{tabular}{>{\bfseries}m{3cm} m{8cm}}
+\toprule
+Participant & Summary \\
+\midrule
+User 1 & Placeholder \\
+User 2 & Placeholder \\
+User 3 & Placeholder \\
+User 4 & Placeholder \\
+User 5 & Placeholder \\
+\bottomrule
+\end{tabular}
+\caption{Summary of participant feedback}
+\end{table}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Results Analysis}
+
+\subsection{Positive Feedback}
+
+\begin{itemize}
+    \item Placeholder
+    \item Placeholder
+    \item Placeholder
+\end{itemize}
+
+\subsection{Issues Identified}
+
+\begin{itemize}
+    \item Placeholder
+    \item Placeholder
+    \item Placeholder
+\end{itemize}
+
+\subsection{Planned Improvements}
+
+Describe which suggestions will be implemented and which cannot currently be
+implemented.
+
+\begin{table}[h]
+\centering
+\begin{tabular}{p{5cm}p{4cm}p{4cm}}
+\toprule
+Feedback & Action & Status \\
+\midrule
+Placeholder & Improve UI & Planned \\
+Placeholder & Not feasible & Deferred \\
+Placeholder & Implement feature & Completed \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Conclusion}
+
+Overall, the User Acceptance Testing demonstrated that the application
+\textbf{[met / partially met / did not meet]} the expectations of the target users.
+The collected feedback provides valuable guidance for improving usability and
+prioritizing future development.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section*{Appendix (Optional)}
+
+\begin{itemize}
+    \item Full questionnaire
+    \item Additional screenshots
+    \item Raw survey responses
+\end{itemize}
+
+\end{document}
