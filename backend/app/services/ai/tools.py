@@ -25,8 +25,8 @@ ADD_COMPONENT_TOOL: dict = {
             "Add a new component to the checklist tree. "
             "Use this for every new section, field, checkbox, image block, or table. "
             "When you need to nest a component inside one you just created, set "
-            "`targetContainerId` to the new component's `humanReadableId` — the server "
-            "resolves that to the real id at apply time."
+            "`targetContainerId` to the real `id` returned by the previous "
+            "tool response. Do not use `humanReadableId` as a target."
         ),
         "parameters": {
             "type": "object",
@@ -36,8 +36,9 @@ ADD_COMPONENT_TOOL: dict = {
                 "targetContainerId": {
                     "type": "string",
                     "description": (
-                        "Real id, humanReadableId of a component added earlier in this batch, "
-                        "or the literal root id provided in the system prompt."
+                        "Real component id returned by an earlier tool response, "
+                        "or the literal root id provided in the system prompt. "
+                        "Do not use humanReadableId here."
                     ),
                 },
                 "position": {

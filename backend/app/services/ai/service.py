@@ -73,12 +73,40 @@ def _find_by_human_readable_id(node: dict, hrid: str) -> dict | None:
     return None
 
 
+def _collect_component_ids(node: dict, acc: set[str] | None = None) -> set[str]:
+    """Collect component ids so add_component can report the real generated id."""
+    if acc is None:
+        acc = set()
+    node_id = node.get("id")
+    if isinstance(node_id, str):
+        acc.add(node_id)
+    for key in ("children", "items"):
+        for child in node.get(key, []) or []:
+            if isinstance(child, dict):
+                _collect_component_ids(child, acc)
+    return acc
+
+
+def _find_first_new_component_id(checklist: dict, previous_ids: set[str]) -> str | None:
+    """Return the parent component id that appeared after a successful add operation."""
+    node_id = checklist.get("id")
+    if isinstance(node_id, str) and node_id not in previous_ids:
+        return node_id
+    for key in ("children", "items"):
+        for child in checklist.get(key, []) or []:
+            if isinstance(child, dict):
+                found = _find_first_new_component_id(child, previous_ids)
+                if found is not None:
+                    return found
+    return None
+
+
 def _resolve_target_container_id(checklist: dict, target_ref: str) -> str:
     """
-    The model may reference a parent container either by its real id or by the
-    `humanReadableId` of something it added earlier. Try humanReadableId first;
-    if no match, fall through and let the downstream validator decide whether
-    the ref is a real id.
+    Resolve a target container reference before validation.
+
+    Prompts instruct the model to use real ids. The humanReadableId fallback is
+    kept only as a compatibility guard for older prompts or in-flight clients.
     """
     found = _find_by_human_readable_id(checklist, target_ref)
     if found is not None:
@@ -113,20 +141,18 @@ def _build_hint_for_failure(call: ToolCall, checklist: dict, exc: Exception) -> 
     ):
         groups = _find_checkbox_groups(checklist)
         if groups:
-            refs = ", ".join(
-                f"{g.get('humanReadableId') or g['id']!r}" for g in groups[-3:]
-            )
+            refs = ", ".join(f"{g['id']!r}" for g in groups[-3:])
             return (
                 "checkbox items can only go inside a checkboxGroup. Existing "
-                f"checkboxGroups you can target: {refs}. If none of these are "
+                f"checkboxGroups you can target by real id: {refs}. If none of these are "
                 "the right group, FIRST call add_component to create a new "
-                "checkboxGroup (give it a humanReadableId), THEN add the "
-                "checkbox with targetContainerId set to that group."
+                "checkboxGroup, THEN add the checkbox with targetContainerId "
+                "set to the real id returned by that tool response."
             )
         return (
             "checkbox items can only go inside a checkboxGroup. No checkboxGroup "
-            "exists yet — call add_component to create one (with a "
-            "humanReadableId), then add the checkbox into it."
+            "exists yet — call add_component to create one, then use the real "
+            "id returned by that tool response as targetContainerId."
         )
     return None
 
@@ -183,6 +209,7 @@ def _build_callback(result: AIRunResult, mode: AiChecklistMode = "edit"):
             if call.name == "add_component":
                 target = _resolve_target_container_id(result.checklist, args["targetContainerId"])
                 component = args.get("component", {})
+                component_ids_before_add = _collect_component_ids(result.checklist)
 
                 # Idempotency: the model sometimes re-creates a checkboxGroup it
                 # already added earlier in the same section (e.g. across rounds).
@@ -195,12 +222,12 @@ def _build_callback(result: AIRunResult, mode: AiChecklistMode = "edit"):
                         return {
                             "ok": True,
                             "id": existing_group["id"],
-                            "humanReadableId": component.get("humanReadableId"),
+                            "humanReadableId": existing_group.get("humanReadableId"),
                             "already_exists": True,
                             "message": (
                                 "A checkboxGroup with this label already exists in this "
-                                "section — reusing it. Do not create another one; add "
-                                "checkboxes to this existing group instead."
+                                f"section — reusing it. Use targetContainerId={existing_group['id']!r} "
+                                "for future checkboxes. Do not use humanReadableId as a target."
                             ),
                         }
 
@@ -258,10 +285,15 @@ def _build_callback(result: AIRunResult, mode: AiChecklistMode = "edit"):
         if call.name == "add_component":
             hrid = args.get("component", {}).get("humanReadableId")
             added = _find_by_human_readable_id(result.checklist, hrid) if hrid else None
+            added_id = added["id"] if added else _find_first_new_component_id(
+                result.checklist,
+                component_ids_before_add,
+            )
             return {
                 "ok": True,
-                "id": added["id"] if added else None,
+                "id": added_id,
                 "humanReadableId": hrid,
+                "message": "Use this returned real id for later targetContainerId values.",
             }
         if call.name == "update_component":
             if table_action_context:
@@ -306,7 +338,7 @@ def generate_checklist_from_text(
     description: str | None = None,
     pdf_context: str | None = None,
     pdf_files: list[tuple[str, bytes]] | None = None,
-    max_rounds: int = 20,
+    max_rounds: int = 10,
 ) -> AIRunResult:
     """
     Build a brand-new checklist tree from a natural-language description.
