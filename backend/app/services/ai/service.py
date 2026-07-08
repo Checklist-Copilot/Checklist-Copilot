@@ -306,7 +306,7 @@ def generate_checklist_from_text(
     description: str | None = None,
     pdf_context: str | None = None,
     pdf_files: list[tuple[str, bytes]] | None = None,
-    max_rounds: int = 5,
+    max_rounds: int = 20,
 ) -> AIRunResult:
     """
     Build a brand-new checklist tree from a natural-language description.
