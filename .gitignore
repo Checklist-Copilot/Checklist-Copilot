@@ -8,3 +8,12 @@ openapi.json
 frontend/checklist-copilot-frontend/.env
 .claude/
 .mcp.json
+
+# LaTeX build artifacts
+*.aux
+*.log
+*.fls
+*.fdb_latexmk
+*.synctex.gz
+*.out
+.DS_Store
