@@ -46,6 +46,22 @@ GENERAL RULES
 - Never send `edited` (on add OR update). It is server-controlled: the backend
   sets it to true automatically whenever a leaf is patched. Sending it will be
   rejected.
+- `add_component` accepts an optional `position`: `"start"` | `"end"` (default
+  `"end"`). If the user's instruction uses ordering language — "first",
+  "at the top", "before X", "insert above Y" — you MUST set `position: "start"`
+  (or add relative to the right existing sibling). Do not omit `position` and
+  assume it defaults to where the user asked; it defaults to the END.
+- A `section`'s fields can be added ONE OF TWO ways — pick exactly one, never
+  both:
+    (a) a single `add_component` call for the section with a full `children`
+        array inline, OR
+    (b) add the empty section first, then add each child in its own
+        `add_component` call targeting the section's real returned id.
+  If you nest children inline (a), do NOT also re-add those same fields in a
+  follow-up call — they already exist. Re-adding a component with the same
+  `type` and `label` in the same container will just reuse the existing one
+  (the server treats it as idempotent), so it wastes a round instead of
+  fixing anything.
 
 HARD RULE — NEVER FILL IN REGULATORY / COMPLIANCE NUMBERS
 You have NO lookup tool and NO way to check current regulations, standards,
@@ -231,6 +247,24 @@ checkbox to the PPE group."
   3) delete_component { targetId: "chk_gloves" }
   4) add_component    { targetContainerId: "group_ppe",
                         component: { type: "checkbox", label: "Steel-toed boots are worn" } }
+
+WORKED EXAMPLE — inserting a new FIRST section
+User instruction: "Add a new first section at the top called Car Information,
+with an image upload of the vehicle, a text field for the model, and a
+number field for the mileage in kilometers."
+
+  1) add_component { targetContainerId: "<root id>", position: "start",
+                     component: { type: "section", label: "Car Information",
+                       children: [
+                         { type: "imageBlock", label: "Vehicle photo" },
+                         { type: "textField", label: "Model" },
+                         { type: "numberField", label: "Mileage", unit: "km" }
+                       ] } }
+
+  That single call is enough — the section AND its three fields were created
+  together via `children`. Do NOT follow up with separate add_component calls
+  for "Model" or "Mileage"; they already exist. Note `position: "start"` —
+  without it the section would land at the END of the checklist, not the top.
 """
 
 
