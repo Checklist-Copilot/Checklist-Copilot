@@ -170,7 +170,7 @@ def build_create_system_prompt(root_id: str) -> str:
 # only has `add_component` available, so update/delete docs would just waste
 # tokens there.
 _OPERATIONS_REFERENCE = """\
-HOW TO USE THE THREE TOOLS
+HOW TO USE THE FIVE TOOLS
 
 add_component — create a new component in the tree.
   Use for: a new section, a new field, a new checkbox in an existing group,
@@ -214,10 +214,31 @@ delete_component — remove a component AND every component nested inside it.
   Cannot delete the root checklist. Once gone, it's gone (the route layer
   separately keeps a snapshot for undo — that's not your concern).
 
+move_component — move one existing component inside its CURRENT parent.
+  Use for: "move section 6 to the top", "put the numeric field after the text field",
+  "move this item to the end", or any request about order/position that is NOT phrased as a swap.
+  Payload: { targetId: "<component to move>", afterId: "<sibling id>" | null }
+    - afterId: null means move targetId to the start/top of its current parent.
+    - afterId: "some_sibling_id" means targetId should appear immediately after that sibling.
+    - To move something to the end, set afterId to the current last sibling id.
+  Limits: move_component cannot move components between parents, and cannot reorder
+  table rows or columns. Table rows/columns/cells are part of the table component;
+  use update_component with tableAction patches for table edits.
+
+swap_component — swap two existing sibling components in ONE operation.
+  Use for explicit swap requests: "swap section 1 with section 4", "swap Exterior
+  Condition with Lights Functionality", "swap the text field and numeric field".
+  Payload: { firstId: "<first component id>", secondId: "<second sibling component id>" }
+  Limits: both ids must be real checklist component ids under the same parent.
+  Do not use this for table rows/columns; table internals are edited through tableAction.
+  After a successful swap_component call, STOP unless the user requested another separate change.
+
 CHOOSING THE RIGHT TOOL
 - Want to change a field on something that already exists? -> update_component.
   Do NOT delete + re-add to "edit" something; just patch it.
 - Want to add/delete table rows or columns, or update one table cell? -> update_component with a tableAction patch.
+- User explicitly says "swap" two components? -> swap_component. Do NOT use multiple move_component calls.
+- User says move/top/bottom/after? -> move_component. Do NOT delete + re-add just to reorder.
 - Want to add something new where nothing exists? -> add_component.
 - Want to remove something the user said to take out? -> delete_component.
 
@@ -238,8 +259,8 @@ EDIT_SYSTEM_PROMPT_TEMPLATE = """\
 You are an assistant that edits an existing checklist via tool calls.
 
 You will be shown the current checklist JSON. Make the change the user
-requested by calling `add_component`, `update_component`, or `delete_component`
-as needed. You can make multiple rounds of tool calls; the server applies each
+requested by calling `add_component`, `update_component`, `delete_component`,
+`move_component`, or `swap_component` as needed. You can make multiple rounds of tool calls; the server applies each
 one immediately and feeds the result back.
 
 When adding new components:
@@ -263,7 +284,7 @@ confirmation message.
 
 _EDIT_MODE_RULES = """\
 MODE: EDIT
-- You may add, update, and delete components when the user asks for those changes.
+- You may add, update, delete, and reorder components when the user asks for those changes.
 """
 
 _USE_MODE_RULES = """\
@@ -271,7 +292,7 @@ MODE: USE
 The user is filling out an existing checklist. This is a strict permission boundary.
 - You may only change existing user-entered values: checkbox.checked, textField.value, numberField.value, and existing table cell values.
 - For imageBlock components, you may remove existing images by updating the images array, and you may add the currently uploaded image by using add_image_to_block in the vision flow.
-- You must NOT add or delete checklist components, even if the user explicitly asks.
+- You must NOT add, delete, or reorder checklist components, even if the user explicitly asks.
 - You must NOT add or remove table rows or columns, even if the user explicitly asks.
 - You must NOT rename labels, change required/settings, collapse sections, or otherwise alter checklist structure.
 If the user asks for a forbidden change, do not call tools for it; briefly explain that you cannot do it because the checklist is currently in use mode, where only filling existing values and managing images is allowed.

@@ -98,6 +98,132 @@ def find_parent_container(checklist: dict[str, Any], target_id: str) -> dict[str
     return None
 
 
+# Locates the mutable sibling list that directly contains a component.
+# Reorder operations use this to move an existing child without changing parents.
+def find_parent_child_list(
+    checklist: dict[str, Any],
+    target_id: str,
+) -> tuple[dict[str, Any], str, list[dict[str, Any]]] | None:
+    for key in ("children", "items"):
+        child_list = checklist.get(key)
+        if not isinstance(child_list, list):
+            continue
+        for child in child_list:
+            if isinstance(child, dict) and child.get("id") == target_id:
+                return checklist, key, child_list
+        for child in child_list:
+            if isinstance(child, dict):
+                found = find_parent_child_list(child, target_id)
+                if found is not None:
+                    return found
+    return None
+
+
+# Detects ids that belong to table internals instead of checklist components.
+# Rows and columns are edited through tableAction patches, not component moves.
+def find_table_part_by_id(checklist: dict[str, Any], target_id: str) -> tuple[str, str] | None:
+    if checklist.get("type") == "table":
+        for row in checklist.get("rows", []) or []:
+            if isinstance(row, dict) and row.get("id") == target_id:
+                return checklist.get("id", ""), "row"
+        for column in checklist.get("columns", []) or []:
+            if isinstance(column, dict) and column.get("id") == target_id:
+                return checklist.get("id", ""), "column"
+
+    for child_list in _iter_child_containers(checklist):
+        for child in child_list:
+            if isinstance(child, dict):
+                found = find_table_part_by_id(child, target_id)
+                if found is not None:
+                    return found
+    return None
+
+
+# Ensures a requested reorder id points at a real checklist component, not a
+# table row/column, and returns its parent sibling list.
+def _require_component_sibling_list(
+    checklist: dict[str, Any],
+    target_id: str,
+    *,
+    role: str = "target",
+) -> tuple[dict[str, Any], str, list[dict[str, Any]]]:
+    location = find_parent_child_list(checklist, target_id)
+    if location is not None:
+        return location
+    if find_table_part_by_id(checklist, target_id) is not None:
+        raise InvalidTargetContainerError(
+            f"Table rows and columns are not checklist components and cannot be used as a {role}. "
+            "Use update_component with a tableAction patch for table edits."
+        )
+    raise ComponentNotFoundError(f"Component not found: {target_id}")
+
+
+# Moves a component inside its current sibling list. `after_id=None` means the
+# target becomes the first child; otherwise it is inserted after that sibling.
+def move_component_after(checklist: dict[str, Any], target_id: str, after_id: str | None) -> dict[str, Any]:
+    if checklist.get("id") == target_id:
+        raise CannotDeleteRootError("Moving the root checklist document is not allowed.")
+    if after_id == target_id:
+        raise InvalidTargetContainerError("A component cannot be moved after itself.")
+
+    target_location = _require_component_sibling_list(checklist, target_id, role="move target")
+
+    _parent, _key, siblings = target_location
+    if after_id is not None:
+        after_location = _require_component_sibling_list(checklist, after_id, role="move anchor")
+        if after_location[2] is not siblings:
+            raise InvalidTargetContainerError("moveComponent can only reorder components within the same parent container.")
+
+    target_index = next(
+        index for index, child in enumerate(siblings) if isinstance(child, dict) and child.get("id") == target_id
+    )
+    if after_id is None and target_index == 0:
+        raise InvalidTargetContainerError("moveComponent would not change the order; the component is already first.")
+    if after_id is not None:
+        previous_sibling = siblings[target_index - 1] if target_index > 0 else None
+        if isinstance(previous_sibling, dict) and previous_sibling.get("id") == after_id:
+            raise InvalidTargetContainerError(
+                "moveComponent would not change the order; targetId is already immediately after afterId."
+            )
+
+    target = siblings.pop(target_index)
+
+    if after_id is None:
+        siblings.insert(0, target)
+        return checklist
+
+    after_index = next(
+        index for index, child in enumerate(siblings) if isinstance(child, dict) and child.get("id") == after_id
+    )
+    siblings.insert(after_index + 1, target)
+    return checklist
+
+
+# Swaps two existing components in the same sibling list. This is intentionally
+# separate from move_component because user requests that say "swap A and B" map
+# to a single deterministic operation instead of an error-prone pair of moves.
+def swap_components(checklist: dict[str, Any], first_id: str, second_id: str) -> dict[str, Any]:
+    if checklist.get("id") in {first_id, second_id}:
+        raise CannotDeleteRootError("Moving the root checklist document is not allowed.")
+    if first_id == second_id:
+        raise InvalidTargetContainerError("swapComponent requires two different component ids.")
+
+    first_location = _require_component_sibling_list(checklist, first_id, role="swap target")
+    second_location = _require_component_sibling_list(checklist, second_id, role="swap target")
+    if first_location[2] is not second_location[2]:
+        raise InvalidTargetContainerError("swapComponent can only swap components within the same parent container.")
+
+    siblings = first_location[2]
+    first_index = next(
+        index for index, child in enumerate(siblings) if isinstance(child, dict) and child.get("id") == first_id
+    )
+    second_index = next(
+        index for index, child in enumerate(siblings) if isinstance(child, dict) and child.get("id") == second_id
+    )
+    siblings[first_index], siblings[second_index] = siblings[second_index], siblings[first_index]
+    return checklist
+
+
 def insert_into_container(
     checklist: dict[str, Any],
     target_container_id: str,

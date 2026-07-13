@@ -145,8 +145,8 @@ It is meant to help the team understand the architecture and start implementatio
 
 ### Implemented: `app/services/checklist_update/`
 
-The module that mutates a checklist's JSON via three operation types:
-`addComponent`, `updateComponent`, `deleteComponent`. Every operation is validated for
+The module that mutates a checklist's JSON via five operation types:
+`addComponent`, `updateComponent`, `deleteComponent`, `moveComponent`, `swapComponent`. Every operation is validated for
 shape (required fields, type checks, parent–child rules) and structural integrity
 (target exists, component type matches the handler). All errors derive from
 `ChecklistOperationError`.
@@ -164,7 +164,7 @@ updated_json = apply_checklist_operations(checklist_json, operations)
 ```
 
 `operations` is a list of `AddComponentOperation` / `UpdateComponentOperation` /
-`DeleteComponentOperation` objects (see `app/schemas/checklist_operations.py`).
+`DeleteComponentOperation` / `MoveComponentOperation` / `SwapComponentOperation` objects (see `app/schemas/checklist_operations.py`).
 Both manual frontend edits and AI tool calls converge on this function — there is
 no separate "AI path" inside the mutation layer.
 
@@ -187,7 +187,7 @@ cd backend
 python test_add_delete_update.py
 ```
 
-Runs 23 checks covering every component type's add/update/delete plus the
+Runs smoke checks covering every component type's add/update/delete/reorder plus the
 validation failure paths. Exits with status 0 if everything passes.
 
 ### Implemented: `app/services/ai/`
@@ -229,8 +229,8 @@ python test_ai_lifecycle.py
 
 Two-phase smoke test: generates a fresh checklist from a natural-language
 prompt, then runs an edit instruction against that same checklist. The edit
-phase is designed to require all three tool types
-(`add_component` / `update_component` / `delete_component`). Prints a per-tool
+phase is designed to require multiple tool types
+(`add_component` / `update_component` / `delete_component` / `move_component` / `swap_component`). Prints a per-tool
 applied/skipped breakdown, the AI's natural-language reply for each phase, and
 a human-readable "what changed" diff so you can confirm each change in the
 resulting JSON.

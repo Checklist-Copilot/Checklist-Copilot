@@ -36,6 +36,9 @@ def validate_use_mode_tool_call(checklist: dict[str, Any], call: ToolCall) -> Us
     if call.name == "delete_component":
         return UseModeGuardResult(False, "This checklist is in use mode, so I cannot delete checklist components. Use mode only allows filling existing values and managing images.")
 
+    if call.name in {"move_component", "swap_component"}:
+        return UseModeGuardResult(False, "This checklist is in use mode, so I cannot reorder checklist components. Use mode only allows filling existing values and managing images.")
+
     if call.name != "update_component":
         return UseModeGuardResult(False, f"Use mode does not allow tool {call.name!r}.")
 
