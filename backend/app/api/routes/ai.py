@@ -102,6 +102,7 @@ def ai_edit_checklist(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc)
         ) from exc
 
+    changed = result.checklist != original_checklist
     logger.info(
         "AI edit completed: checklist_id=%s applied_calls=%s skipped_calls=%s raw_tool_calls=%s reply=%r changed=%s",
         checklist_id,
@@ -109,12 +110,19 @@ def ai_edit_checklist(
         result.skipped_calls,
         result.raw_tool_calls,
         result.reply,
-        result.checklist != original_checklist,
+        changed,
     )
+
+    # Do not let the model claim it changed the checklist when all tool attempts
+    # either failed or netted out to the original JSON. The UI still receives the
+    # skipped calls for debugging, but the chat reply should be honest.
+    response_reply = result.reply
+    if result.raw_tool_calls and not changed:
+        response_reply = "I couldn't complete that change. Please try specifying the components to reorder."
 
     # Snapshot for undo, then save the AI-modified JSON. If the model only replied
     # without applying a structural/value change, leave the DB row untouched.
-    if result.checklist != original_checklist:
+    if changed:
         checklist.checklist_prev = original_checklist
         checklist.checklist = result.checklist
         apply_stats(checklist)
@@ -123,7 +131,7 @@ def ai_edit_checklist(
 
     return AiResponse(
         checklist=result.checklist,
-        reply=result.reply,
+        reply=response_reply,
         applied_calls=result.applied_calls,
         skipped=[AiSkippedCall(**s) for s in result.skipped_calls],
     )

@@ -958,11 +958,15 @@ components:
               - $ref: '#/components/schemas/AddComponentOperation'
               - $ref: '#/components/schemas/UpdateComponentOperation'
               - $ref: '#/components/schemas/DeleteComponentOperation'
+              - $ref: '#/components/schemas/MoveComponentOperation'
+              - $ref: '#/components/schemas/SwapComponentOperation'
             discriminator:
               propertyName: operation
               mapping:
                 addComponent: '#/components/schemas/AddComponentOperation'
                 deleteComponent: '#/components/schemas/DeleteComponentOperation'
+                moveComponent: '#/components/schemas/MoveComponentOperation'
+                swapComponent: '#/components/schemas/SwapComponentOperation'
                 updateComponent: '#/components/schemas/UpdateComponentOperation'
           type: array
           title: Operations
@@ -1101,6 +1105,43 @@ components:
         - operation
         - targetId
       title: DeleteComponentOperation
+    MoveComponentOperation:
+      properties:
+        operation:
+          type: string
+          const: moveComponent
+          title: Operation
+        targetId:
+          type: string
+          title: Targetid
+        afterId:
+          anyOf:
+            - type: string
+            - type: 'null'
+          title: Afterid
+      type: object
+      required:
+        - operation
+        - targetId
+      title: MoveComponentOperation
+    SwapComponentOperation:
+      properties:
+        operation:
+          type: string
+          const: swapComponent
+          title: Operation
+        firstId:
+          type: string
+          title: Firstid
+        secondId:
+          type: string
+          title: Secondid
+      type: object
+      required:
+        - operation
+        - firstId
+        - secondId
+      title: SwapComponentOperation
     FileDeleteResponse:
       properties:
         message:

@@ -31,6 +31,18 @@ class DeleteComponentOperation(BaseModel):
     targetId: str
 
 
+class MoveComponentOperation(BaseModel):
+    operation: Literal["moveComponent"]
+    targetId: str
+    afterId: str | None = None
+
+
+class SwapComponentOperation(BaseModel):
+    operation: Literal["swapComponent"]
+    firstId: str
+    secondId: str
+
+
 class DeleteTableColumnOperation(BaseModel):
     operation: Literal["deleteTableColumn"]
     targetId: str
@@ -47,6 +59,8 @@ ChecklistOperation = Annotated[
     AddComponentOperation
     | UpdateComponentOperation
     | DeleteComponentOperation
+    | MoveComponentOperation
+    | SwapComponentOperation
     | DeleteTableColumnOperation
     | DeleteTableRowOperation,
     Field(discriminator="operation"),

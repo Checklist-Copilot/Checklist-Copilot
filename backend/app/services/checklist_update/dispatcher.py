@@ -7,12 +7,14 @@ from app.schemas.checklist_operations import (
     DeleteComponentOperation,
     DeleteTableColumnOperation,
     DeleteTableRowOperation,
+    MoveComponentOperation,
+    SwapComponentOperation,
     UpdateComponentOperation,
 )
 from app.services.checklist_update.add.dispatcher import dispatch_add_component
 from app.services.checklist_update.delete.dispatcher import dispatch_delete_component
 from app.services.checklist_update.exceptions import UnsupportedOperationError
-from app.services.checklist_update.tree_utils import delete_table_column_by_id, delete_table_row_by_id
+from app.services.checklist_update.tree_utils import delete_table_column_by_id, delete_table_row_by_id, move_component_after, swap_components
 from app.services.checklist_update.update.dispatcher import dispatch_update_component
 
 logger = logging.getLogger(__name__)
@@ -38,6 +40,10 @@ def _operation_log_context(operation: ChecklistOperation) -> dict[str, Any]:
         }
     if isinstance(operation, DeleteComponentOperation):
         return {"operation": operation.operation, "targetId": operation.targetId}
+    if isinstance(operation, MoveComponentOperation):
+        return {"operation": operation.operation, "targetId": operation.targetId, "afterId": operation.afterId}
+    if isinstance(operation, SwapComponentOperation):
+        return {"operation": operation.operation, "firstId": operation.firstId, "secondId": operation.secondId}
     if isinstance(operation, DeleteTableColumnOperation):
         return {"operation": operation.operation, "targetId": operation.targetId, "columnId": operation.columnId}
     if isinstance(operation, DeleteTableRowOperation):
@@ -58,6 +64,10 @@ def dispatch_operation(checklist: dict, operation: ChecklistOperation) -> dict:
             updated = dispatch_update_component(checklist, operation)
         elif isinstance(operation, DeleteComponentOperation):
             updated = dispatch_delete_component(checklist, operation)
+        elif isinstance(operation, MoveComponentOperation):
+            updated = move_component_after(checklist, operation.targetId, operation.afterId)
+        elif isinstance(operation, SwapComponentOperation):
+            updated = swap_components(checklist, operation.firstId, operation.secondId)
         elif isinstance(operation, DeleteTableColumnOperation):
             updated = delete_table_column_by_id(checklist, operation.targetId, operation.columnId)
         elif isinstance(operation, DeleteTableRowOperation):

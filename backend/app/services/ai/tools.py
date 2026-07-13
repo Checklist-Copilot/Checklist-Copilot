@@ -106,6 +106,67 @@ UPDATE_COMPONENT_TOOL: dict = {
 }
 
 
+MOVE_COMPONENT_TOOL: dict = {
+    "type": "function",
+    "function": {
+        "name": "move_component",
+        "description": (
+            "Reorder an existing checklist component within its current parent container. "
+            "Use this when the user asks to move a section/item/field/group/table/image block "
+            "to the top, after another sibling, or to the end. This does not move components "
+            "between parents and cannot reorder table rows or columns."
+        ),
+        "parameters": {
+            "type": "object",
+            "additionalProperties": False,
+            "required": ["targetId", "afterId"],
+            "properties": {
+                "targetId": {
+                    "type": "string",
+                    "description": "Real id of the component to move. Must not be a table row or column id.",
+                },
+                "afterId": {
+                    "anyOf": [{"type": "string"}, {"type": "null"}],
+                    "description": (
+                        "Real id of the sibling that should come immediately before targetId after the move. "
+                        "Use null to move targetId to the start/top of its current parent. To move to the end, "
+                        "set afterId to the current last sibling id. Must not be a table row or column id."
+                    ),
+                },
+            },
+        },
+    },
+}
+
+
+SWAP_COMPONENT_TOOL: dict = {
+    "type": "function",
+    "function": {
+        "name": "swap_component",
+        "description": (
+            "Swap the positions of two existing checklist components that share the same parent. "
+            "Use this for explicit swap requests, e.g. 'swap section 1 and section 4' or "
+            "'swap Exterior Condition with Lights Functionality'. Cannot swap table rows or columns."
+        ),
+        "parameters": {
+            "type": "object",
+            "additionalProperties": False,
+            "required": ["firstId", "secondId"],
+            "properties": {
+                "firstId": {
+                    "type": "string",
+                    "description": "Real id of the first component to swap. Must not be a table row or column id.",
+                },
+                "secondId": {
+                    "type": "string",
+                    "description": "Real id of the second sibling component to swap. Must not be a table row or column id.",
+                },
+            },
+        },
+    },
+}
+
+
 DELETE_COMPONENT_TOOL: dict = {
     "type": "function",
     "function": {
@@ -123,7 +184,13 @@ DELETE_COMPONENT_TOOL: dict = {
 }
 
 
-ALL_TOOLS: list[dict] = [ADD_COMPONENT_TOOL, UPDATE_COMPONENT_TOOL, DELETE_COMPONENT_TOOL]
+ALL_TOOLS: list[dict] = [
+    ADD_COMPONENT_TOOL,
+    UPDATE_COMPONENT_TOOL,
+    DELETE_COMPONENT_TOOL,
+    MOVE_COMPONENT_TOOL,
+    SWAP_COMPONENT_TOOL,
+]
 
 # For "create from text" we don't need update/delete — the checklist starts empty.
 CREATE_TOOLS: list[dict] = [ADD_COMPONENT_TOOL]
@@ -174,4 +241,6 @@ OBSERVE_TOOLS: list[dict] = [
     ADD_IMAGE_TO_BLOCK_TOOL,
     UPDATE_COMPONENT_TOOL,
     DELETE_COMPONENT_TOOL,
+    MOVE_COMPONENT_TOOL,
+    SWAP_COMPONENT_TOOL,
 ]

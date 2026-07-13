@@ -8,10 +8,11 @@ Run from the `backend/` directory:
 It walks through:
   1. Adding every component type (section, textField, numberField, imageBlock,
      table, checkboxGroup, checkbox).
-  2. Updating fields of each type.
-  3. Deleting a component.
-  4. Triggering each of the validation errors the handlers should reject.
-  5. Verifying the server-controlled `edited` flag and the `recount` stats
+  2. Reordering components within their current parent.
+  3. Updating fields of each type.
+  4. Deleting a component.
+  5. Triggering each of the validation errors the handlers should reject.
+  6. Verifying the server-controlled `edited` flag and the `recount` stats
      (total / edited / completed item counts).
 
 If everything passes you see a summary at the bottom and the final checklist
@@ -34,6 +35,8 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from app.schemas.checklist_operations import (  # noqa: E402
     AddComponentOperation,
     DeleteComponentOperation,
+    MoveComponentOperation,
+    SwapComponentOperation,
     UpdateComponentOperation,
 )
 from app.services.checklist_update.exceptions import (  # noqa: E402
@@ -129,6 +132,18 @@ def apply(checklist: dict, op_dict: dict) -> dict:
         op = DeleteComponentOperation.model_construct(
             operation="deleteComponent",
             targetId=op_dict["targetId"],
+        )
+    elif op_type == "moveComponent":
+        op = MoveComponentOperation.model_construct(
+            operation="moveComponent",
+            targetId=op_dict["targetId"],
+            afterId=op_dict.get("afterId"),
+        )
+    elif op_type == "swapComponent":
+        op = SwapComponentOperation.model_construct(
+            operation="swapComponent",
+            firstId=op_dict["firstId"],
+            secondId=op_dict["secondId"],
         )
     else:
         raise ValueError(f"unknown op {op_type}")
@@ -317,6 +332,62 @@ IMAGE_BLOCK_ID = checklist["children"][0]["children"][2]["id"]
 TABLE_ID = checklist["children"][0]["children"][3]["id"]
 FIRST_CHECKBOX_ID = find_component_by_id(checklist, GROUP_ID)["items"][0]["id"]
 SECOND_CHECKBOX_ID = find_component_by_id(checklist, GROUP_ID)["items"][1]["id"]
+
+
+print("\n=== Reorders ===")
+
+
+@step("move numberField to top of section")
+def _():
+    global checklist
+    checklist = apply(
+        checklist,
+        {"operation": "moveComponent", "targetId": NUMBER_FIELD_ID, "afterId": None},
+    )
+    children = find_component_by_id(checklist, SECTION_ID)["children"]
+    assert_eq([child["id"] for child in children[:2]], [NUMBER_FIELD_ID, TEXT_FIELD_ID], "section order")
+
+
+@step("move textField after imageBlock")
+def _():
+    global checklist
+    checklist = apply(
+        checklist,
+        {"operation": "moveComponent", "targetId": TEXT_FIELD_ID, "afterId": IMAGE_BLOCK_ID},
+    )
+    children = find_component_by_id(checklist, SECTION_ID)["children"]
+    assert_eq([child["id"] for child in children[:3]], [NUMBER_FIELD_ID, IMAGE_BLOCK_ID, TEXT_FIELD_ID], "section order after anchor")
+
+
+expect_error(
+    "move table row id raises InvalidTargetContainerError",
+    InvalidTargetContainerError,
+    lambda: apply(checklist, {"operation": "moveComponent", "targetId": "row-1", "afterId": None}),
+)
+
+expect_error(
+    "move no-op raises InvalidTargetContainerError",
+    InvalidTargetContainerError,
+    lambda: apply(checklist, {"operation": "moveComponent", "targetId": TEXT_FIELD_ID, "afterId": IMAGE_BLOCK_ID}),
+)
+
+
+@step("swap two section children")
+def _():
+    global checklist
+    checklist = apply(
+        checklist,
+        {"operation": "swapComponent", "firstId": NUMBER_FIELD_ID, "secondId": TEXT_FIELD_ID},
+    )
+    children = find_component_by_id(checklist, SECTION_ID)["children"]
+    assert_eq([child["id"] for child in children[:3]], [TEXT_FIELD_ID, IMAGE_BLOCK_ID, NUMBER_FIELD_ID], "section order after swap")
+
+
+expect_error(
+    "swap table column id raises InvalidTargetContainerError",
+    InvalidTargetContainerError,
+    lambda: apply(checklist, {"operation": "swapComponent", "firstId": "col-name", "secondId": TEXT_FIELD_ID}),
+)
 
 
 print("\n=== Updates ===")

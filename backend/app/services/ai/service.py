@@ -30,6 +30,8 @@ logger = logging.getLogger(__name__)
 from app.schemas.checklist_operations import (
     AddComponentOperation,
     DeleteComponentOperation,
+    MoveComponentOperation,
+    SwapComponentOperation,
     UpdateComponentOperation,
 )
 from app.services.ai.openai_client import OpenAIClient, ToolCall
@@ -42,7 +44,7 @@ from app.services.ai.tools import ALL_TOOLS, CREATE_TOOLS, OBSERVE_TOOLS
 from app.services.ai.use_mode_guard import AiChecklistMode, validate_use_mode_tool_call
 from app.services.checklist_update.exceptions import ChecklistOperationError
 from app.services.checklist_update.service import apply_checklist_operations
-from app.services.checklist_update.tree_utils import find_component_by_id
+from app.services.checklist_update.tree_utils import find_component_by_id, find_parent_child_list
 
 
 @dataclass
@@ -133,6 +135,25 @@ def _build_hint_for_failure(call: ToolCall, checklist: dict, exc: Exception) -> 
     part of the tool reply. The model usually corrects on the next round once
     it sees a concrete suggestion.
     """
+    if call.name in {"move_component", "swap_component"}:
+        target_id = call.arguments.get("targetId") or call.arguments.get("firstId")
+        location = find_parent_child_list(checklist, target_id) if isinstance(target_id, str) else None
+        if location is not None:
+            siblings = location[2]
+            sibling_order = [
+                child.get("id") for child in siblings if isinstance(child, dict) and isinstance(child.get("id"), str)
+            ]
+            return (
+                "Reorder tools only work on siblings inside the same parent. "
+                f"Current sibling_order for component {target_id!r}: {sibling_order}. "
+                "For explicit swap requests, use exactly one swap_component call with the two sibling ids, then stop. "
+                "For move requests, use move_component. Do not use checkbox ids as anchors for checkboxGroup moves."
+            )
+        return (
+            "move_component can only target real checklist component ids, not table row ids, "
+            "table column ids, or nested table cell ids."
+        )
+
     # Case: tried to add a checkbox somewhere that isn't a checkboxGroup.
     if (
         call.name == "add_component"
@@ -264,6 +285,18 @@ def _build_callback(result: AIRunResult, mode: AiChecklistMode = "edit"):
                     operation="deleteComponent",
                     targetId=args["targetId"],
                 )
+            elif call.name == "move_component":
+                op = MoveComponentOperation.model_construct(
+                    operation="moveComponent",
+                    targetId=args["targetId"],
+                    afterId=args.get("afterId"),
+                )
+            elif call.name == "swap_component":
+                op = SwapComponentOperation.model_construct(
+                    operation="swapComponent",
+                    firstId=args["firstId"],
+                    secondId=args["secondId"],
+                )
             else:
                 reason = f"unknown tool {call.name!r}"
                 result.skipped_calls.append({"call": {"name": call.name, "arguments": args}, "reason": reason})
@@ -322,6 +355,33 @@ def _build_callback(result: AIRunResult, mode: AiChecklistMode = "edit"):
             return {"ok": True, "updated_id": args.get("targetId")}
         if call.name == "delete_component":
             return {"ok": True, "deleted_id": args.get("targetId")}
+        if call.name == "move_component":
+            location = find_parent_child_list(result.checklist, args.get("targetId"))
+            parent = location[0] if location else None
+            siblings = location[2] if location else []
+            return {
+                "ok": True,
+                "moved_id": args.get("targetId"),
+                "parent_id": parent.get("id") if isinstance(parent, dict) else None,
+                "after_id": args.get("afterId"),
+                "sibling_order": [
+                    child.get("id") for child in siblings if isinstance(child, dict) and isinstance(child.get("id"), str)
+                ],
+                "message": "The component was reordered. If sibling_order now matches the user's request, stop calling tools.",
+            }
+        if call.name == "swap_component":
+            location = find_parent_child_list(result.checklist, args.get("firstId"))
+            parent = location[0] if location else None
+            siblings = location[2] if location else []
+            return {
+                "ok": True,
+                "swapped_ids": [args.get("firstId"), args.get("secondId")],
+                "parent_id": parent.get("id") if isinstance(parent, dict) else None,
+                "sibling_order": [
+                    child.get("id") for child in siblings if isinstance(child, dict) and isinstance(child.get("id"), str)
+                ],
+                "message": "The two components were swapped. Stop calling tools unless the user requested another separate change.",
+            }
         return {"ok": True}
 
     return on_tool_call
