@@ -6,6 +6,11 @@
 \usepackage{enumitem}
 \usepackage{hyperref}
 \usepackage{array}
+\usepackage{tabularx}
+\usepackage{placeins}
+
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.5em}
 
 \makeatletter
 \renewcommand{\@maketitle}{%
@@ -39,12 +44,105 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \section{Introduction}
+% What is Checkly
+\textbf{Checkly} is an AI-powered checklist web-platform that enables users to easily create, modify, manage and complete checklists. The platform's main value proposition is the integration of AI assistance throughout every stage of the checklist workflow.
 
-\textbf{Checkly} is an AI-powered checklist platform that enables users to create, manage, complete, and modify checklists within a single web application. The platform's main value proposition is the integration of AI assistance throughout every stage of the checklist workflow.
+% Purpose of UAT
+To validate our project, we conducted user acceptance testing (UAT), with the main objectives of validating the underlying idea and ensuring that it addresses a genuine pain point, as well as testing the functionality and quality of our implementation.
 
-Conducting User Acceptance Testing (UAT) was essential to validate that the application meets the needs and expectations of its intended users. As students at the Technical University of Munich (TUM), we primarily targeted professionals within the university environment, including professors, doctoral researchers, and other academic staff, as they closely match our envisioned user base. Since the project was initially developed in collaboration with \textbf{R\"{O}SBERG Engineering}, who provided the initial idea and requirements, we considered their feedback to be highly valuable. Although the collaboration ended at an early stage due to their limited capacity to supervise the project, and we subsequently developed the concept in a more generalizable direction, they still represent one of our key target audiences.
+\section{Who should use the app? Who should test the app?}
 
-The primary objective of the UAT was to evaluate the platform from several perspectives, including its technical functionality, usability, user experience, and overall usefulness. We assessed whether the application operated reliably across different browsers and devices, whether the interface was intuitive and easy to use, and whether the implemented features effectively addressed the intended problem while providing meaningful value to users. In addition, we collected suggestions for future improvements and measured overall user satisfaction to better understand how well the platform met the expectations of our target audience.
+% Who is the target audience
+Before conducting user testing, we first needed to clearly define our target audience and determine our preferred tester profile.
+
+Initially, the project was conceived by \textbf{R\"{O}SBERG Engineering} as a GenAI-powered voice and vision copilot, designed to support its technicians during industrial equipment inspections. Even though the collaboration with them ended at a very early stage, we decided to continue developing the idea as a proof of concept for an advanced checklist solution while maintaining its original focus on the same target audience. Building on this idea, we created Checkly, an application designed to make repetitive and recurring checklist tasks more efficient.
+
+We believe Checkly will provide the greatest value in B2B contexts, particularly for safety inspections, quality audits, equipment maintenance, event organization, and other similar procedures. Accordingly, its primary target group includes project teams, event organizers, production teams, quality assurance teams, and other industrial professionals.
+
+% Who are the perfect testers
+Naturally, the most suitable tester profile was our target customer group. Accordingly, we contacted Rosenberg Engineering, as they had provided the original idea and initial requirements, making their feedback particularly valuable. However, there were also other groups capable of providing valuable feedback on our application. These included individuals capable of evaluating our implementation from a technical perspective, particularly its UI, software, and AI functionality, as well those with sufficient general technical experience and users familiar with checklist applications. We therefore also reached out to various professors and doctoral researchers within our university community, as well as students, professional contacts, and friends.
+
+\section{Testing Challenges}
+Before establishing the framework and starting the testing process, we firstly had to identify, analyze and consider several potential challenges.
+
+One potential issue resulted from the application being only a proof of concept developed for a university course rather than a commercial product intended for long-term development. This provided testers with one less incentive to thoroughly test the application effectively and invest sufficient time and effort in the testing process. Another potential challenge was that our preferred testers were generally busy professionals who presumably valued their time highly. This, combined with our inability to offer any monetary compensation, further reduced their incentive to invest their limited time and effort in testing our application. Given these challenges, even testers who agreed to evaluate the application would be unlikely to test it extensively or provide honest, reliable, meaningful feedback. 
+
+To mitigate these issues, we made the feedback process as simple as possible and minimized the effort required from participants. We improved the accessibility of the feedback process by allowing participants to choose between a PDF form and a Google Form. To keep the form concise, we minimized the amount of text and required information, and omitted sensitive data such as email addresses, allowing participants to remain anonymous. Furthermore, despite only five testers were required for the class, we requested feedback from a considerably larger group of people to increase our chances of receiving high-quality responses. This measures increased our chances of receiving meaningful feedback from testers who had genuinely used the relevant features and carefully reviewed the survey questions.
+
+\section{Participants and method}
+
+User acceptance testing was conducted with ten participants in the months of June and July 2026. 
+
+To assess the relevance of the participants’ evaluations, we collected tester information regarding their professional backgrounds, technical environments, and experience with checklist software.
+
+In the first part of the evaluation participants rated nine aspects of Checkly on a five-point scale, where higher scores represented a more favorable evaluation. In addition, we collected open-text feedback, which were then coded into non-exclusive themes
+
+Given the small sample size, the reported statistical findings cannot be considered representative of the entire population. Nevertheless, they provided valuable preliminary insights.
+
+\section{Quantitative results}
+Overall, the results were very positive and supported our main assumptions: the application functions as intended, provides value, and generates interest among potential users. In short, the application works and people like it.
+
+
+
+\begin{table}[htbp]
+    \centering
+    \small
+    \caption{Summary of Checkly UAT ratings (\(N=10\)), ranked by positive feedback}
+    \label{tab:uat-summary}
+    \begin{tabularx}{\textwidth}{Xrrrr}
+        \toprule
+        Metric & Mean & Median & SD & Positive (\%) \\
+        \midrule
+        Overall satisfaction & 4.4 & 5.0 & 1.1 & 80 \\
+        App stability and reliability & 4.3 & 5.0 & 1.3 & 80 \\
+        Speed and responsiveness & 4.3 & 5.0 & 1.3 & 80 \\
+        Trust in AI suggested changes & 4.1 & 4.0 & 1.0 & 80 \\
+        First impression & 4.1 & 5.0 & 1.4 & 70 \\
+        AI understanding of requests & 4.1 & 5.0 & 1.4 & 70 \\
+        Ease of use & 4.0 & 4.5 & 1.3 & 70 \\
+        Usefulness of AI features & 4.0 & 5.0 & 1.5 & 70 \\
+        Ease of checklist creation & 3.8 & 4.5 & 1.5 & 60 \\
+        \bottomrule
+    \end{tabularx}
+\end{table}
+
+ \begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.95\textwidth]{../uat_analysis/results_analysis/uat_metric_averages.pdf}
+    \caption{Mean rating for each UAT metric on the five-point scale.}
+    \label{fig:uat-means}
+\end{figure}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
