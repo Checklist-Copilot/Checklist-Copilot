@@ -2,7 +2,7 @@
 """Analyze the Checkly UAT survey exported as CSV.
 
 Install dependencies:
-    pip install pandas numpy matplotlib openpyxl
+    pip install pandas numpy matplotlib
 
 Run:
     python checkly_uat_csv_analysis.py responses.csv
@@ -11,7 +11,7 @@ Optional acceptance criteria:
     python checkly_uat_csv_analysis.py responses.csv \
         --acceptance-mean 4.0 --acceptance-positive 70
 
-Outputs are written to ./uat_results by default.
+PNG plots are written to ./results_analysis by default.
 """
 
 from __future__ import annotations
@@ -71,6 +71,16 @@ IMPROVEMENT_THEMES = {
     "Profile customisation": r"profil(?:e)? picture|avatar",
 }
 
+# Shared palette for every pie chart.
+PIE_BLUE = "#0D5ACD"
+PIE_GREEN = "#20A658"
+PIE_YELLOW = "#F9A825"
+PIE_RED = "#C62828"
+
+PIE_COLORS = [PIE_BLUE, PIE_GREEN, PIE_YELLOW, PIE_RED]
+PROFESSION_PIE_COLORS = [PIE_BLUE, PIE_RED, PIE_YELLOW]
+PRIOR_USE_PIE_COLORS = [PIE_GREEN, PIE_BLUE, PIE_YELLOW]
+
 
 def normalize(text: object) -> str:
     """Convert a header to a lowercase, accent-free comparison string."""
@@ -111,7 +121,6 @@ def frequency_table(series: pd.Series, dimension: str) -> pd.DataFrame:
 
 
 def save_figure(fig: plt.Figure, output_dir: Path, name: str) -> None:
-    fig.savefig(output_dir / f"{name}.pdf", bbox_inches="tight")
     fig.savefig(output_dir / f"{name}.png", dpi=200, bbox_inches="tight")
     plt.close(fig)
 
@@ -232,42 +241,12 @@ def analyze(args: argparse.Namespace) -> None:
         }
     ).sort_values(["Mentions", "Theme"], ascending=[False, True])
 
-    # Anonymized source data for auditing.
-    columns_to_drop = [
-        column for column in [other_sources["first_name"], other_sources["last_name"]]
-        if column is not None
-    ]
-    anonymized = df.drop(columns=columns_to_drop).copy()
-    existing_id = find_column(anonymized, ["participant id"])
-    if existing_id is not None:
-        anonymized = anonymized.drop(columns=[existing_id])
-    anonymized.insert(0, "Participant ID", participant_ids)
-
-    # CSV and Excel outputs.
-    metric_summary.round(2).to_csv(output_dir / "metric_summary.csv")
-    distribution.to_csv(output_dir / "likert_distribution.csv")
-    profile.round(1).to_csv(output_dir / "participant_profile.csv", index=False)
-    positive_theme_summary.to_csv(output_dir / "positive_themes.csv", index=False)
-    improvement_theme_summary.to_csv(output_dir / "improvement_themes.csv", index=False)
-    coding.to_csv(output_dir / "qualitative_coding_review.csv", index=False)
-
-    with pd.ExcelWriter(output_dir / "uat_analysis.xlsx", engine="openpyxl") as writer:
-        metric_summary.round(2).to_excel(writer, sheet_name="Metric Summary")
-        distribution.to_excel(writer, sheet_name="Rating Distribution")
-        profile.round(1).to_excel(writer, sheet_name="Participant Profile", index=False)
-        positive_theme_summary.to_excel(writer, sheet_name="Positive Themes", index=False)
-        improvement_theme_summary.to_excel(writer, sheet_name="Improvement Themes", index=False)
-        coding.to_excel(writer, sheet_name="Coding Review", index=False)
-        anonymized.to_excel(writer, sheet_name="Anonymized Responses", index=False)
-
     # Chart styling.
     plt.rcParams.update(
         {
             "font.family": "DejaVu Sans",
             "font.size": 10,
             "axes.titlesize": 13,
-            "pdf.fonttype": 42,
-            "ps.fonttype": 42,
         }
     )
 
@@ -328,6 +307,615 @@ def analyze(args: argparse.Namespace) -> None:
         fig.tight_layout()
         save_figure(fig, output_dir, "uat_improvement_themes")
 
+    # 4. Positive-response rate by metric.
+    positive_ordered = metric_summary.sort_values("Positive (%)")
+    fig, ax = plt.subplots(figsize=(8.5, 5.0))
+    colors = [
+        "#16A34A" if value >= 70 else "#D97706"
+        for value in positive_ordered["Positive (%)"]
+    ]
+    bars = ax.barh(
+        positive_ordered.index,
+        positive_ordered["Positive (%)"],
+        color=colors,
+        height=0.65,
+    )
+    ax.axvline(70, color="#374151", linestyle="--", linewidth=1.2, label="70% reference")
+    ax.set_xlim(0, 100)
+    ax.set_xlabel(f"Ratings at or above {args.positive_threshold:g} (%)")
+    ax.set_title("Checkly UAT: positive-response rate by metric")
+    ax.grid(axis="x", color="#E5E7EB", linewidth=0.8)
+    ax.set_axisbelow(True)
+    ax.legend(frameon=False, loc="lower right")
+    for bar, value in zip(bars, positive_ordered["Positive (%)"]):
+        ax.text(
+            min(value + 1.5, 96),
+            bar.get_y() + bar.get_height() / 2,
+            f"{value:.0f}%",
+            va="center",
+            fontweight="bold",
+        )
+    for spine in ["top", "right", "left"]:
+        ax.spines[spine].set_visible(False)
+    fig.tight_layout()
+    save_figure(fig, output_dir, "uat_positive_rates")
+
+    # 5. Participant-level profile lines. This exposes outliers without a heatmap.
+    fig, ax = plt.subplots(figsize=(10.5, 5.8))
+    x = np.arange(len(ratings.columns))
+    for row, participant_id in zip(ratings.to_numpy(dtype=float), participant_ids):
+        ax.plot(
+            x,
+            row,
+            marker="o",
+            markersize=4,
+            linewidth=1.1,
+            alpha=0.65,
+            label=participant_id,
+        )
+    ax.plot(
+        x,
+        ratings.mean(axis=0),
+        color="#111827",
+        marker="o",
+        markersize=6,
+        linewidth=3,
+        label="Sample mean",
+        zorder=5,
+    )
+    ax.set_xticks(x)
+    ax.set_xticklabels(ratings.columns, rotation=38, ha="right")
+    ax.set_ylim(0.8, 5.2)
+    ax.set_yticks(range(1, 6))
+    ax.set_ylabel("Rating (1–5)")
+    ax.set_title("Participant-level rating profiles")
+    ax.grid(axis="y", color="#E5E7EB", linewidth=0.8)
+    ax.set_axisbelow(True)
+    ax.legend(frameon=False, ncol=6, fontsize=8, loc="upper center")
+    for spine in ["top", "right"]:
+        ax.spines[spine].set_visible(False)
+    fig.tight_layout()
+    save_figure(fig, output_dir, "uat_participant_rating_profiles")
+
+    # 6. Score spread by metric.
+    fig, ax = plt.subplots(figsize=(9.5, 5.8))
+    box_data = [ratings[column].dropna().to_numpy() for column in ratings.columns]
+    box = ax.boxplot(
+        box_data,
+        orientation="horizontal",
+        tick_labels=ratings.columns,
+        patch_artist=True,
+        widths=0.58,
+        medianprops={"color": "#111827", "linewidth": 1.8},
+    )
+    for patch in box["boxes"]:
+        patch.set_facecolor("#93C5FD")
+        patch.set_edgecolor("#2563EB")
+    ax.set_xlim(0.8, 5.2)
+    ax.set_xticks(range(1, 6))
+    ax.set_xlabel("Rating (1–5)")
+    ax.set_title("Checkly UAT: score spread and median by metric")
+    ax.grid(axis="x", color="#E5E7EB", linewidth=0.8)
+    ax.set_axisbelow(True)
+    for spine in ["top", "right", "left"]:
+        ax.spines[spine].set_visible(False)
+    fig.tight_layout()
+    save_figure(fig, output_dir, "uat_metric_boxplots")
+
+    # 7. Ranked correlation pairs to identify metrics that move together.
+    correlations = ratings.corr()
+    correlation_pairs = []
+    for first_index, first_metric in enumerate(correlations.columns):
+        for second_index in range(first_index + 1, len(correlations.columns)):
+            second_metric = correlations.columns[second_index]
+            correlation_pairs.append(
+                (
+                    f"{first_metric} vs {second_metric}",
+                    correlations.iat[first_index, second_index],
+                )
+            )
+    correlation_pairs = sorted(
+        correlation_pairs,
+        key=lambda item: abs(item[1]),
+        reverse=True,
+    )[:12]
+    pair_labels = [pair[0] for pair in reversed(correlation_pairs)]
+    pair_values = [pair[1] for pair in reversed(correlation_pairs)]
+    fig, ax = plt.subplots(figsize=(10.0, 6.5))
+    bars = ax.barh(
+        pair_labels,
+        pair_values,
+        color=["#2563EB" if value >= 0 else "#D97706" for value in pair_values],
+        height=0.65,
+    )
+    ax.axvline(0, color="#374151", linewidth=0.9)
+    ax.set_xlim(-1, 1)
+    ax.set_xlabel("Pearson correlation")
+    ax.set_title("Strongest correlations between UAT rating metrics")
+    ax.grid(axis="x", color="#E5E7EB", linewidth=0.8)
+    ax.set_axisbelow(True)
+    for bar, value in zip(bars, pair_values):
+        ax.text(
+            value - 0.03 if value >= 0 else value + 0.03,
+            bar.get_y() + bar.get_height() / 2,
+            f"{value:.2f}",
+            ha="right" if value >= 0 else "left",
+            va="center",
+            color="white" if abs(value) > 0.25 else "#111827",
+            fontweight="bold",
+        )
+    for spine in ["top", "right", "left"]:
+        ax.spines[spine].set_visible(False)
+    fig.tight_layout()
+    save_figure(fig, output_dir, "uat_metric_correlation_pairs")
+
+    # 8. Overall participant score, useful for spotting influential responses.
+    participant_means = ratings.mean(axis=1).sort_values()
+    sorted_ids = participant_ids.loc[participant_means.index]
+    fig, ax = plt.subplots(figsize=(8.5, 4.8))
+    colors = [
+        "#D97706" if value < aggregate_mean else "#2563EB"
+        for value in participant_means
+    ]
+    bars = ax.barh(sorted_ids, participant_means, color=colors, height=0.65)
+    ax.axvline(
+        aggregate_mean,
+        color="#374151",
+        linestyle="--",
+        linewidth=1.2,
+        label=f"Sample mean ({aggregate_mean:.2f})",
+    )
+    ax.set_xlim(1, 5)
+    ax.set_xticks(range(1, 6))
+    ax.set_xlabel("Mean across available rating metrics")
+    ax.set_ylabel("Anonymous participant")
+    ax.set_title("Overall rating by participant")
+    ax.grid(axis="x", color="#E5E7EB", linewidth=0.8)
+    ax.set_axisbelow(True)
+    ax.legend(frameon=False, loc="lower right")
+    for bar, value in zip(bars, participant_means):
+        ax.text(
+            min(value + 0.06, 4.9),
+            bar.get_y() + bar.get_height() / 2,
+            f"{value:.1f}",
+            va="center",
+            fontweight="bold",
+        )
+    for spine in ["top", "right", "left"]:
+        ax.spines[spine].set_visible(False)
+    fig.tight_layout()
+    save_figure(fig, output_dir, "uat_participant_means")
+
+    # 9. Directional device comparison. Labels expose the small subgroup sizes.
+    device_column = other_sources["device"]
+    if device_column is not None:
+        devices = (
+            df[device_column]
+            .fillna("Not specified")
+            .astype(str)
+            .str.replace(r"\s*\(recommended\)\s*", "", regex=True)
+            .str.strip()
+            .replace("", "Not specified")
+        )
+        device_means = ratings.assign(Device=devices).groupby("Device").mean()
+        device_counts = devices.value_counts().reindex(device_means.index)
+        fig, ax = plt.subplots(figsize=(10.5, 5.6))
+        x = np.arange(len(device_means.columns))
+        width = 0.8 / max(len(device_means), 1)
+        palette = ["#2563EB", "#16A34A", "#D97706", "#7C3AED"]
+        for position, (device, values) in enumerate(device_means.iterrows()):
+            offset = (position - (len(device_means) - 1) / 2) * width
+            ax.bar(
+                x + offset,
+                values,
+                width=width,
+                label=f"{device} (n={device_counts[device]})",
+                color=palette[position % len(palette)],
+            )
+        ax.set_ylim(1, 5)
+        ax.set_yticks(range(1, 6))
+        ax.set_xticks(x)
+        ax.set_xticklabels(device_means.columns, rotation=38, ha="right")
+        ax.set_ylabel("Mean rating (1–5)")
+        ax.set_title("Directional comparison of ratings by device")
+        ax.grid(axis="y", color="#E5E7EB", linewidth=0.8)
+        ax.set_axisbelow(True)
+        ax.legend(frameon=False, ncol=min(len(device_means), 3), loc="upper center")
+        for spine in ["top", "right"]:
+            ax.spines[spine].set_visible(False)
+        fig.tight_layout()
+        save_figure(fig, output_dir, "uat_ratings_by_device")
+
+    # 10. Grouped rating dot plots for tester characteristics.
+    def save_group_rating_dotplot(
+        groups: pd.Series,
+        title: str,
+        filename: str,
+    ) -> None:
+        cleaned_groups = (
+            groups.fillna("Not specified")
+            .astype(str)
+            .str.strip()
+            .replace("", "Not specified")
+        )
+        grouped = ratings.assign(Group=cleaned_groups).groupby("Group").mean()
+        counts = cleaned_groups.value_counts().reindex(grouped.index)
+        if grouped.empty:
+            return
+
+        fig, ax = plt.subplots(figsize=(10.5, 6.0))
+        y = np.arange(len(grouped.columns))
+        offsets = np.linspace(-0.24, 0.24, len(grouped))
+        palette = ["#2563EB", "#16A34A", "#D97706", "#7C3AED", "#DC2626", "#0891B2"]
+        for position, (group, values) in enumerate(grouped.iterrows()):
+            ax.scatter(
+                values,
+                y + offsets[position],
+                s=65,
+                color=palette[position % len(palette)],
+                label=f"{group} (n={counts[group]})",
+                zorder=3,
+            )
+            ax.plot(
+                values,
+                y + offsets[position],
+                color=palette[position % len(palette)],
+                linewidth=0.8,
+                alpha=0.45,
+            )
+        ax.set_yticks(y)
+        ax.set_yticklabels(grouped.columns)
+        ax.invert_yaxis()
+        ax.set_xlim(1, 5)
+        ax.set_xticks(range(1, 6))
+        ax.set_title(title)
+        ax.set_xlabel("Subgroup mean rating (1–5)")
+        ax.grid(axis="x", color="#E5E7EB", linewidth=0.8)
+        ax.set_axisbelow(True)
+        ax.legend(
+            frameon=False,
+            ncol=min(len(grouped), 3),
+            loc="upper center",
+            bbox_to_anchor=(0.5, -0.12),
+        )
+        for spine in ["top", "right", "left"]:
+            ax.spines[spine].set_visible(False)
+        fig.subplots_adjust(left=0.30, right=0.98, top=0.90, bottom=0.24)
+        save_figure(fig, output_dir, filename)
+
+    profile_plot_groups: list[tuple[str, pd.Series, str]] = []
+
+    if device_column is not None:
+        profile_plot_groups.append(("Device", devices, "uat_rating_profile_by_device"))
+        save_group_rating_dotplot(
+            devices,
+            "Mean UAT ratings by device",
+            "uat_rating_profile_by_device",
+        )
+
+    browser_column = other_sources["browser"]
+    if browser_column is not None:
+        browsers = (
+            df[browser_column]
+            .fillna("Not specified")
+            .astype(str)
+            .str.replace(r"(?i)^dickduckgo$", "DuckDuckGo", regex=True)
+            .str.strip()
+            .replace("", "Not specified")
+        )
+        profile_plot_groups.append(("Browser", browsers, "uat_rating_profile_by_browser"))
+        save_group_rating_dotplot(
+            browsers,
+            "Mean UAT ratings by browser",
+            "uat_rating_profile_by_browser",
+        )
+
+    occupation_column = other_sources["occupation"]
+    if occupation_column is not None:
+        backgrounds = (
+            df[occupation_column]
+            .fillna("Not specified")
+            .astype(str)
+            .str.replace(";", " / ", regex=False)
+            .str.strip()
+            .replace("", "Not specified")
+        )
+        profile_plot_groups.append(
+            ("Professional background", backgrounds, "uat_rating_profile_by_background")
+        )
+        save_group_rating_dotplot(
+            backgrounds,
+            "Mean UAT ratings by professional background",
+            "uat_rating_profile_by_background",
+        )
+
+    prior_use_column = other_sources["prior_use"]
+    if prior_use_column is not None:
+        prior_use = (
+            df[prior_use_column]
+            .fillna("Not specified")
+            .astype(str)
+            .str.strip()
+            .replace("", "Not specified")
+        )
+        profile_plot_groups.append(
+            ("Previous checklist use", prior_use, "uat_rating_profile_by_prior_use")
+        )
+        save_group_rating_dotplot(
+            prior_use,
+            "Mean UAT ratings by previous checklist-software use",
+            "uat_rating_profile_by_prior_use",
+        )
+
+    # 11. Test each participant-information factor against every rating metric.
+    # Permutation tests avoid relying on large-sample assumptions, but the results
+    # remain exploratory because several subgroups contain very few participants.
+    def eta_squared(group_codes: np.ndarray, values: np.ndarray) -> float:
+        valid = ~np.isnan(values)
+        group_codes = group_codes[valid]
+        values = values[valid]
+        grand_mean = values.mean()
+        total_variation = ((values - grand_mean) ** 2).sum()
+        if total_variation == 0:
+            return 0.0
+        between_group_variation = sum(
+            (group_codes == code).sum()
+            * (values[group_codes == code].mean() - grand_mean) ** 2
+            for code in np.unique(group_codes)
+        )
+        return float(between_group_variation / total_variation)
+
+    tested_characteristics = [
+        (label, groups)
+        for label, groups in [
+            ("Professional background", backgrounds if occupation_column is not None else None),
+            ("Device", devices if device_column is not None else None),
+            ("Browser", browsers if browser_column is not None else None),
+        ]
+        if groups is not None
+    ]
+
+    permutation_rng = np.random.default_rng(42)
+    permutation_count = 10_000
+    metric_association_rows: list[dict[str, object]] = []
+    for characteristic, group_series in tested_characteristics:
+        cleaned_groups = (
+            group_series.fillna("Not specified")
+            .astype(str)
+            .str.strip()
+            .replace("", "Not specified")
+        )
+        group_codes = pd.Categorical(cleaned_groups).codes
+        if len(np.unique(group_codes)) < 2:
+            continue
+        for metric in ratings.columns:
+            metric_values = ratings[metric].to_numpy(dtype=float)
+            observed = eta_squared(group_codes, metric_values)
+            valid_values = metric_values[~np.isnan(metric_values)]
+            valid_codes = group_codes[~np.isnan(metric_values)]
+            exceedances = 0
+            for _ in range(permutation_count):
+                permuted = permutation_rng.permutation(valid_values)
+                if eta_squared(valid_codes, permuted) >= observed:
+                    exceedances += 1
+            metric_association_rows.append(
+                {
+                    "Characteristic": characteristic,
+                    "Metric": metric,
+                    "Eta squared": observed,
+                    "Permutation p": (exceedances + 1) / (permutation_count + 1),
+                }
+            )
+
+    metric_associations = pd.DataFrame(metric_association_rows)
+    if not metric_associations.empty:
+        p_value_matrix = metric_associations.pivot(
+            index="Metric",
+            columns="Characteristic",
+            values="Permutation p",
+        ).reindex(index=ratings.columns)
+        fig, ax = plt.subplots(figsize=(15.0, 12.5))
+        image = ax.imshow(
+            p_value_matrix.to_numpy(),
+            cmap="RdYlGn",
+            vmin=0,
+            vmax=1,
+            aspect="auto",
+        )
+        ax.set_xticks(range(len(p_value_matrix.columns)))
+        ax.set_xticklabels(
+            [
+                "Professional\nbackground"
+                if label == "Professional background"
+                else label
+                for label in p_value_matrix.columns
+            ],
+            rotation=25,
+            ha="right",
+            fontsize=32,
+        )
+        ax.set_yticks(range(len(p_value_matrix.index)))
+        ax.set_yticklabels(p_value_matrix.index, fontsize=29)
+        significant_count = int((p_value_matrix < 0.05).sum().sum())
+        ax.set_title(
+            "Testers information vs UAT metrics",
+            fontsize=34,
+            fontweight="bold",
+            pad=16,
+        )
+        for row_index in range(len(p_value_matrix.index)):
+            for column_index in range(len(p_value_matrix.columns)):
+                value = p_value_matrix.iat[row_index, column_index]
+                ax.text(
+                    column_index,
+                    row_index,
+                    f"{value:.2f}" + ("*" if value < 0.05 else ""),
+                    ha="center",
+                    va="center",
+                    color="white" if value < 0.18 else "#111827",
+                    fontweight="bold" if value < 0.05 else "normal",
+                    fontsize=30,
+                )
+        colorbar = fig.colorbar(image, ax=ax, fraction=0.035, pad=0.03)
+        colorbar.set_label("p-value", fontsize=32)
+        colorbar.ax.tick_params(labelsize=27)
+        fig.tight_layout(rect=(0, 0.04, 1, 1))
+        save_figure(
+            fig,
+            output_dir,
+            "uat_characteristics_by_metric_significance",
+        )
+
+    # 12. Tester-background overview: profession and prior checklist use.
+    if occupation_column is not None and prior_use_column is not None:
+        profession_counts = backgrounds.value_counts()
+        prior_use_counts = prior_use.value_counts()
+
+        fig, axes = plt.subplots(1, 2, figsize=(9.0, 5.2))
+        for ax, counts, title, colors in [
+            (
+                axes[0],
+                profession_counts,
+                "Professional\nbackground",
+                PROFESSION_PIE_COLORS,
+            ),
+            (
+                axes[1],
+                prior_use_counts,
+                "Previous checklist-\nsoftware use",
+                PRIOR_USE_PIE_COLORS,
+            ),
+        ]:
+            wedges, _, percentage_texts = ax.pie(
+                counts.values,
+                autopct=lambda percentage: f"{percentage:.0f}%",
+                startangle=90,
+                radius=1.08,
+                colors=colors[: len(counts)],
+                pctdistance=0.68,
+                wedgeprops={"edgecolor": "white", "linewidth": 1.5},
+                textprops={"fontsize": 14},
+            )
+            ax.set_title(title, fontweight="bold")
+            ax.legend(
+                wedges,
+                counts.index,
+                frameon=False,
+                loc="lower center",
+                bbox_to_anchor=(0.5, -0.28),
+                fontsize=13,
+            )
+            for text in percentage_texts:
+                text.set_fontweight("bold")
+
+        fig.suptitle("Tester background", fontsize=15)
+        fig.subplots_adjust(left=0.03, right=0.97, top=0.86, bottom=0.22, wspace=-0.30)
+        save_figure(fig, output_dir, "uat_tester_background_pies")
+
+    # 14. Testing-environment overview: device and browser.
+    if device_column is not None and browser_column is not None:
+        device_counts = devices.value_counts()
+        browser_counts = browsers.value_counts()
+
+        fig, axes = plt.subplots(1, 2, figsize=(9.0, 5.2))
+        for ax, counts, title, colors in [
+            (axes[0], device_counts, "Device used", PIE_COLORS),
+            (axes[1], browser_counts, "Browser used", PIE_COLORS),
+        ]:
+            wedges, _, percentage_texts = ax.pie(
+                counts.values,
+                autopct=lambda percentage: f"{percentage:.0f}%",
+                startangle=90,
+                radius=1.08,
+                colors=colors[: len(counts)],
+                pctdistance=0.68,
+                wedgeprops={"edgecolor": "white", "linewidth": 1.5},
+                textprops={"fontsize": 14},
+            )
+            ax.set_title(title, fontweight="bold")
+            ax.legend(
+                wedges,
+                counts.index,
+                frameon=False,
+                loc="lower center",
+                bbox_to_anchor=(0.5, -0.28),
+                fontsize=13,
+            )
+            for text in percentage_texts:
+                text.set_fontweight("bold")
+
+        fig.suptitle("Testing environment", fontsize=15)
+        fig.subplots_adjust(left=0.03, right=0.97, top=0.86, bottom=0.27, wspace=-0.30)
+        save_figure(fig, output_dir, "uat_testing_environment_pies")
+
+    # 14. Combined participant overview: environment on the left, background on the right.
+    if (
+        device_column is not None
+        and browser_column is not None
+        and occupation_column is not None
+        and prior_use_column is not None
+    ):
+        combined_pies = [
+            (device_counts, "Device used", PIE_COLORS),
+            (browser_counts, "Browser used", PIE_COLORS),
+            (profession_counts, "Professional\nbackground", PROFESSION_PIE_COLORS),
+            (
+                prior_use_counts,
+                "Previous checklist-\nsoftware use",
+                PRIOR_USE_PIE_COLORS,
+            ),
+        ]
+
+        fig, axes = plt.subplots(1, 4, figsize=(13.5, 5.4))
+        for ax, (counts, title, colors) in zip(axes, combined_pies):
+            wedges, _, percentage_texts = ax.pie(
+                counts.values,
+                autopct=lambda percentage: f"{percentage:.0f}%",
+                startangle=90,
+                radius=1.12,
+                colors=colors[: len(counts)],
+                pctdistance=0.68,
+                wedgeprops={"edgecolor": "white", "linewidth": 1.5},
+                textprops={"fontsize": 13},
+            )
+            ax.set_title(title, fontweight="bold", fontsize=12)
+            ax.legend(
+                wedges,
+                counts.index,
+                frameon=False,
+                loc="lower center",
+                bbox_to_anchor=(0.5, -0.48),
+                fontsize=12,
+            )
+            for text in percentage_texts:
+                text.set_fontweight("bold")
+
+        fig.suptitle("UAT participant overview", fontsize=16, fontweight="bold")
+        fig.text(
+            0.27,
+            0.89,
+            "Testing environment",
+            ha="center",
+            fontsize=14,
+            fontweight="bold",
+        )
+        fig.text(
+            0.73,
+            0.89,
+            "Tester background",
+            ha="center",
+            fontsize=14,
+            fontweight="bold",
+        )
+        fig.subplots_adjust(
+            left=0.02,
+            right=0.98,
+            top=0.80,
+            bottom=0.28,
+            wspace=-0.38,
+        )
+        save_figure(fig, output_dir, "uat_participant_overview_pies")
+
     # Concise console summary.
     print(f"Participants: {len(df)}")
     print(f"Aggregate mean: {aggregate_mean:.2f}/5")
@@ -337,13 +925,32 @@ def analyze(args: argparse.Namespace) -> None:
     print("\nImportant interpretation:")
     print("Percentages describe this test sample, not precise population estimates.")
     print("Repeated findings can still support cautious, directional conclusions for similar target users.")
+    if not metric_associations.empty:
+        significant_tests = metric_associations[
+            metric_associations["Permutation p"] < 0.05
+        ]
+        print(
+            "\nParticipant characteristics vs individual rating metrics: "
+        )
+        closest_tests = metric_associations.nsmallest(5, "Permutation p")
+        print("Five smallest p-values:")
+        for _, row in closest_tests.iterrows():
+            print(
+                f"- {row['Characteristic']} vs {row['Metric']}: "
+                f"eta-squared={row['Eta squared']:.2f}, "
+                f"permutation p={row['Permutation p']:.2f}"
+            )
+        print(
+            "These tests are exploratory and unadjusted for multiple comparisons. "
+            "Small and sparse subgroups limit their reliability."
+        )
     print(f"\nFiles saved to: {output_dir.resolve()}")
 
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Analyze the Checkly UAT CSV export.")
     parser.add_argument("csv_file", help="Path to the survey CSV file")
-    parser.add_argument("--output-dir", default="results_analysis", help="Output directory (default: uat_results)")
+    parser.add_argument("--output-dir", default="results_analysis", help="PNG output directory (default: results_analysis)")
     parser.add_argument("--positive-threshold", type=float, default=4, help="Minimum positive rating (default: 4)")
     parser.add_argument("--acceptance-mean", type=float, default=None, help="Optional minimum acceptable mean")
     parser.add_argument("--acceptance-positive", type=float, default=None, help="Optional minimum positive percentage")
