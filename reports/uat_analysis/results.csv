@@ -1,0 +1,25 @@
+"Timestamp","First Name","Last Name","Occupation (optional)","Device used during testing (optional)","Browser used (optional)","Have you used checklist software before?","If yes, which checklist tools have you used? (optional)","First impression","Ease of use","App stability and reliability","Speed and responsiveness","Ease of checklist creation","Usefulness of AI features (optional – if used)","AI Assistant’s understanding of requests (optional – if used)","Trust in the AI Assistant’s suggested changes (optional – if used","Overall satisfaction ","What did you like most about Checkly? (optional)","What was confusing, slow, or didn’t work as you expected? (optional)","What could be improved? (optional)","Was there any feature you expected to find but didn't? (optional)","Is there any chance you see yourself using Checkly in the future?","Additional comments (optional)","",""
+"2026/06/30 2:52:45 pm EEST","José Afonso","Teixeira","Software Developer","Tablet (recommended)","Chrome","Never","none","3","3","3","3","3","3","3","3","3","","","","","Yes","","23","3"
+"2026/07/09 11:22:57 pm EEST","Move ","Yanni","Student","Mobile","Safari","Frequently","Apple Reminders","5","5","5","5","4","5","5","4","5","My checklists and the design ","The download ","","","Yes","","","5"
+"2026/07/09 11:27:30 pm EEST","Yannick ","Suckrow","Student","Mobile","Chrome","Occasionally","Paper Checklists","3","3","4","5","3","2","3","4","4","The design ","The need to upload a pdf ","Let users create checklist first ask for sign up for saving document ","-","Yes","","","5"
+"2026/07/09 11:29:17 pm EEST","Kamila","Burda","Student","Mobile","Firefox","Occasionally","Apple Reminders;notion","5","4","5","5","5","5","5","5","5","","","","","Yes","","","5"
+"2026/07/09 11:29:49 pm EEST","Adeian","Mülthaler","Student","Mobile","DickDuckGo","Frequently","Nextcloud Todo","5","4","5","4","2","5","5","4","5","That the AI is agentic and able to change the checklists itself","PDF creation","PDF","","Yes","","","5"
+"2026/07/10 5:00:52 pm EEST","Eva","Gasanova","Student","Mobile","Safari","Occasionally","Microsoft To Do","1","1","1","1","1","1","1","2","2","","","","","Yes","","","1"
+"2026/07/10 5:31:47 pm EEST","Zuzanna ","Gorzkowska ","Student","Mobile","Chrome","Never","Apple Reminders;Microsoft To Do;Paper Checklists","4","5","5","5","5","5","5","5","5","AI features, simplicity and ease of use ","Nothing ","App layout simplified too many colours fuvk graphics ","Nope ","Yes","","","5"
+"2026/07/10 5:40:44 pm EEST","Sara Khatun","Guluzade","Software Developer;Office Worker","Desktop","Chrome","Occasionally","Apple Reminders;Microsoft To Do","5","5","5","5","5","5","5","5","5","ui design, how AI understood my request","","maybe decreasing the font size and fitting full  view to screen, you can also add some visuals like visuals of elements that people enter to make it even more interactive","Maybe having the ""Create an account / sign up"" button would help so that without having to click on ""start for free""","Yes","Keep going, very helpful, good luck <3","","5"
+"2026/07/10 6:05:12 pm EEST","A","G","Student","Desktop","Chrome","Never","","5","5","5","5","5","5","4","4","5","","","","","Yes","","","4"
+"2026/07/10 6:39:01 pm EEST","Mario","Kratz","Student","Desktop","Chrome","Occasionally","Paper Checklists;Normal Calender app","5","5","5","5","5","4","5","5","5","The AI Assistent. I didnt need to click anything and i created checklists just by talking to the chatbot.","","Add an ""Impressum"" and I would add some customer feedback to the dashboard. It could also explain why the strategy is useful and briefly summarize the main features of the app.
+
+The dashboard could include photos or mockups of people who already use Checkly, together with short customer quotes. For example:
+
+“I use Checkly to build a daily routine and stay organized.”
+
+“I use Checkly because I often feel nervous and wonder whether I turned off the electricity or locked my car. Checkly gives me peace of mind because I know that I have completed these tasks.”
+
+Another important point is why AI is helpful. Everyone knows the moment when they come back from shopping and realize that they forgot something. AI can help prevent this by suggesting important items and making the shopping process easier.
+
+I would separate the dashboard from the checklist. When users are in a hurry, they should be able to open the checklist directly instead of scrolling through the dashboard first. This would make the app faster and easier to use.
+
+For the checklist, I think it would be better to use more icons. For example, fruits could have fruit icons and drinks could have drink icons. However, this should only be used if it does not create too many things to click.
+
+In the checklist, I would also like to be able to check off items. A different layout could be useful as well. Instead of showing categories, the checklist could only display the important items. It might also be helpful to add a back button.","To set a profil picture","Yes","","","5"
