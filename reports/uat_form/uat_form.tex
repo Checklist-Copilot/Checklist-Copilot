@@ -8,13 +8,15 @@
 \usepackage{array}
 \usepackage{amssymb}
 \usepackage{tabularx}
+\usepackage{xcolor}
 
 \newcolumntype{Y}{>{\raggedright\arraybackslash\hspace{0pt}}X}
-\newcolumntype{C}{>{\centering\arraybackslash}p{0.65cm}}
+\newcolumntype{C}{>{\centering\arraybackslash}p{0.55cm}}
 
 \newcommand{\fillline}[1]{\makebox[#1][l]{\hrulefill}}
 \newcommand{\ansline}{\par\noindent\rule{\linewidth}{0.3pt}\par\vspace{0.5em}}
-\newcommand{\ansblock}{\ansline\ansline\ansline}
+\newcommand{\ansblock}{\ansline\ansline}
+\newcommand{\formnote}[1]{\textit{\textcolor{gray}{(#1)}}}
 
 \makeatletter
 \renewcommand{\@maketitle}{%
@@ -50,84 +52,84 @@
 
 \begin{center}
 \small This form can be completed as a PDF or via Google Forms: \href{https://docs.google.com/forms/d/e/1FAIpQLSeXisUHeyiNp6xcpsaMaFFlzQmLwat27WgNNU8XmNLZmMYivQ/viewform?usp=sharing&ouid=100005269846048668522}{Google Forms}
+
+\formnote{Google Forms does not collect your email address, and you do not need to sign in.}
 \end{center}
+
+\subsection*{About This Project}
+
+Checkly is a student project created by a small group for one of our classes. We are inviting people to try it and share honest feedback so we can learn what works and what could be improved.
+
+You're welcome to create your own account or, if you prefer not to, you may use our test account.\\
+\textbf{Email:} \texttt{test@checkly.com} \qquad \textbf{Password:} \texttt{test}
 
 \subsection*{What is Checkly?}
 
-Checkly is an AI-assisted checklist web platform that makes it easier for you to create, manage, and complete checklists by integrating AI into every step of the process.
+Checkly is an \textbf{AI-assisted checklist web platform} that makes it easier for you to create, manage, and complete checklists by integrating AI into every step of the process.
 
 \subsection*{Example Use Cases}
 
-\begin{itemize}[leftmargin=1.4em,itemsep=0.2em]
-  \item Safety inspection
-  \item Equipment and maintenance check
-  \item Quality audit
-  \item Site walkthrough
-  \item Recurring task
-  \item Setup routine
-  \item Onboarding and training checklist
-  \item Packing and travel checklist
-\end{itemize}
+\noindent\begin{tabularx}{\textwidth}{@{}XX@{}}
+$\bullet$ Safety inspections & $\bullet$ Equipment maintenance\\[0.25em]
+$\bullet$ Quality audits & $\bullet$ Recurring procedures
+\end{tabularx}
 
 \subsection*{Tester Information}
 
-\small Description (optional)
-
 \begin{itemize}[leftmargin=1.4em,itemsep=0.4em,label={}]
-  \item First Name*\hfill \fillline{7cm}
-  \item Last Name*\hfill \fillline{7cm}
-  \item Occupation\\
+  \item First Name\hfill \fillline{7cm}
+  \item Last Name\hfill \fillline{7cm}
+  \item Occupation \formnote{optional}\\
   $\Box$ Student \qquad $\Box$ Professor \qquad $\Box$ Software Developer\\
   $\Box$ Office Worker \qquad $\Box$ Technician \qquad $\Box$ Manager\\
   $\Box$ Other: \fillline{5cm}
-  \item Device used during testing\\
-  $\Box$ Tablet (recommended) \qquad $\Box$ Desktop \qquad $\Box$ Mobile\\
+  \item Device used during testing \formnote{optional}\\
+  $\Box$ Tablet \formnote{recommended} \qquad $\Box$ Desktop \qquad $\Box$ Mobile\\
   $\Box$ Other: \fillline{5cm}
-  \item Browser used\\
+  \item Browser used \formnote{optional}\\
   $\Box$ Chrome \qquad $\Box$ Safari \qquad $\Box$ Firefox\\
   $\Box$ Microsoft Edge \qquad $\Box$ Opera \qquad $\Box$ Brave\\
   $\Box$ Arc \qquad $\Box$ Other: \fillline{5cm}
   \item Have you used checklist software before?\\
   $\Box$ Frequently \qquad $\Box$ Occasionally \qquad $\Box$ Never
-  \item If yes, which checklist tools have you used?\\
+  \item If yes, which checklist tools have you used? \formnote{optional}\\
   $\Box$ Apple Reminders \qquad $\Box$ Google Keep \qquad $\Box$ Microsoft To Do\\
   $\Box$ Trello \qquad $\Box$ Paper Checklists \qquad $\Box$ Other: \fillline{5cm}
 \end{itemize}
 
 \subsection*{Your Task}
 
-Feel free to explore the app on your own. If you’d like some guidance, here are a few recommended steps:
+\textbf{Explore the app.} \textbf{Recommended steps:}
 
 \begin{itemize}[leftmargin=1.4em,itemsep=0.25em]
-  \item Sign up / log in
-  \item Create a new checklist
-  \item Build out the checklist: add a section and a mix of item types (checkbox, text, photo)
+  \item Sign up
+  \item Create a checklist, optionally by describing it to the AI
   \item Use the AI Assistant to add or modify something in the checklist
-  \item Complete the checklist by filling in its items
+  \item Use the checklist
 \end{itemize}
 
 
-\subsection*{Evaluation*}
+\subsection*{Evaluation}
 
-\textit{Rate each statement from 1 (Strongly disagree) to 5 (Strongly agree).}
+\textit{Rate each aspect from 1 (\textbf{Very poor}) to 5 (\textbf{Excellent}).}
 
 \begingroup
 \setlength{\tabcolsep}{3pt}
+\renewcommand{\arraystretch}{1.12}
 \small
-\begin{tabularx}{\textwidth}{@{}YCCCCC@{}}
+\noindent\begin{tabularx}{\textwidth}{@{}YCCCCC@{}}
 \toprule
-Statement & 1 & 2 & 3 & 4 & 5\\
+Aspect & 1 & 2 & 3 & 4 & 5\\
 \midrule
 First impression & $\Box$ & $\Box$ & $\Box$ & $\Box$ & $\Box$\\
-The application was easy to use & $\Box$ & $\Box$ & $\Box$ & $\Box$ & $\Box$\\
-The application behaved reliably without crashes or unexpected errors & $\Box$ & $\Box$ & $\Box$ & $\Box$ & $\Box$\\
-The application responded quickly & $\Box$ & $\Box$ & $\Box$ & $\Box$ & $\Box$\\
+Ease of use & $\Box$ & $\Box$ & $\Box$ & $\Box$ & $\Box$\\
+App stability and reliability & $\Box$ & $\Box$ & $\Box$ & $\Box$ & $\Box$\\
+Speed and responsiveness & $\Box$ & $\Box$ & $\Box$ & $\Box$ & $\Box$\\
 Ease of checklist creation & $\Box$ & $\Box$ & $\Box$ & $\Box$ & $\Box$\\
-Usefulness of AI Features & $\Box$ & $\Box$ & $\Box$ & $\Box$ & $\Box$\\
-The AI Assistant understood my requests & $\Box$ & $\Box$ & $\Box$ & $\Box$ & $\Box$\\
-I trusted the changes suggested by the AI Assistant & $\Box$ & $\Box$ & $\Box$ & $\Box$ & $\Box$\\
+Usefulness of AI features \formnote{optional -- if used} & $\Box$ & $\Box$ & $\Box$ & $\Box$ & $\Box$\\
+AI Assistant's understanding of requests \formnote{optional -- if used} & $\Box$ & $\Box$ & $\Box$ & $\Box$ & $\Box$\\
+Trust in the AI Assistant's suggested changes \formnote{optional -- if used} & $\Box$ & $\Box$ & $\Box$ & $\Box$ & $\Box$\\
 Overall satisfaction & $\Box$ & $\Box$ & $\Box$ & $\Box$ & $\Box$\\
-How likely are you to recommend Checkly? & $\Box$ & $\Box$ & $\Box$ & $\Box$ & $\Box$\\
 \bottomrule
 \end{tabularx}
 \endgroup
@@ -135,22 +137,22 @@ How likely are you to recommend Checkly? & $\Box$ & $\Box$ & $\Box$ & $\Box$ & $
 \subsection*{Open Feedback}
 
 \begin{itemize}[leftmargin=1.4em,itemsep=0.8em,label={}]
-  \item What did you like most about Checkly?
+  \item What did you like most about Checkly? \formnote{optional}
   \ansblock
 
-  \item What was confusing, slow, or didn’t work as you expected?
+  \item What was confusing, slow, or didn’t work as you expected? \formnote{optional}
   \ansblock
 
-  \item What could be improved?
+  \item What could be improved? \formnote{optional}
   \ansblock
 
-  \item Was there any feature you expected to find but didn't?
+  \item Was there any feature you expected to find but didn't? \formnote{optional}
   \ansblock
 
-  \item Is there any chance you see yourself using Checkly in the future?\\
+  \item \textbf{Is there any chance you see yourself using Checkly in the future?}\\
   $\Box$ Yes \qquad $\Box$ No
 
-  \item Additional comments.
+  \item Additional comments. \formnote{optional}
   \ansblock
 \end{itemize}
 
