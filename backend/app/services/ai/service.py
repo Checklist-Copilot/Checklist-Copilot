@@ -178,11 +178,24 @@ def _build_hint_for_failure(call: ToolCall, checklist: dict, exc: Exception) -> 
     return None
 
 
-def _find_existing_checkbox_group(checklist: dict, container_id: str, label: str) -> dict | None:
+# Component types where a same-type, same-label sibling inside the same
+# container is (almost) always an accidental re-add rather than an
+# intentional duplicate — e.g. a model that nests a field inline via a
+# section's `children` and then separately re-adds it in a later round.
+# `section` is deliberately excluded: users may legitimately want two
+# sections with the same name.
+_DEDUPLICATE_ON_REPEAT_TYPES = {
+    "checkboxGroup", "checkbox", "textField", "numberField", "imageBlock", "table",
+}
+
+
+def _find_existing_component(checklist: dict, container_id: str, component_type: str, label: str) -> dict | None:
     """
-    Look for a `checkboxGroup` with a matching (trimmed, case-insensitive)
-    label already inside `container_id`. Used to stop the model from creating
-    duplicate groups in the same section across tool-call rounds.
+    Look for a component of `component_type` with a matching (trimmed,
+    case-insensitive) label already inside `container_id`. Used to stop the
+    model from creating duplicate components in the same container — e.g.
+    across tool-call rounds, or when it both nests a field inline in a
+    section's `children` and separately re-adds it.
     """
     container = find_component_by_id(checklist, container_id)
     if container is None:
@@ -192,7 +205,7 @@ def _find_existing_checkbox_group(checklist: dict, container_id: str, label: str
         for child in container.get(key, []) or []:
             if (
                 isinstance(child, dict)
-                and child.get("type") == "checkboxGroup"
+                and child.get("type") == component_type
                 and (child.get("label") or "").strip().lower() == target_label
             ):
                 return child
@@ -232,23 +245,27 @@ def _build_callback(result: AIRunResult, mode: AiChecklistMode = "edit"):
                 component = args.get("component", {})
                 component_ids_before_add = _collect_component_ids(result.checklist)
 
-                # Idempotency: the model sometimes re-creates a checkboxGroup it
-                # already added earlier in the same section (e.g. across rounds).
-                # Reuse the existing one instead of creating a duplicate.
-                if component.get("type") == "checkboxGroup":
-                    existing_group = _find_existing_checkbox_group(
-                        result.checklist, target, component.get("label", "")
+                # Idempotency: the model sometimes re-creates a component it
+                # already added earlier — either in an earlier round, or via
+                # a section's inline `children` followed by a separate
+                # add_component call for the same field. Reuse the existing
+                # one instead of creating a duplicate.
+                component_type = component.get("type")
+                if component_type in _DEDUPLICATE_ON_REPEAT_TYPES:
+                    existing_component = _find_existing_component(
+                        result.checklist, target, component_type, component.get("label", "")
                     )
-                    if existing_group is not None:
+                    if existing_component is not None:
                         return {
                             "ok": True,
-                            "id": existing_group["id"],
-                            "humanReadableId": existing_group.get("humanReadableId"),
+                            "id": existing_component["id"],
+                            "humanReadableId": existing_component.get("humanReadableId"),
                             "already_exists": True,
                             "message": (
-                                "A checkboxGroup with this label already exists in this "
-                                f"section — reusing it. Use targetContainerId={existing_group['id']!r} "
-                                "for future checkboxes. Do not use humanReadableId as a target."
+                                f"A {component_type} with this label already exists in this "
+                                f"container — reusing it instead of creating a duplicate. Use "
+                                f"targetContainerId={existing_component['id']!r} if you need to "
+                                "nest something inside it. Do not use humanReadableId as a target."
                             ),
                         }
 
