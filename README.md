@@ -1,77 +1,52 @@
 # AI Checklist Copilot
 
-A lightweight proof-of-concept checklist designer and execution environment with an AI copilot.
+A proof-of-concept checklist editor and runner with an AI copilot. The frontend is a Vite/React app and the backend is a FastAPI app.
 
-The goal is not to clone the full PAM LiveForms system, but to build a smaller demonstrator where users can create, edit, save, and use digital checklists. The key idea is that every checklist is represented internally as structured JSON, which can be rendered by the frontend and safely modified through validated AI tool calls.
+## Local setup
 
-## Core Idea
+### Environment files
 
-Users can design simple digital checklists containing elements such as sections, checkbox items, text fields, number fields, dropdowns, tables, images, and photo upload fields.
+Create/update the required environment files before starting the apps:
 
-Instead of storing the checklist as raw HTML, the application stores it as a hierarchical JSON model. The frontend renders this JSON as an interactive checklist/form.
+- Frontend: `frontend/checklist-copilot-frontend/.env`
+  - Localhost only:
+    ```env
+    VITE_API_BASE_URL=http://127.0.0.1:8000/api
+    ```
+  - Accessible from a phone on the same local network: replace `<YOUR_COMPUTER_LAN_IP>` with your computer's local IP address:
+    ```env
+    VITE_API_BASE_URL=http://<YOUR_COMPUTER_LAN_IP>:8000/api
+    ```
+- Backend: `backend/.env` must exist and contain the required backend settings such as `DATABASE_URL` and `JWT_SECRET_KEY`.
 
-Each checklist element has:
+## Run the backend
 
-- A globally unique technical `id`
-- An optional human-readable `humanReadableId`
-- A `type`
-- A label and type-specific properties
-- Optional child elements
-
-This makes it possible to reliably update checklist elements even if their visible labels change.
-
-## AI Copilot
-
-The AI copilot modifies checklists through controlled tool calls instead of directly changing the UI or DOM.
-
-Example user request:
-
-```txt
-Add a new safety section with three checkbox items.
+```bash
+cd backend
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+fastapi dev app/main.py
 ```
 
-The AI responds with structured actions such as:
+To make the backend reachable from a phone on the same local network:
 
-```
-{
-  "tool": "add_element",
-  "parentId": "018f6c4a-8a4e-7b91-bb2f-6d3c2f019284",
-  "element": {
-    "id": "018f6c4c-84e2-758a-8d9b-31f81e110aa2",
-    "humanReadableId": "item_protective_equipment_worn",
-    "type": "checkbox",
-    "label": "Protective equipment is worn",
-    "checked": false
-  }
-}
+```bash
+fastapi dev app/main.py --host 0.0.0.0 --port 8000
 ```
 
-The application validates the action, applies it to the checklist JSON, and re-renders the UI.
+## Run the frontend
 
-## General Flow
-
-```
-User request
-→ LLM interprets request
-→ LLM returns structured tool call
-→ App validates the action
-→ App stores the previous checklist snapshot
-→ App updates checklist JSON
-→ Frontend re-renders checklist
+```bash
+cd frontend/checklist-copilot-frontend
+npm ci
+npm run dev
 ```
 
-Before applying an AI-generated change, the backend stores the previous checklist state as a snapshot. If the user wants to revert the last change, the frontend can call the undo API, which restores the previous snapshot.
+To make the frontend reachable from a phone on the same local network:
 
-## Manual Editing Flow
-
-When the user edits the checklist manually in the frontend, the checklist JSON is still the source of truth.
-
-For example, if the user changes a field label, checks an item, adds a new element, or deletes a section, the frontend first updates the local checklist JSON state. After that, the updated JSON is sent to the backend so the new version can be saved in the database.
-
-```txt
-User manually edits checklist
-→ Frontend updates local checklist JSON
-→ Frontend re-renders checklist from updated JSON
-→ Frontend sends updated JSON to backend
-→ Backend validates and saves new version in database
+```bash
+npm run dev -- --host 0.0.0.0
 ```
+
+Then open the URL printed by Vite, for example `http://127.0.0.1:5173` locally or `http://<YOUR_COMPUTER_LAN_IP>:5173` from your phone.
