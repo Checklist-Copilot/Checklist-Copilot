@@ -1,0 +1,15 @@
+Dimension,Category,Count,Share (%)
+Occupation,Student,8,80.0
+Occupation,Software Developer,1,10.0
+Occupation,Software Developer;Office Worker,1,10.0
+Device,Mobile,6,60.0
+Device,Desktop,3,30.0
+Device,Tablet,1,10.0
+Browser,Chrome,6,60.0
+Browser,Safari,2,20.0
+Browser,Firefox,1,10.0
+Browser,DuckDuckGo,1,10.0
+Previous checklist use,Occasionally,5,50.0
+Previous checklist use,Never,3,30.0
+Previous checklist use,Frequently,2,20.0
+Future-use interest,Yes,10,100.0
